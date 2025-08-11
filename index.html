@@ -30,31 +30,37 @@
   <div class="wrap">
     <section class="hero">
       <h1>Proyecto AR Biología — Célula Animal</h1>
-      <p>Explora el modelo 3D de una célula animal en tu navegador o actívalo en Realidad Aumentada con un marcador HIRO.</p>
+      <p>Explora el modelo 3D de una célula animal, activa etiquetas interactivas, o visualiza el modelo en Realidad Aumentada con marcador HIRO.</p>
     </section>
 
     <section class="grid">
       <div class="card">
-        <h2>Ver en 3D (navegador)</h2>
-        <p>Interactúa con el modelo, haz zoom y rota la vista.</p>
+        <h2>Ver en 3D (simple)</h2>
+        <p>Visor rápido sin etiquetas. Ideal para probar el modelo.</p>
         <a class="btn" href="viewer.html">Abrir visor 3D</a>
       </div>
 
       <div class="card">
+        <h2>Ver en 3D con Etiquetas</h2>
+        <p>Hotspots clicables con nombre y descripción de cada parte.</p>
+        <a class="btn" href="viewer_hotspots.html">Abrir visor con etiquetas</a>
+      </div>
+
+      <div class="card">
         <h2>Ver en RA (marcador HIRO)</h2>
-        <p>Abre desde el celular y apunta la cámara al marcador HIRO impreso.</p>
+        <p>Abre desde el celular y apunta al marcador HIRO impreso.</p>
         <a class="btn" href="arjs-demo/animal_glb.html">Abrir en RA</a>
       </div>
     </section>
 
     <section class="tips">
-      <div class="tip">• Sube el archivo del modelo en <code>assets/models/Celula_animal.glb</code>.</div>
-      <div class="tip">• Para RA usa GitHub Pages (HTTPS) y concede permisos de cámara.</div>
-      <div class="tip">• Marcador HIRO: puedes generar/imprimir uno desde recursos públicos de AR.js (búscalo como “hiro marker AR.js”).</div>
-      <div class="tip">• Si el modelo se ve muy grande/pequeño, ajusta el atributo <code>scale</code> en las escenas.</div>
+      <div class="tip">• Modelo: <code>assets/models/Celula_animal.glb</code></div>
+      <div class="tip">• Datos de etiquetas: <code>assets/data/hotspots.json</code> (posiciones y descripciones).</div>
+      <div class="tip">• Para RA necesitas GitHub Pages (HTTPS) y permisos de cámara.</div>
+      <div class="tip">• Si el modelo se ve grande/pequeño, ajusta <code>scale</code> en los HTML.</div>
     </section>
 
-    <div class="footer">© Proyecto AR Biología</div>
+    <div class="footer">© Proyecto AR Biología - Creado por: Francisco Pinto Aravena</div>
   </div>
 </body>
 </html>

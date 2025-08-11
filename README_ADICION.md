@@ -1,20 +1,25 @@
-# Archivos añadidos — Célula Animal (GLB)
+# Archivos añadidos — Célula Animal (GLB) con Etiquetas
 
-Este paquete incluye:
-- `index.html` — página de inicio con enlaces a visor 3D y escena AR.
-- `viewer.html` — visor 3D con A-Frame.
-- `arjs-demo/animal_glb.html` — escena AR con AR.js + marcador HIRO.
-- `assets/models/Celula_animal.glb` — modelo GLB de célula animal (colócalo aquí si deseas reemplazarlo).
-  
-## Uso en GitHub Pages
-1. Copia estas carpetas/archivos al repo `cartas-ar-biologia` respetando las rutas.
-2. Haz commit y push a `main`.
+Incluye:
+- `index.html` — landing con enlaces a los visores.
+- `viewer.html` — visor 3D simple.
+- `viewer_hotspots.html` — visor 3D con etiquetas interactivas (hotspots).
+- `arjs-demo/animal_glb.html` — AR con AR.js + marcador HIRO.
+- `assets/models/Celula_animal.glb` — modelo (puedes reemplazarlo).
+- `assets/data/hotspots.json` — posiciones/nombres/descripciones de partes.
+
+## Uso
+1. Copia estas rutas en tu repo `cartas-ar-biologia` tal cual.
+2. Commit + push a `main`.
 3. Abre:
    - Landing: `https://<usuario>.github.io/cartas-ar-biologia/`
-   - Visor 3D: `https://<usuario>.github.io/cartas-ar-biologia/viewer.html`
+   - 3D simple: `https://<usuario>.github.io/cartas-ar-biologia/viewer.html`
+   - 3D con etiquetas: `https://<usuario>.github.io/cartas-ar-biologia/viewer_hotspots.html`
    - RA (HIRO): `https://<usuario>.github.io/cartas-ar-biologia/arjs-demo/animal_glb.html`
 
-## Notas
-- La RA requiere HTTPS y permisos de cámara (GitHub Pages cumple).
-- Para imprimir un marcador HIRO, busca “hiro marker AR.js” y usa una plantilla A4 en negro con buen contraste.
-- Si el modelo se ve muy grande/pequeño, ajusta el atributo `scale` en los HTML.
+## Editar etiquetas
+- Ajusta posiciones en `assets/data/hotspots.json` (campo `offset` es relativo al grupo del modelo).
+- Si cambias `scale`/`rotation` del grupo en el HTML, puede que debas reajustar los `offset`.
+
+
+Creado por: Francisco Pinto Aravena

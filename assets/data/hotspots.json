@@ -1,0 +1,74 @@
+[
+  {
+    "name": "Núcleo",
+    "description": "Contiene la información genética (ADN) y controla las actividades celulares.",
+    "offset": {
+      "x": 0.0,
+      "y": 0.25,
+      "z": 0.0
+    }
+  },
+  {
+    "name": "Mitocondria",
+    "description": "Produce energía (ATP) a través de la respiración celular.",
+    "offset": {
+      "x": -0.4,
+      "y": 0.05,
+      "z": 0.1
+    }
+  },
+  {
+    "name": "Aparato de Golgi",
+    "description": "Modifica, empaqueta y distribuye proteínas y lípidos.",
+    "offset": {
+      "x": 0.35,
+      "y": 0.05,
+      "z": 0.2
+    }
+  },
+  {
+    "name": "Retículo Endoplasmático Rugoso",
+    "description": "Síntesis de proteínas; posee ribosomas adheridos a su superficie.",
+    "offset": {
+      "x": 0.2,
+      "y": -0.05,
+      "z": -0.25
+    }
+  },
+  {
+    "name": "Retículo Endoplasmático Liso",
+    "description": "Síntesis de lípidos y detoxificación.",
+    "offset": {
+      "x": -0.25,
+      "y": -0.08,
+      "z": -0.25
+    }
+  },
+  {
+    "name": "Lisosoma",
+    "description": "Digestión de desechos y reciclaje de componentes celulares.",
+    "offset": {
+      "x": -0.05,
+      "y": -0.18,
+      "z": 0.25
+    }
+  },
+  {
+    "name": "Membrana Plasmática",
+    "description": "Delimita la célula y regula el intercambio de sustancias.",
+    "offset": {
+      "x": 0.0,
+      "y": -0.28,
+      "z": 0.0
+    }
+  },
+  {
+    "name": "Citoesqueleto",
+    "description": "Estructura interna que da forma y facilita el movimiento intracelular.",
+    "offset": {
+      "x": 0.15,
+      "y": 0.0,
+      "z": 0.35
+    }
+  }
+]
