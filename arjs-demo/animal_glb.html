@@ -41,16 +41,17 @@
   </div>
 
   <script>
-    // DRACO fallback similar to viewers
-    const dracoUrl = '../assets/models/Celula_animal_draco.glb';
-    const normalUrl = '../assets/models/Celula_animal.glb';
+  const dracoUrl  = '../assets/models/Celula_animal_draco.glb';
+  const normalUrl = '../assets/models/Celula_animal.glb';
+  const modelEl   = document.getElementById('cellModel');
 
-    fetch(dracoUrl, {{ method: 'HEAD' }}).then(r => {{
-      const url = r.ok ? dracoUrl : normalUrl;
-      document.getElementById('cellModel').setAttribute('gltf-model', url);
-    }}).catch(() => {{
-      document.getElementById('cellModel').setAttribute('gltf-model', normalUrl);
-    }});
-  </script>
-</body>
+  // Intenta Draco primero (si existe), si no usa normal
+  fetch(dracoUrl, { method: 'HEAD' })
+    .then(r => modelEl.setAttribute('gltf-model', r.ok ? dracoUrl : normalUrl))
+    .catch(() => modelEl.setAttribute('gltf-model', normalUrl));
+
+  // Logs útiles
+  modelEl.addEventListener('model-loaded', () => console.log('GLB cargado OK'));
+  modelEl.addEventListener('model-error',  e => console.error('GLB error:', e.detail));
+</script></body>
 </html>
