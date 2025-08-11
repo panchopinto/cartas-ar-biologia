@@ -5,7 +5,8 @@
   <title>RA — Célula Animal (GLB)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
+  <!-- AR.js con versión fijada -->
+  <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.4/aframe/build/aframe-ar.js"></script>
   <style>
     html,body{margin:0;overflow:hidden;background:#000}
     .legend{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);color:#fff;
@@ -13,45 +14,68 @@
     .legend b{display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:middle;border-radius:2px;background:#3cc9ff}
     .hdr{position:fixed;left:0;right:0;top:0;padding:.5rem .8rem;color:#fff;
          background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));font-family:system-ui,Arial,sans-serif}
+    .notice{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.65);
+            color:#fff;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.15);display:none}
     .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px}
     .btn{border:1px solid rgba(255,255,255,.2);color:#fff;background:rgba(0,0,0,.35);
          border-radius:10px;padding:6px 10px;font-family:system-ui,Arial,sans-serif;cursor:pointer}
   </style>
 </head>
 <body>
-  <div class="hdr">RA — Célula Animal / <span style="opacity:.85">Point camera to HIRO marker</span></div>
+  <div class="hdr">RA — Célula Animal / <span style="opacity:.85">Apunta al marcador HIRO</span></div>
+  <div class="toolbar"><button class="btn" id="flipCam">Cambiar cámara</button></div>
+  <div class="notice" id="camNotice">No se detecta cámara. Revisa permisos / usa HTTPS / Chrome (Android) o Safari (iOS).</div>
 
   <a-scene
     embedded
-    renderer="alpha:true; antialias:true; precision:mediump"
+    renderer="alpha:true; antialias:true; precision:mediump; physicallyCorrectLights:true"
     vr-mode-ui="enabled: false"
-    arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720">
+    arjs="sourceType: webcam; facingMode: environment; debugUIEnabled: false; trackingMethod: best; sourceWidth: 848; sourceHeight: 480; displayWidth: 848; displayHeight: 480">
     <a-marker preset="hiro">
-      <a-entity 
-        id="cellModel"
-        position="0 0 0"
-        rotation="0 0 0"
-        scale="0.40 0.40 0.40"></a-entity>
+      <!-- luces dentro del marcador -->
+      <a-entity light="type: ambient; intensity: 1.1"></a-entity>
+      <a-entity light="type: directional; intensity: 0.9" position="1 2 1"></a-entity>
+
+      <a-entity id="cellModel" position="0 0 0" rotation="0 0 0" scale="0.40 0.40 0.40"></a-entity>
     </a-marker>
     <a-entity camera></a-entity>
   </a-scene>
 
   <div class="legend">
-    <b></b> Si no ves la cámara, revisa permisos y usa HTTPS. / If you don't see the camera, check permissions and use HTTPS.
+    <b></b> Si no ves la cámara, verifica permisos y que la página sea HTTPS. En iOS usa Safari.
   </div>
 
   <script>
-  const dracoUrl  = '../assets/models/Celula_animal_draco.glb';
-  const normalUrl = '../assets/models/Celula_animal.glb';
-  const modelEl   = document.getElementById('cellModel');
+    const dracoUrl  = '../assets/models/Celula_animal_draco.glb';
+    const normalUrl = '../assets/models/Celula_animal.glb';
+    const modelEl   = document.getElementById('cellModel');
 
-  // Intenta Draco primero (si existe), si no usa normal
-  fetch(dracoUrl, { method: 'HEAD' })
-    .then(r => modelEl.setAttribute('gltf-model', r.ok ? dracoUrl : normalUrl))
-    .catch(() => modelEl.setAttribute('gltf-model', normalUrl));
+    fetch(dracoUrl, { method: 'HEAD' })
+      .then(r => modelEl.setAttribute('gltf-model', r.ok ? dracoUrl : normalUrl))
+      .catch(() => modelEl.setAttribute('gltf-model', normalUrl));
 
-  // Logs útiles
-  modelEl.addEventListener('model-loaded', () => console.log('GLB cargado OK'));
-  modelEl.addEventListener('model-error',  e => console.error('GLB error:', e.detail));
-</script></body>
+    modelEl.addEventListener('model-loaded', () => console.log('GLB cargado OK'));
+    modelEl.addEventListener('model-error',  e => console.error('GLB error:', e.detail));
+
+    // Aviso si la cámara no inicia
+    window.addEventListener('load', () => {
+      const scene = document.querySelector('a-scene');
+      setTimeout(() => {
+        const sys = scene?.systems?.arjs;
+        const hasVideo = !!sys && !!sys.arToolkitSource && !!sys.arToolkitSource.domElement;
+        if (!hasVideo) document.getElementById('camNotice').style.display = 'block';
+      }, 2500);
+    });
+
+    // Cambiar entre cámaras
+    document.getElementById('flipCam').addEventListener('click', () => {
+      const scene = document.querySelector('a-scene');
+      const sys = scene.systems['arjs'];
+      if (!sys || !sys.parameters) return;
+      const isUser = sys.parameters.sourceParameters.facingMode === 'user';
+      sys.parameters.sourceParameters.facingMode = isUser ? 'environment' : 'user';
+      location.reload();
+    });
+  </script>
+</body>
 </html>
