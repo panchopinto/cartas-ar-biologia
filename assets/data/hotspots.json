@@ -1,7 +1,7 @@
 [
   {
     "name": "Núcleo",
-    "description": "Contiene la información genética (ADN) y controla las actividades celulares.",
+    "description": "Contiene el ADN y regula las funciones celulares.",
     "offset": {
       "x": 0.0,
       "y": 0.25,
@@ -10,7 +10,7 @@
   },
   {
     "name": "Mitocondria",
-    "description": "Produce energía (ATP) a través de la respiración celular.",
+    "description": "Genera ATP mediante la respiración celular.",
     "offset": {
       "x": -0.4,
       "y": 0.05,
@@ -19,7 +19,7 @@
   },
   {
     "name": "Aparato de Golgi",
-    "description": "Modifica, empaqueta y distribuye proteínas y lípidos.",
+    "description": "Modifica y empaqueta proteínas y lípidos.",
     "offset": {
       "x": 0.35,
       "y": 0.05,
@@ -27,8 +27,8 @@
     }
   },
   {
-    "name": "Retículo Endoplasmático Rugoso",
-    "description": "Síntesis de proteínas; posee ribosomas adheridos a su superficie.",
+    "name": "R.E. Rugoso",
+    "description": "Sintetiza proteínas con ribosomas adheridos.",
     "offset": {
       "x": 0.2,
       "y": -0.05,
@@ -36,8 +36,8 @@
     }
   },
   {
-    "name": "Retículo Endoplasmático Liso",
-    "description": "Síntesis de lípidos y detoxificación.",
+    "name": "R.E. Liso",
+    "description": "Sintetiza lípidos y realiza detoxificación.",
     "offset": {
       "x": -0.25,
       "y": -0.08,
@@ -46,7 +46,7 @@
   },
   {
     "name": "Lisosoma",
-    "description": "Digestión de desechos y reciclaje de componentes celulares.",
+    "description": "Digestión de desechos y reciclaje celular.",
     "offset": {
       "x": -0.05,
       "y": -0.18,
@@ -54,8 +54,8 @@
     }
   },
   {
-    "name": "Membrana Plasmática",
-    "description": "Delimita la célula y regula el intercambio de sustancias.",
+    "name": "Membrana",
+    "description": "Delimita la célula y regula el intercambio.",
     "offset": {
       "x": 0.0,
       "y": -0.28,
@@ -64,7 +64,7 @@
   },
   {
     "name": "Citoesqueleto",
-    "description": "Estructura interna que da forma y facilita el movimiento intracelular.",
+    "description": "Da forma y soporta movimiento intracelular.",
     "offset": {
       "x": 0.15,
       "y": 0.0,

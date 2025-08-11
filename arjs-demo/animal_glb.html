@@ -13,11 +13,23 @@
     .legend b{display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:middle;border-radius:2px;background:#3cc9ff}
     .hdr{position:fixed;left:0;right:0;top:0;padding:.5rem .8rem;color:#fff;
          background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));font-family:system-ui,Arial,sans-serif}
+    .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px}
+    .btn{border:1px solid rgba(255,255,255,.2);color:#fff;background:rgba(0,0,0,.35);
+         border-radius:10px;padding:6px 10px;font-family:system-ui,Arial,sans-serif;cursor:pointer}
   </style>
 </head>
 <body>
   <div class="hdr">RA — Célula Animal (apunta al marcador HIRO)</div>
-  <a-scene embedded arjs>
+  <div class="toolbar">
+    <button class="btn" id="flipCam">Cambiar cámara</button>
+  </div>
+
+  <a-scene
+    embedded
+    renderer="alpha:true; antialias:true; precision:mediump"
+    vr-mode-ui="enabled: false"
+    arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720">
+    <!-- AR.js coloca el video de la cámara como fondo automáticamente -->
     <a-marker preset="hiro">
       <a-entity 
         gltf-model="../assets/models/Celula_animal.glb"
@@ -30,7 +42,20 @@
   </a-scene>
 
   <div class="legend">
-    <b></b> Si no aparece, ilumina mejor el marcador HIRO y evita reflejos. Permite el acceso a la cámara.
+    <b></b> Si no ves la cámara: verifica permisos y usa HTTPS. En iOS, usa Safari.
   </div>
+
+  <script>
+  // Toggle between environment (back) and user (front) camera if supported
+  const btn = document.getElementById('flipCam');
+  btn?.addEventListener('click', () => {
+    const arSystem = document.querySelector('a-scene').systems['arjs'];
+    if (!arSystem || !arSystem.arToolkitSource) return;
+    const isUser = arSystem.parameters.sourceParameters.facingMode === 'user';
+    arSystem.parameters.sourceParameters.facingMode = isUser ? 'environment' : 'user';
+    arSystem.arToolkitSource.copyElementSizeTo(document.querySelector('a-scene').canvas);
+    location.reload(); // simple refresh to apply new constraint
+  });
+  </script>
 </body>
 </html>

@@ -15,26 +15,12 @@
 </head>
 <body>
   <a-scene renderer="antialias: true">
-    <!-- Cámara -->
     <a-entity camera position="0 1.4 3" look-controls></a-entity>
-
-    <!-- Luces -->
     <a-entity light="type: ambient; intensity: 1.0"></a-entity>
     <a-entity light="type: directional; intensity: 0.9" position="1 2 1"></a-entity>
-
-    <!-- Piso sutil -->
     <a-plane rotation="-90 0 0" width="10" height="10" color="#111" position="0 -0.01 0"></a-plane>
-
-    <!-- Modelo -->
-    <a-entity 
-      id="cell"
-      gltf-model="assets/models/Celula_animal.glb"
-      position="0 0 -1.5"
-      rotation="0 45 0"
-      scale="0.45 0.45 0.45">
-    </a-entity>
+    <a-entity gltf-model="assets/models/Celula_animal.glb" position="0 0 -1.5" rotation="0 45 0" scale="0.45 0.45 0.45"></a-entity>
   </a-scene>
-
   <div class="hud">
     <b>Tips:</b> arrastra para rotar · pellizca/rueda para zoom · doble toque/clic para centrar.
   </div>
