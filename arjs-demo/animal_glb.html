@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="utf-8" />
-  <title>RA Célula Animal (GLB)</title>
+  <title>RA — Célula Animal (GLB)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
@@ -10,24 +10,27 @@
     html,body{margin:0;overflow:hidden;background:#000}
     .legend{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);color:#fff;
             font-family:system-ui,Arial,sans-serif;padding:.6rem .9rem;line-height:1.2}
-    .legend b{display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:middle;border-radius:2px}
+    .legend b{display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:middle;border-radius:2px;background:#3cc9ff}
+    .hdr{position:fixed;left:0;right:0;top:0;padding:.5rem .8rem;color:#fff;
+         background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));font-family:system-ui,Arial,sans-serif}
   </style>
 </head>
 <body>
+  <div class="hdr">RA — Célula Animal (apunta al marcador HIRO)</div>
   <a-scene embedded arjs>
     <a-marker preset="hiro">
       <a-entity 
         gltf-model="../assets/models/Celula_animal.glb"
         position="0 0 0"
         rotation="0 0 0"
-        scale="0.4 0.4 0.4">
+        scale="0.40 0.40 0.40">
       </a-entity>
     </a-marker>
     <a-entity camera></a-entity>
   </a-scene>
 
   <div class="legend">
-    Apunta la cámara al marcador <b style="background:#3cf"></b> HIRO para ver la célula.
+    <b></b> Si no aparece, ilumina mejor el marcador HIRO y evita reflejos. Asegúrate de permitir el acceso a la cámara.
   </div>
 </body>
 </html>
