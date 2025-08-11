@@ -5,6 +5,7 @@
   <title>Vista 3D — Célula Animal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/DRACOLoader.js"></script>
   <style>
     html,body{margin:0;overflow:hidden;background:#000}
     .hud{position:fixed;left:0;right:0;bottom:0;padding:10px 14px;
@@ -19,10 +20,31 @@
     <a-entity light="type: ambient; intensity: 1.0"></a-entity>
     <a-entity light="type: directional; intensity: 0.9" position="1 2 1"></a-entity>
     <a-plane rotation="-90 0 0" width="10" height="10" color="#111" position="0 -0.01 0"></a-plane>
-    <a-entity gltf-model="assets/models/Celula_animal.glb" position="0 0 -1.5" rotation="0 45 0" scale="0.45 0.45 0.45"></a-entity>
+
+    <a-entity id="cell" position="0 0 -1.5" rotation="0 45 0" scale="0.45 0.45 0.45"></a-entity>
   </a-scene>
+
   <div class="hud">
     <b>Tips:</b> arrastra para rotar · pellizca/rueda para zoom · doble toque/clic para centrar.
   </div>
+
+  <script>
+    // Try Draco model first, fallback to regular GLB
+    const dracoUrl = 'assets/models/Celula_animal_draco.glb';
+    const normalUrl = 'assets/models/Celula_animal.glb';
+
+    if (window.THREE && THREE.DRACOLoader) {{
+      const loader = new THREE.DRACOLoader();
+      loader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+      try {{ console.log('DRACO loader set.'); }} catch(e){{}}
+    }}
+
+    fetch(dracoUrl, {{ method: 'HEAD' }}).then(r => {{
+      const url = r.ok ? dracoUrl : normalUrl;
+      document.getElementById('cell').setAttribute('gltf-model', url);
+    }}).catch(() => {{
+      document.getElementById('cell').setAttribute('gltf-model', normalUrl);
+    }});
+  </script>
 </body>
 </html>

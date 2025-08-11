@@ -19,43 +19,38 @@
   </style>
 </head>
 <body>
-  <div class="hdr">RA — Célula Animal (apunta al marcador HIRO)</div>
-  <div class="toolbar">
-    <button class="btn" id="flipCam">Cambiar cámara</button>
-  </div>
+  <div class="hdr">RA — Célula Animal / <span style="opacity:.85">Point camera to HIRO marker</span></div>
 
   <a-scene
     embedded
     renderer="alpha:true; antialias:true; precision:mediump"
     vr-mode-ui="enabled: false"
     arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720">
-    <!-- AR.js coloca el video de la cámara como fondo automáticamente -->
     <a-marker preset="hiro">
       <a-entity 
-        gltf-model="../assets/models/Celula_animal.glb"
+        id="cellModel"
         position="0 0 0"
         rotation="0 0 0"
-        scale="0.40 0.40 0.40">
-      </a-entity>
+        scale="0.40 0.40 0.40"></a-entity>
     </a-marker>
     <a-entity camera></a-entity>
   </a-scene>
 
   <div class="legend">
-    <b></b> Si no ves la cámara: verifica permisos y usa HTTPS. En iOS, usa Safari.
+    <b></b> Si no ves la cámara, revisa permisos y usa HTTPS. / If you don't see the camera, check permissions and use HTTPS.
   </div>
 
   <script>
-  // Toggle between environment (back) and user (front) camera if supported
-  const btn = document.getElementById('flipCam');
-  btn?.addEventListener('click', () => {
-    const arSystem = document.querySelector('a-scene').systems['arjs'];
-    if (!arSystem || !arSystem.arToolkitSource) return;
-    const isUser = arSystem.parameters.sourceParameters.facingMode === 'user';
-    arSystem.parameters.sourceParameters.facingMode = isUser ? 'environment' : 'user';
-    arSystem.arToolkitSource.copyElementSizeTo(document.querySelector('a-scene').canvas);
-    location.reload(); // simple refresh to apply new constraint
-  });
+    // DRACO fallback similar to viewers
+    const dracoUrl = '../assets/models/Celula_animal_draco.glb';
+    const normalUrl = '../assets/models/Celula_animal.glb';
+
+    fetch(dracoUrl, {{ method: 'HEAD' }}).then(r => {{
+      const url = r.ok ? dracoUrl : normalUrl;
+      document.getElementById('cellModel').setAttribute('gltf-model', url);
+    }}).catch(() => {{
+      document.getElementById('cellModel').setAttribute('gltf-model', normalUrl);
+    }});
   </script>
 </body>
 </html>

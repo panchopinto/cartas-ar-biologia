@@ -3,16 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Proyecto AR Biología — Célula Animal</title>
+  <title data-i18n="title">Proyecto AR Biología — Célula Animal</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    :root{
-      --bg:#0b0f14; --card:#111825; --muted:#9ab; --text:#e6eef7; --accent:#3cc9ff;
-    }
+    :root{--bg:#0b0f14;--card:#111825;--muted:#9ab;--text:#e6eef7;--accent:#3cc9ff;}
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;background:radial-gradient(1200px 600px at 10% -10%, rgba(60,201,255,.12), transparent 50%),linear-gradient(180deg,#0b0f14,#0a0d12);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
-    .wrap{max-width:980px;margin:0 auto;padding:28px}
-    header{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+    .wrap{max-width:1024px;margin:0 auto;padding:28px}
+    header{display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:12px;flex-wrap:wrap}
     .brand{font-weight:800;letter-spacing:.3px}
+    .lang{display:flex;gap:8px;align-items:center}
+    .lang button{border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.35);color:#fff;border-radius:10px;padding:6px 10px;cursor:pointer}
     .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:20px;align-items:center;margin:40px 0 24px}
     .hero h1{margin:0 0 8px;font-size:clamp(28px,5vw,44px);line-height:1.05}
     .hero p{margin:0;color:var(--muted)}
@@ -23,62 +24,150 @@
     .btn{display:inline-block;margin-top:10px;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.12);text-decoration:none;color:#fff;background:linear-gradient(180deg,#1a93c7,#177fa9)}
     .btn:hover{filter:brightness(1.05)}
     .list{display:grid;gap:8px;margin-top:10px;color:#cbd6e2;font-size:14px}
+    .qrgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:12px}
+    .qr{display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;padding:12px;border:1px dashed rgba(255,255,255,.15);border-radius:12px}
     .footer{opacity:.6;margin-top:32px;font-size:12px;text-align:center}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <div class="brand">Proyecto AR Biología</div>
-      <nav><a class="btn" href="https://panchopinto.github.io/cartas-ar-biologia/" target="_blank" rel="noopener">Ver sitio</a></nav>
+      <div class="brand" data-i18n="brand">Proyecto AR Biología</div>
+      <div class="lang">
+        <span data-i18n="language">Idioma:</span>
+        <button id="btnES">ES</button>
+        <button id="btnEN">EN</button>
+      </div>
     </header>
 
     <section class="hero">
       <div>
-        <h1>Célula Animal — 3D y RA con marcador</h1>
-        <p>Visualiza el modelo 3D, activa etiquetas de partes y usa Realidad Aumentada con la cámara del dispositivo.</p>
+        <h1 data-i18n="hero_title">Célula Animal — 3D y RA con marcador</h1>
+        <p data-i18n="hero_desc">Visualiza el modelo 3D, activa etiquetas de partes y usa Realidad Aumentada con la cámara del dispositivo.</p>
         <div class="list">
-          <div>• 3D simple: carga rápida.</div>
-          <div>• 3D con etiquetas: hotspots clicables y panel informativo.</div>
-          <div>• RA (HIRO): usa la cámara como fondo y posiciona el modelo en el marcador.</div>
+          <div data-i18n="bullet_fast">• 3D simple: carga rápida.</div>
+          <div data-i18n="bullet_hotspots">• 3D con etiquetas: hotspots clicables y panel informativo.</div>
+          <div data-i18n="bullet_ar">• RA (HIRO): la cámara es el fondo y el modelo se posiciona en el marcador.</div>
         </div>
       </div>
       <div class="card">
-        <div style="font-weight:600;margin-bottom:6px">Accesos rápidos</div>
-        <a class="btn" href="viewer.html">Ver en 3D (simple)</a><br/>
-        <a class="btn" href="viewer_hotspots.html">Ver en 3D con etiquetas</a><br/>
-        <a class="btn" href="arjs-demo/animal_glb.html">Ver en RA (HIRO)</a>
+        <div style="font-weight:600;margin-bottom:6px" data-i18n="quick_access">Accesos rápidos</div>
+        <a class="btn" href="viewer.html" data-i18n="btn_viewer">Ver en 3D (simple)</a><br/>
+        <a class="btn" href="viewer_hotspots.html" data-i18n="btn_hotspots">Ver en 3D con etiquetas</a><br/>
+        <a class="btn" href="arjs-demo/animal_glb.html" data-i18n="btn_ar">Ver en RA (HIRO)</a>
       </div>
     </section>
 
     <section class="grid">
       <div class="card">
-        <h2>Optimización</h2>
-        <div class="list">
-          <div>• Comprime GLB (Draco) para cargas más rápidas.</div>
-          <div>• Usa texturas en potencias de 2 (512, 1024, 2048).</div>
-          <div>• Evita materiales excesivos; prehornea luces si es posible.</div>
+        <h2 data-i18n="qr_title">Códigos QR para ferias</h2>
+        <div class="qrgrid">
+          <div class="qr">
+            <div id="qrRa"></div>
+            <div><small data-i18n="qr_ra_label">RA (marcador HIRO)</small><br/><code>https://panchopinto.github.io/cartas-ar-biologia/arjs-demo/animal_glb.html</code></div>
+          </div>
+          <div class="qr">
+            <div id="qrHot"></div>
+            <div><small data-i18n="qr_hot_label">Visor 3D con etiquetas</small><br/><code>https://panchopinto.github.io/cartas-ar-biologia/viewer_hotspots.html</code></div>
+          </div>
         </div>
       </div>
       <div class="card">
-        <h2>Accesibilidad & UX</h2>
+        <h2 data-i18n="opt_title">Optimización</h2>
         <div class="list">
-          <div>• Contraste alto y botones grandes en móvil.</div>
-          <div>• Instrucciones breves en cada vista (tooltips/HUD).</div>
-          <div>• Agrega selector de idioma si lo necesitas.</div>
+          <div data-i18n="opt_draco">• Comprime el modelo con <b>Draco</b> para cargas más rápidas (fallback automático).</div>
+          <div data-i18n="opt_textures">• Texturas en potencias de 2 (512, 1024, 2048).</div>
+          <div data-i18n="opt_assets">• Minimiza materiales/meshes; hornea luces cuando sea posible.</div>
         </div>
       </div>
       <div class="card">
-        <h2>AR estable</h2>
+        <h2 data-i18n="ux_title">Accesibilidad & UX</h2>
         <div class="list">
-          <div>• Iluminación uniforme del marcador.</div>
-          <div>• Fondo mate, sin reflejos.</div>
-          <div>• Impresión del HIRO nítida y tamaño A4.</div>
+          <div data-i18n="ux_buttons">• Botones grandes, contraste alto y textos ≥14px.</div>
+          <div data-i18n="ux_instructions">• Instrucciones breves en cada vista (tooltips/HUD).</div>
+          <div data-i18n="ux_lang">• Selector de idioma con persistencia.</div>
         </div>
       </div>
     </section>
 
-    <div class="footer">© Proyecto AR Biología - Creado por: Francisco Pinto Aravena</div>
+    <div class="footer">© Proyecto AR Biología</div>
   </div>
+
+  <script>
+    // i18n dictionary
+    const T = {
+      es: {
+        title: "Proyecto AR Biología — Célula Animal",
+        brand: "Proyecto AR Biología",
+        language: "Idioma:",
+        hero_title: "Célula Animal — 3D y RA con marcador",
+        hero_desc: "Visualiza el modelo 3D, activa etiquetas de partes y usa Realidad Aumentada con la cámara del dispositivo.",
+        bullet_fast: "• 3D simple: carga rápida.",
+        bullet_hotspots: "• 3D con etiquetas: hotspots clicables y panel informativo.",
+        bullet_ar: "• RA (HIRO): la cámara es el fondo y el modelo se posiciona en el marcador.",
+        quick_access: "Accesos rápidos",
+        btn_viewer: "Ver en 3D (simple)",
+        btn_hotspots: "Ver en 3D con etiquetas",
+        btn_ar: "Ver en RA (HIRO)",
+        qr_title: "Códigos QR para ferias",
+        qr_ra_label: "RA (marcador HIRO)",
+        qr_hot_label: "Visor 3D con etiquetas",
+        opt_title: "Optimización",
+        opt_draco: "• Comprime el modelo con <b>Draco</b> para cargas más rápidas (fallback automático).",
+        opt_textures: "• Texturas en potencias de 2 (512, 1024, 2048).",
+        opt_assets: "• Minimiza materiales/meshes; hornea luces cuando sea posible.",
+        ux_title: "Accesibilidad & UX",
+        ux_buttons: "• Botones grandes, contraste alto y textos ≥14px.",
+        ux_instructions: "• Instrucciones breves en cada vista (tooltips/HUD).",
+        ux_lang: "• Selector de idioma con persistencia."
+      },
+      en: {
+        title: "AR Biology Project — Animal Cell",
+        brand: "AR Biology Project",
+        language: "Language:",
+        hero_title: "Animal Cell — 3D and AR with marker",
+        hero_desc: "View the 3D model, enable part labels, and use Augmented Reality with the device camera.",
+        bullet_fast: "• Simple 3D: fast loading.",
+        bullet_hotspots: "• 3D with labels: clickable hotspots and info panel.",
+        bullet_ar: "• AR (HIRO): the camera is the background and the model sits on the marker.",
+        quick_access: "Quick access",
+        btn_viewer: "Open 3D (simple)",
+        btn_hotspots: "Open 3D with labels",
+        btn_ar: "Open in AR (HIRO)",
+        qr_title: "QR codes for fairs",
+        qr_ra_label: "AR (HIRO marker)",
+        qr_hot_label: "3D viewer with labels",
+        opt_title: "Optimization",
+        opt_draco: "• Compress the model with <b>Draco</b> to speed up loading (automatic fallback).",
+        opt_textures: "• Use power-of-two textures (512, 1024, 2048).",
+        opt_assets: "• Reduce materials/meshes; bake lighting when possible.",
+        ux_title: "Accessibility & UX",
+        ux_buttons: "• Big buttons, high contrast, and text ≥14px.",
+        ux_instructions: "• Short instructions on each view (tooltips/HUD).",
+        ux_lang: "• Language switch with persistence."
+      }
+    };
+
+    function setLang(lang) {
+      localStorage.setItem('lang', lang);
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const html = T[lang][key];
+        if (html) el.innerHTML = html;
+      });
+      document.documentElement.lang = lang === 'en' ? 'en' : 'es';
+    }
+    document.getElementById('btnES').addEventListener('click', ()=> setLang('es'));
+    document.getElementById('btnEN').addEventListener('click', ()=> setLang('en'));
+    setLang(localStorage.getItem('lang') || 'es');
+
+    // QR codes
+    new QRCode(document.getElementById("qrRa"), {
+      text: "https://panchopinto.github.io/cartas-ar-biologia/arjs-demo/animal_glb.html", width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M
+    });
+    new QRCode(document.getElementById("qrHot"), {
+      text: "https://panchopinto.github.io/cartas-ar-biologia/viewer_hotspots.html", width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M
+    });
+  </script>
 </body>
 </html>

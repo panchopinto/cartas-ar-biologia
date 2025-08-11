@@ -1,20 +1,32 @@
-# Célula Animal — 3D + RA (cámara como fondo)
+# Célula Animal — i18n + QR + Draco (fallback)
 
 Incluye:
-- `index.html` — landing con accesos y recomendaciones de UX.
-- `viewer.html` — visor 3D simple.
-- `viewer_hotspots.html` — visor 3D con etiquetas interactivas.
-- `arjs-demo/animal_glb.html` — RA con AR.js y cámara como fondo.
-- `assets/models/Celula_animal.glb` — modelo (si deseas, reemplázalo).
-- `assets/data/hotspots.json` — posiciones/nombres/descripciones de partes.
+- `index.html` — landing con **selector de idioma (ES/EN)** y **QR** para RA y visor con etiquetas.
+- `viewer.html` — visor 3D con fallback a Draco (`Celula_animal_draco.glb` si existe).
+- `viewer_hotspots.html` — visor 3D con etiquetas y fallback a Draco.
+- `arjs-demo/animal_glb.html` — RA con cámara como fondo y fallback a Draco.
+- `assets/models/Celula_animal.glb` — modelo actual (sin compresión).
+- `assets/models/Celula_animal_draco.glb` — *(opcional)* modelo comprimido Draco (si lo agregas).
+- `assets/data/hotspots.json` — etiquetas editables.
 
-## Sugerencias de diseño (página principal)
-- **Jerarquía visual:** hero claro con título, subtítulo y 3 CTA (3D simple, 3D con etiquetas, RA).
-- **Consistencia:** paleta sobria, botones con alto contraste, tipografía legible.
-- **Accesibilidad:** textos ≥14px, foco visible, aria-labels si agregas iconos.
-- **Rendimiento:** imágenes webp, CSS mínimo, script diferido; GLB con compresión Draco.
+## Cómo generar GLB con Draco
+Usa **glTF-Transform** o **gltf-pipeline** en tu PC:
 
-## AR estable y cámara como fondo
-- HTTPS y permisos de cámara (GitHub Pages lo cumple).
-- Marcador HIRO A4, bien iluminado y sin reflejos.
-- Dispositivos iOS: usar Safari para acceso a cámara.
+### Opción A: glTF-Transform (recomendado)
+```
+npm i -g @gltf-transform/cli
+gltf-transform optimize Celula_animal.glb Celula_animal_draco.glb   --draco.mesh-compression   --texture-compress webp   --gzip
+```
+Copia `Celula_animal_draco.glb` a `assets/models/`. El sitio intentará cargarlo primero y, si no existe, usará `Celula_animal.glb`.
+
+### Opción B: gltf-pipeline
+```
+npm i -g gltf-pipeline
+gltf-pipeline -i Celula_animal.glb -o Celula_animal_draco.glb -d
+```
+
+## Notas
+- Los QR apuntan a:
+  - RA: https://panchopinto.github.io/cartas-ar-biologia/arjs-demo/animal_glb.html
+  - 3D con etiquetas: https://panchopinto.github.io/cartas-ar-biologia/viewer_hotspots.html
+- El selector de idioma persiste en `localStorage`.
