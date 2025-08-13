@@ -1,120 +1,107 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <title>Vista 3D + Etiquetas — Célula Animal</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/DRACOLoader.js"></script>
-  <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Visor 3D — Célula (con etiquetas)</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    html,body{margin:0;overflow:hidden;background:#000}
-    .hud{position:fixed;left:0;right:0;bottom:0;padding:10px 14px;color:#fff;
-         background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.55));
-         font-family:system-ui,Arial,sans-serif;font-size:14px;line-height:1.4}
-    .panel{position:fixed;right:12px;top:12px;min-width:240px;max-width:300px;background:rgba(10,14,22,.75);
-           color:#e6eef7;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 14px;
-           font-family:system-ui,Arial,sans-serif;backdrop-filter: blur(6px)}
-    .panel h3{margin:0 0 6px;font-size:16px}
-    .panel p{margin:0;font-size:14px;opacity:.95;line-height:1.5}
-    .toolbar{position:fixed;left:12px;top:12px;display:flex;gap:8px}
-    .btn{border:1px solid rgba(255,255,255,.2);color:#fff;background:rgba(0,0,0,.35);
-         border-radius:10px;padding:8px 12px;font-family:system-ui,Arial,sans-serif;cursor:pointer}
+    html,body{height:100%;margin:0;background:#0b0f14;color:#e6eef7;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+    .top{position:fixed;left:0;right:0;top:0;padding:10px 14px;background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0));z-index:5}
+    .wrap{height:100%;display:grid;grid-template-rows:auto 1fr auto}
+    .bar{display:flex;gap:8px;align-items:center}
+    .btn{border:1px solid rgba(255,255,255,.2);background:#0d1522;color:#fff;border-radius:10px;padding:6px 10px;text-decoration:none;cursor:pointer}
+    .mv{width:100%;height:100%}
+    .legend{color:#9ab;font-size:12px;padding:8px 12px}
   </style>
 </head>
 <body>
-  <div class="toolbar">
-    <button class="btn" id="toggleLabels">Mostrar/Ocultar etiquetas</button>
-    <button class="btn" id="resetCam">Reiniciar cámara</button>
-  </div>
-  <div class="panel" id="infoPanel" style="display:none">
-    <h3 id="partName">Parte</h3>
-    <p id="partDesc">Descripción</p>
-  </div>
-  <a-scene renderer="antialias: true">
-    <a-entity id="cam" camera position="0 1.4 3" look-controls></a-entity>
-    <a-entity light="type: ambient; intensity: 1.0"></a-entity>
-    <a-entity light="type: directional; intensity: 0.9" position="1 2 1"></a-entity>
-    <a-plane rotation="-90 0 0" width="10" height="10" color="#111" position="0 -0.01 0"></a-plane>
+  <div class="wrap">
+    <div class="top">
+      <div class="bar">
+        <a class="btn" href="index.html">← Volver</a>
+        <div id="title" style="padding:6px 10px;border-radius:10px;background:#0d1522;border:1px solid rgba(255,255,255,.08)">
+          Célula <span id="kindLabel">Animal</span> — 3D con etiquetas
+        </div>
+        <button id="btnToggle" class="btn" style="margin-left:auto">Ocultar etiquetas</button>
+      </div>
+    </div>
 
-    <a-entity id="cellGroup" position="0 0 -1.5" rotation="0 45 0" scale="0.45 0.45 0.45">
-      <a-entity id="cellModel"></a-entity>
-    </a-entity>
-  </a-scene>
-  <div class="hud">
-    <b>Usa:</b> clic en puntos para ver info · botón para mostrar/ocultar etiquetas.
+    <model-viewer id="mv" class="mv"
+      camera-controls
+      exposure="1.0"
+      shadow-intensity="1"
+      environment-image="neutral">
+      <div slot="poster">Cargando…</div>
+      <!-- Hotspots se crean por JS para poder cambiar entre animal/vegetal -->
+    </model-viewer>
+
+    <div class="legend">Tip: botón para ocultar/mostrar etiquetas. Las posiciones pueden ajustarse más tarde.</div>
   </div>
+
   <script>
-    // Draco fallback
-    const dracoUrl = 'assets/models/Celula_animal_draco.glb';
-    const normalUrl = 'assets/models/Celula_animal.glb';
+    const MODELS = {
+      animal:  "assets/models/Celula_animal.glb",
+      vegetal: "assets/models/celula_eucariota_vegetal.glb"
+    };
 
-    if (window.THREE && THREE.DRACOLoader) {{
-      const loader = new THREE.DRACOLoader();
-      loader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
-      try {{ console.log('DRACO loader set.'); }} catch(e){{}}
-    }}
+    // Posiciones aproximadas de hotspots (en metros, relativo al modelo)
+    const HOTSPOTS = {
+      animal: [
+        {label:"Núcleo",       pos:"0.05m 0.10m 0.06m"},
+        {label:"Mitocondria",  pos:"-0.12m 0.06m 0.08m"},
+        {label:"R.E.",         pos:"0.12m 0.04m -0.08m"},
+        {label:"Golgi",        pos:"0.00m 0.00m -0.14m"},
+        {label:"Membrana",     pos:"0.00m 0.16m 0.00m"},
+        {label:"Lisosomas",    pos:"0.10m 0.06m 0.10m"}
+      ],
+      vegetal: [
+        {label:"Pared celular", pos:"0.00m 0.16m 0.00m"},
+        {label:"Membrana",      pos:"0.00m 0.12m 0.00m"},
+        {label:"Vacuola",       pos:"0.16m 0.06m 0.02m"},
+        {label:"Núcleo",        pos:"-0.12m 0.10m -0.06m"},
+        {label:"Cloroplastos",  pos:"0.10m 0.04m 0.12m"},
+        {label:"Golgi",         pos:"0.04m 0.00m -0.12m"},
+        {label:"R.E.",          pos:"-0.08m 0.04m 0.06m"}
+      ]
+    };
 
-    fetch(dracoUrl, {{ method: 'HEAD' }}).then(r => {{
-      const url = r.ok ? dracoUrl : normalUrl;
-      document.getElementById('cellModel').setAttribute('gltf-model', url);
-    }}).catch(() => {{
-      document.getElementById('cellModel').setAttribute('gltf-model', normalUrl);
-    }});
+    const q = new URLSearchParams(location.search);
+    let kind = (q.get('m') || 'animal').toLowerCase();
+    if (!MODELS[kind]) kind = 'animal';
 
-    // Hotspots
-    const HOTSPOTS_URL = 'assets/data/hotspots.json';
-    const infoPanel = document.getElementById('infoPanel');
-    const partName = document.getElementById('partName');
-    const partDesc = document.getElementById('partDesc');
-    const toggleBtn = document.getElementById('toggleLabels');
-    const resetBtn = document.getElementById('resetCam');
-    let labelsVisible = true;
+    document.getElementById('kindLabel').textContent = kind === 'animal' ? 'Animal' : 'Vegetal';
 
-    function showInfo(name, desc){{
-      partName.textContent = name;
-      partDesc.textContent = desc;
-      infoPanel.style.display = 'block';
-    }}
-    function hideInfo(){{ infoPanel.style.display = 'none'; }}
+    const mv = document.getElementById('mv');
+    mv.src = MODELS[kind];
 
-    toggleBtn.addEventListener('click', () => {{
-      labelsVisible = !labelsVisible;
-      document.querySelectorAll('.hotspot, .hotlabel').forEach(el => el.setAttribute('visible', labelsVisible));
-      if(!labelsVisible) hideInfo();
-    }});
+    // Construir hotspots dinámicamente
+    function renderHotspots(kind) {
+      // Limpia anteriores
+      mv.querySelectorAll('button[slot^="hotspot-"]').forEach(el => el.remove());
+      // Crea nuevos
+      HOTSPOTS[kind].forEach((h, i) => {
+        const btn = document.createElement('button');
+        btn.textContent = h.label;
+        btn.className = 'btn';
+        btn.setAttribute('slot', `hotspot-${i+1}`);
+        btn.setAttribute('data-position', h.pos);
+        btn.setAttribute('data-normal', "0m 1m 0m");
+        btn.setAttribute('data-visibility-attribute', 'visible');
+        mv.appendChild(btn);
+      });
+    }
+    renderHotspots(kind);
 
-    resetBtn.addEventListener('click', () => {{
-      const cam = document.getElementById('cam');
-      cam.setAttribute('position', {{x:0, y:1.4, z:3}});
-      cam.setAttribute('rotation', {{x:0, y:0, z:0}});
-    }});
-
-    fetch(HOTSPOTS_URL).then(r => r.json()).then(data => {{
-      const group = document.getElementById('cellGroup');
-      data.forEach(h => {{
-        const spot = document.createElement('a-sphere');
-        spot.classList.add('hotspot');
-        spot.setAttribute('radius', 0.06);
-        spot.setAttribute('color', '#3cc9ff');
-        spot.setAttribute('position', h.offset);
-        spot.setAttribute('opacity', 0.95);
-        spot.setAttribute('segments-width', 12);
-        spot.setAttribute('segments-height', 12);
-        spot.setAttribute('animation__pulse', 'property: scale; to: 1.2 1.2 1.2; dir: alternate; dur: 800; loop: true; easing: easeInOutSine');
-
-        const label = document.createElement('a-entity');
-        label.classList.add('hotlabel');
-        label.setAttribute('position', {{x:h.offset.x, y:h.offset.y + 0.15, z:h.offset.z}});
-        label.setAttribute('look-at', '[camera]');
-        label.setAttribute('text', {{ value:h.name, align:'center', width:1.6, color:'#FFFFFF' }});
-
-        spot.addEventListener('click', () => showInfo(h.name, h.description));
-
-        group.appendChild(spot);
-        group.appendChild(label);
-      }});
-    }});
+    // Mostrar/ocultar
+    let visible = true;
+    const btn = document.getElementById('btnToggle');
+    btn.addEventListener('click', () => {
+      visible = !visible;
+      mv.querySelectorAll('button[slot^="hotspot-"]').forEach(el => el.style.display = visible ? 'inline-block' : 'none');
+      btn.textContent = visible ? 'Ocultar etiquetas' : 'Mostrar etiquetas';
+    });
   </script>
 </body>
 </html>
+
