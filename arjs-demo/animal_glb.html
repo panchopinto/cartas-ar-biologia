@@ -17,6 +17,73 @@
     .loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-family:system-ui,Arial,sans-serif;color:#fff;background:rgba(0,0,0,.5);padding:.6rem .9rem;border-radius:10px;display:none;z-index:7}
   </style>
 </head>
+  <script>
+AFRAME.registerComponent('pinch-scale', {
+  schema: { min: {default: 0.1}, max: {default: 4}, factor: {default: 1} },
+  init: function () {
+    this.startDist = null;
+    this.startScale = null;
+    this.active = false;
+    this.canvas = null;
+
+    const scene = this.el.sceneEl;
+    const add = () => {
+      this.canvas = scene.canvas;
+      // Evitar que el navegador haga zoom/scroll por defecto
+      this.canvas.style.touchAction = 'none';
+
+      this._onStart = this.onStart.bind(this);
+      this._onMove  = this.onMove.bind(this);
+      this._onEnd   = this.onEnd.bind(this);
+
+      this.canvas.addEventListener('touchstart', this._onStart, {passive:false});
+      this.canvas.addEventListener('touchmove',  this._onMove,  {passive:false});
+      this.canvas.addEventListener('touchend',   this._onEnd);
+      this.canvas.addEventListener('touchcancel',this._onEnd);
+    };
+
+    if (scene.canvas) add();
+    else scene.addEventListener('render-target-loaded', add);
+  },
+  remove: function () {
+    if (!this.canvas) return;
+    this.canvas.removeEventListener('touchstart', this._onStart);
+    this.canvas.removeEventListener('touchmove',  this._onMove);
+    this.canvas.removeEventListener('touchend',   this._onEnd);
+    this.canvas.removeEventListener('touchcancel',this._onEnd);
+  },
+  onStart: function (e) {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      this.active = true;
+      this.startDist = this.getDist(e.touches[0], e.touches[1]);
+      this.startScale = this.el.object3D.scale.clone();
+    }
+  },
+  onMove: function (e) {
+    if (!this.active || e.touches.length !== 2) return;
+    e.preventDefault();
+    const newDist = this.getDist(e.touches[0], e.touches[1]);
+    const k = (newDist / this.startDist) * this.data.factor;
+
+    const min = this.data.min, max = this.data.max;
+    const sx = THREE.MathUtils.clamp(this.startScale.x * k, min, max);
+    const sy = THREE.MathUtils.clamp(this.startScale.y * k, min, max);
+    const sz = THREE.MathUtils.clamp(this.startScale.z * k, min, max);
+    this.el.object3D.scale.set(sx, sy, sz);
+  },
+  onEnd: function (e) {
+    if (e.touches.length < 2) {
+      this.active = false;
+      this.startDist = null;
+    }
+  },
+  getDist: function (t1, t2) {
+    const dx = t1.clientX - t2.clientX, dy = t1.clientY - t2.clientY;
+    return Math.hypot(dx, dy);
+  }
+});
+</script>
 <body>
   <div class="hud">RA — Célula <span id="labelKind" style="opacity:.9">Animal</span> · Marcador <b>HIRO</b></div>
   <div class="toolbar">
