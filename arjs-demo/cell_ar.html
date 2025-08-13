@@ -3,11 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <title>RA — Célula (Animal / Vegetal)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
   <style>
     html,body{margin:0;overflow:hidden;background:#000}
+    /* Necesario para capturar gestos multitáctiles en el canvas */
+    canvas, .a-canvas { touch-action: none; }
+
     .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;
          font-family:system-ui,Arial,sans-serif;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));z-index:5}
     .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px;z-index:6}
@@ -33,28 +36,99 @@
     renderer="alpha:true; antialias:true; precision:mediump; colorManagement:true"
     vr-mode-ui="enabled:false"
     arjs="sourceType: webcam; facingMode: environment; debugUIEnabled:false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720">
+
+    <!-- Luces para que el PBR se vea bien -->
+    <a-entity light="type: ambient; intensity: 0.9"></a-entity>
+    <a-entity light="type: directional; intensity: 0.7" position="1 1 0"></a-entity>
+
     <a-marker preset="hiro">
-      <a-entity id="cellModel" position="0 0 0" rotation="0 0 0" scale="0.40 0.40 0.40"></a-entity>
+      <a-entity
+        id="cellModel"
+        position="0 0 0"
+        rotation="0 0 0"
+        scale="0.40 0.40 0.40"
+        pinch-scale="min:0.2; max:3; factor:1">
+      </a-entity>
     </a-marker>
     <a-entity camera></a-entity>
   </a-scene>
 
-  <div class="legend">Si no ves la cámara, revisa permisos y usa HTTPS. Puedes alternar entre Célula Animal y Vegetal con los botones.</div>
+  <div class="legend">
+    Si no ves la cámara, revisa permisos y usa HTTPS.
+    Puedes alternar entre Célula Animal y Vegetal con los botones.
+  </div>
 
   <script>
+    /* === Gestos: zoom con dos dedos (pinch) === */
+    AFRAME.registerComponent('pinch-scale', {
+      schema: { min: {default: 0.1}, max: {default: 4}, factor: {default: 1} },
+      init: function () {
+        this.startDist = null; this.startScale = null; this.active = false; this.canvas = null;
+        const scene = this.el.sceneEl;
+        const add = () => {
+          this.canvas = scene.canvas;
+          if (this.canvas) this.canvas.style.touchAction = 'none';
+          this._onStart = this.onStart.bind(this);
+          this._onMove  = this.onMove.bind(this);
+          this._onEnd   = this.onEnd.bind(this);
+          this.canvas.addEventListener('touchstart', this._onStart, {passive:false});
+          this.canvas.addEventListener('touchmove',  this._onMove,  {passive:false});
+          this.canvas.addEventListener('touchend',   this._onEnd);
+          this.canvas.addEventListener('touchcancel',this._onEnd);
+        };
+        scene.canvas ? add() : scene.addEventListener('render-target-loaded', add);
+      },
+      remove: function () {
+        if (!this.canvas) return;
+        this.canvas.removeEventListener('touchstart', this._onStart);
+        this.canvas.removeEventListener('touchmove',  this._onMove);
+        this.canvas.removeEventListener('touchend',   this._onEnd);
+        this.canvas.removeEventListener('touchcancel',this._onEnd);
+      },
+      onStart: function (e) {
+        if (e.touches.length === 2) {
+          e.preventDefault();
+          this.active = true;
+          this.startDist = this.getDist(e.touches[0], e.touches[1]);
+          this.startScale = this.el.object3D.scale.clone();
+        }
+      },
+      onMove: function (e) {
+        if (!this.active || e.touches.length !== 2) return;
+        e.preventDefault();
+        const newDist = this.getDist(e.touches[0], e.touches[1]);
+        const k = (newDist / this.startDist) * this.data.factor;
+        const min = this.data.min, max = this.data.max;
+        const sx = THREE.MathUtils.clamp(this.startScale.x * k, min, max);
+        const sy = THREE.MathUtils.clamp(this.startScale.y * k, min, max);
+        const sz = THREE.MathUtils.clamp(this.startScale.z * k, min, max);
+        this.el.object3D.scale.set(sx, sy, sz);
+      },
+      onEnd: function (e) {
+        if (e.touches.length < 2) { this.active = false; this.startDist = null; }
+      },
+      getDist: function (t1, t2) {
+        const dx = t1.clientX - t2.clientX, dy = t1.clientY - t2.clientY;
+        return Math.hypot(dx, dy);
+      }
+    });
+
+    /* === Lógica: Draco + fallback, conmutación Animal/Vegetal y cache-buster === */
+    const DEFAULT_SCALE = {x:0.40, y:0.40, z:0.40};
     const MAP = {
       animal:  { normal: "../assets/models/Celula_animal.glb",            draco: "../assets/models/Celula_animal_draco.glb" },
       vegetal: { normal: "../assets/models/celula_eucariota_vegetal.glb", draco: "../assets/models/celula_eucariota_vegetal_draco.glb" }
     };
+
     const params = new URLSearchParams(location.search);
     let kind = (params.get('m') || 'animal').toLowerCase();
     if (!MAP[kind]) kind = 'animal';
 
-    const modelEl = document.getElementById('cellModel');
-    const labelEl = document.getElementById('labelKind');
-    const btnA = document.getElementById('btnAnimal');
-    const btnV = document.getElementById('btnVegetal');
-    const loading = document.getElementById('loading');
+    const modelEl  = document.getElementById('cellModel');
+    const labelEl  = document.getElementById('labelKind');
+    const btnA     = document.getElementById('btnAnimal');
+    const btnV     = document.getElementById('btnVegetal');
+    const loading  = document.getElementById('loading');
 
     function setUI(){
       btnA.classList.toggle('active', kind==='animal');
@@ -62,15 +136,25 @@
       labelEl.textContent = kind==='animal' ? 'Animal' : 'Vegetal';
       const u = new URL(location.href); u.searchParams.set('m', kind); history.replaceState(null,'', u.toString());
     }
+
     async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(), {method:'HEAD'}); return r.ok; }catch{return false;} }
     async function pick(){ const e=MAP[kind]; return (await exists(e.draco)) ? e.draco : e.normal; }
-    async function load(){ loading.style.display='block'; const url=(await pick())+'#'+Date.now(); modelEl.removeAttribute('gltf-model'); setTimeout(()=>modelEl.setAttribute('gltf-model',url),30); }
 
-    btnA.onclick=()=>{ kind='animal'; setUI(); load(); };
-    btnV.onclick=()=>{ kind='vegetal'; setUI(); load(); };
+    async function load(){
+      loading.style.display='block';
+      const url=(await pick()) + '#' + Date.now();     // evita caché
+      modelEl.removeAttribute('gltf-model');           // forzar recarga
+      // resetear escala después de usar pinch
+      modelEl.object3D.scale.set(DEFAULT_SCALE.x, DEFAULT_SCALE.y, DEFAULT_SCALE.z);
+      // pequeño delay para que A-Frame procese el remove antes del set
+      setTimeout(()=> modelEl.setAttribute('gltf-model', url), 30);
+    }
+
+    btnA.onclick = ()=>{ kind='animal'; setUI(); load(); };
+    btnV.onclick = ()=>{ kind='vegetal'; setUI(); load(); };
 
     modelEl.addEventListener('model-loaded', ()=> loading.style.display='none');
-    modelEl.addEventListener('model-error',  ()=>{ loading.style.display='none'; alert('No se pudo cargar el modelo.'); });
+    modelEl.addEventListener('model-error',  ()=>{ loading.style.display='none'; alert('No se pudo cargar el modelo. Revisa rutas/formato.'); });
 
     setUI(); load();
   </script>
