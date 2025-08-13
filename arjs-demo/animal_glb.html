@@ -2,180 +2,56 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <title>RA — Célula (HIRO)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <!-- Versiones estables -->
-  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
+  <title>RA — Célula Animal (GLB)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
   <style>
     html,body{margin:0;overflow:hidden;background:#000}
-    canvas, .a-canvas { touch-action: none; } /* gestos multitáctiles */
-    .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;
-         font-family:system-ui,Arial,sans-serif;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));z-index:5}
-    .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px;z-index:6}
-    .btn{border:1px solid rgba(255,255,255,.25);color:#fff;background:rgba(0,0,0,.35);
+    .legend{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);color:#fff;
+            font-family:system-ui,Arial,sans-serif;padding:.6rem .9rem;line-height:1.2}
+    .legend b{display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:middle;border-radius:2px;background:#3cc9ff}
+    .hdr{position:fixed;left:0;right:0;top:0;padding:.5rem .8rem;color:#fff;
+         background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));font-family:system-ui,Arial,sans-serif}
+    .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px}
+    .btn{border:1px solid rgba(255,255,255,.2);color:#fff;background:rgba(0,0,0,.35);
          border-radius:10px;padding:6px 10px;font-family:system-ui,Arial,sans-serif;cursor:pointer}
-    .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
-    .loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-family:system-ui,Arial,sans-serif;
-             color:#fff;background:rgba(0,0,0,.5);padding:.6rem .9rem;border-radius:10px;display:none;z-index:7}
-    .status{position:fixed;left:8px;top:8px;background:rgba(0,0,0,.4);color:#fff;padding:6px 10px;border-radius:8px;font:14px system-ui;z-index:9}
   </style>
 </head>
 <body>
-  <div class="hud">RA — Célula <span id="labelKind" style="opacity:.9">Animal</span> · Marcador <b>HIRO</b></div>
-  <div class="toolbar">
-    <button id="btnAnimal" class="btn active">Animal</button>
-    <button id="btnVegetal" class="btn">Vegetal</button>
-  </div>
-  <div id="loading" class="loading">Cargando modelo…</div>
-  <div id="status" class="status">Buscando marcador…</div>
+  <div class="hdr">RA — Célula Animal / <span style="opacity:.85">Point camera to HIRO marker</span></div>
 
   <a-scene
     embedded
-    renderer="alpha:true; antialias:true; precision:mediump; colorManagement:true; physicallyCorrectLights:true; powerPreference:high-performance"
-    vr-mode-ui="enabled:false"
-    arjs="sourceType: webcam; facingMode: environment; videoTexture: true; debugUIEnabled:true;
-          trackingMethod: best; sourceWidth:640; sourceHeight:480; displayWidth:640; displayHeight:480">
-
-    <!-- Iluminación -->
-    <a-entity light="type: ambient; intensity: 0.9"></a-entity>
-    <a-entity light="type: directional; intensity: 0.7" position="1 1 0"></a-entity>
-
-    <!-- Marker (preset estable) -->
-    <a-marker preset="hiro" id="hiro">
-      <!-- PRUEBA: cubo verde. Si aparece al detectar el HIRO, el tracking está OK. (Puedes borrarlo luego) -->
-      <a-box depth="0.2" height="0.2" width="0.2" color="#4caf50" position="0 0.2 0"></a-box>
-
-      <!-- Modelo GLB -->
-      <a-entity
+    renderer="alpha:true; antialias:true; precision:mediump"
+    vr-mode-ui="enabled: false"
+    arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720">
+    <a-marker preset="hiro">
+      <a-entity 
         id="cellModel"
         position="0 0 0"
         rotation="0 0 0"
-        scale="0.40 0.40 0.40"
-        pinch-scale="min:0.2; max:3; factor:1">
-      </a-entity>
+        scale="0.40 0.40 0.40"></a-entity>
     </a-marker>
-
-    <!-- Cámara con near/far amplios -->
-    <a-entity camera="near:0.01; far:5000"></a-entity>
+    <a-entity camera></a-entity>
   </a-scene>
 
+  <div class="legend">
+    <b></b> Si no ves la cámara, revisa permisos y usa HTTPS. / If you don't see the camera, check permissions and use HTTPS.
+  </div>
+
   <script>
-    /* === Gestos: pinch-to-zoom === */
-    AFRAME.registerComponent('pinch-scale', {
-      schema: { min: {default: 0.1}, max: {default: 4}, factor: {default: 1} },
-      init: function () {
-        this.startDist = null; this.startScale = null; this.active = false; this.canvas = null;
-        const scene = this.el.sceneEl;
-        const add = () => {
-          this.canvas = scene.canvas;
-          if (this.canvas) this.canvas.style.touchAction = 'none';
-          this._onStart = this.onStart.bind(this);
-          this._onMove  = this.onMove.bind(this);
-          this._onEnd   = this.onEnd.bind(this);
-          this.canvas.addEventListener('touchstart', this._onStart, {passive:false});
-          this.canvas.addEventListener('touchmove',  this._onMove,  {passive:false});
-          this.canvas.addEventListener('touchend',   this._onEnd);
-          this.canvas.addEventListener('touchcancel',this._onEnd);
-        };
-        scene.canvas ? add() : scene.addEventListener('render-target-loaded', add);
-      },
-      remove: function () {
-        if (!this.canvas) return;
-        this.canvas.removeEventListener('touchstart', this._onStart);
-        this.canvas.removeEventListener('touchmove',  this._onMove);
-        this.canvas.removeEventListener('touchend',   this._onEnd);
-        this.canvas.removeEventListener('touchcancel',this._onEnd);
-      },
-      onStart: function (e) {
-        if (e.touches.length === 2) {
-          e.preventDefault();
-          this.active = true;
-          this.startDist = this.getDist(e.touches[0], e.touches[1]);
-          this.startScale = this.el.object3D.scale.clone();
-        }
-      },
-      onMove: function (e) {
-        if (!this.active || e.touches.length !== 2) return;
-        e.preventDefault();
-        const newDist = this.getDist(e.touches[0], e.touches[1]);
-        const k = (newDist / this.startDist) * this.data.factor;
-        const min = this.data.min, max = this.data.max;
-        const sx = THREE.MathUtils.clamp(this.startScale.x * k, min, max);
-        const sy = THREE.MathUtils.clamp(this.startScale.y * k, min, max);
-        const sz = THREE.MathUtils.clamp(this.startScale.z * k, min, max);
-        this.el.object3D.scale.set(sx, sy, sz);
-      },
-      onEnd: function (e) {
-        if (e.touches.length < 2) { this.active = false; this.startDist = null; }
-      },
-      getDist: function (t1, t2) {
-        const dx = t1.clientX - t2.clientX, dy = t1.clientY - t2.clientY;
-        return Math.hypot(dx, dy);
-      }
-    });
+  const dracoUrl  = '../assets/models/Celula_animal_draco.glb';
+  const normalUrl = '../assets/models/Celula_animal.glb';
+  const modelEl   = document.getElementById('cellModel');
 
-    /* === Carga de modelos (Draco + fallback) y conmutación Animal/Vegetal === */
-    const DEFAULT_SCALE = {x:0.40, y:0.40, z:0.40};
-    const MAP = {
-      animal:  { normal: "../assets/models/Celula_animal.glb",            draco: "../assets/models/Celula_animal_draco.glb" },
-      vegetal: { normal: "../assets/models/celula_eucariota_vegetal.glb", draco: "../assets/models/celula_eucariota_vegetal_draco.glb" }
-    };
+  // Intenta Draco primero (si existe), si no usa normal
+  fetch(dracoUrl, { method: 'HEAD' })
+    .then(r => modelEl.setAttribute('gltf-model', r.ok ? dracoUrl : normalUrl))
+    .catch(() => modelEl.setAttribute('gltf-model', normalUrl));
 
-    const params = new URLSearchParams(location.search);
-    let kind = (params.get('m') || 'animal').toLowerCase();
-    if (!MAP[kind]) kind = 'animal';
-
-    const modelEl  = document.getElementById('cellModel');
-    const labelEl  = document.getElementById('labelKind');
-    const btnA     = document.getElementById('btnAnimal');
-    const btnV     = document.getElementById('btnVegetal');
-    const loading  = document.getElementById('loading');
-    const statusEl = document.getElementById('status');
-    const markerEl = document.getElementById('hiro');
-
-    function setUI(){
-      btnA.classList.toggle('active', kind==='animal');
-      btnV.classList.toggle('active', kind==='vegetal');
-      labelEl.textContent = kind==='animal' ? 'Animal' : 'Vegetal';
-      const u = new URL(location.href); u.searchParams.set('m', kind); history.replaceState(null,'', u.toString());
-    }
-
-    async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(), {method:'HEAD'}); return r.ok; }catch{return false;} }
-    async function pick(){ const e=MAP[kind]; return (await exists(e.draco)) ? e.draco : e.normal; }
-
-    async function load(){
-      loading.style.display='block';
-      const url=(await pick()) + '#' + Date.now();     // cache-buster
-      modelEl.removeAttribute('gltf-model');           // forzar recarga real
-      modelEl.object3D.scale.set(DEFAULT_SCALE.x, DEFAULT_SCALE.y, DEFAULT_SCALE.z); // reset pinch
-      setTimeout(()=> modelEl.setAttribute('gltf-model', url), 30);
-    }
-
-    btnA.onclick = ()=>{ kind='animal'; setUI(); load(); };
-    btnV.onclick = ()=>{ kind='vegetal'; setUI(); load(); };
-
-    modelEl.addEventListener('model-loaded', ()=> { loading.style.display='none'; });
-    modelEl.addEventListener('model-error',  e=> {
-      loading.style.display='none';
-      statusEl.textContent = 'Error cargando modelo ❌';
-      alert('No se pudo cargar el modelo. Revisa rutas/nombres (mayúsculas) o tamaño.');
-      console.error(e.detail);
-    });
-
-    // Indicador de detección del marcador
-    markerEl.addEventListener('markerFound', ()=> statusEl.textContent = 'Marcador detectado ✅');
-    markerEl.addEventListener('markerLost',  ()=> statusEl.textContent = 'Buscando marcador…');
-
-    setUI(); load();
-
-    /* === Transparencia real del canvas cuando la escena esté lista === */
-    const scene = document.querySelector('a-scene');
-    scene.addEventListener('loaded', () => {
-      const r = scene.renderer;
-      if (r && r.setClearAlpha) r.setClearAlpha(0);
-      else if (r && r.setClearColor) r.setClearColor(0x000000, 0);
-    });
-  </script>
-</body>
+  // Logs útiles
+  modelEl.addEventListener('model-loaded', () => console.log('GLB cargado OK'));
+  modelEl.addEventListener('model-error',  e => console.error('GLB error:', e.detail));
+</script></body>
 </html>
