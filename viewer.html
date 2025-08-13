@@ -1,50 +1,57 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <title>Vista 3D — Célula Animal</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/DRACOLoader.js"></script>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Visor 3D — Célula</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    html,body{margin:0;overflow:hidden;background:#000}
-    .hud{position:fixed;left:0;right:0;bottom:0;padding:10px 14px;
-         color:#fff;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.55));
-         font-family:system-ui,Arial,sans-serif;font-size:14px;line-height:1.4}
-    .hud b{opacity:.95}
+    html,body{height:100%;margin:0;background:#0b0f14;color:#e6eef7;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+    .top{position:fixed;left:0;right:0;top:0;padding:10px 14px;background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0));z-index:5}
+    .wrap{height:100%;display:grid;grid-template-rows:auto 1fr auto}
+    .bar{display:flex;gap:8px;align-items:center}
+    .btn{border:1px solid rgba(255,255,255,.2);background:#0d1522;color:#fff;border-radius:10px;padding:6px 10px;text-decoration:none}
+    .mv{width:100%;height:100%}
+    footer{color:#9ab;font-size:12px;padding:8px 12px}
   </style>
 </head>
 <body>
-  <a-scene renderer="antialias: true">
-    <a-entity camera position="0 1.4 3" look-controls></a-entity>
-    <a-entity light="type: ambient; intensity: 1.0"></a-entity>
-    <a-entity light="type: directional; intensity: 0.9" position="1 2 1"></a-entity>
-    <a-plane rotation="-90 0 0" width="10" height="10" color="#111" position="0 -0.01 0"></a-plane>
+  <div class="wrap">
+    <div class="top">
+      <div class="bar">
+        <a class="btn" href="index.html">← Volver</a>
+        <div id="title" style="padding:6px 10px;border-radius:10px;background:#0d1522;border:1px solid rgba(255,255,255,.08)">
+          Célula <span id="kindLabel">Animal</span> — Visor 3D
+        </div>
+      </div>
+    </div>
 
-    <a-entity id="cell" position="0 0 -1.5" rotation="0 45 0" scale="0.45 0.45 0.45"></a-entity>
-  </a-scene>
+    <model-viewer id="mv" class="mv"
+      camera-controls
+      auto-rotate
+      exposure="1.0"
+      shadow-intensity="1"
+      environment-image="neutral"
+      disable-zoom="false">
+      <div slot="poster">Cargando…</div>
+    </model-viewer>
 
-  <div class="hud">
-    <b>Tips:</b> arrastra para rotar · pellizca/rueda para zoom · doble toque/clic para centrar.
+    <footer>Tip: pellizca para zoom; arrastra para rotar; Shift + arrastre para desplazar.</footer>
   </div>
 
   <script>
-    // Try Draco model first, fallback to regular GLB
-    const dracoUrl = 'assets/models/Celula_animal_draco.glb';
-    const normalUrl = 'assets/models/Celula_animal.glb';
+    const MAP = {
+      animal:  "assets/models/Celula_animal.glb",
+      vegetal: "assets/models/celula_eucariota_vegetal.glb"
+    };
+    const q = new URLSearchParams(location.search);
+    let kind = (q.get('m') || 'animal').toLowerCase();
+    if (!MAP[kind]) kind = 'animal';
 
-    if (window.THREE && THREE.DRACOLoader) {{
-      const loader = new THREE.DRACOLoader();
-      loader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
-      try {{ console.log('DRACO loader set.'); }} catch(e){{}}
-    }}
-
-    fetch(dracoUrl, {{ method: 'HEAD' }}).then(r => {{
-      const url = r.ok ? dracoUrl : normalUrl;
-      document.getElementById('cell').setAttribute('gltf-model', url);
-    }}).catch(() => {{
-      document.getElementById('cell').setAttribute('gltf-model', normalUrl);
-    }});
+    document.getElementById('kindLabel').textContent = kind === 'animal' ? 'Animal' : 'Vegetal';
+    const mv = document.getElementById('mv');
+    mv.src = MAP[kind];
   </script>
 </body>
 </html>
+
