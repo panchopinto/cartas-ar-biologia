@@ -30,7 +30,7 @@
 
   <a-scene
     embedded
-    renderer="alpha:true; antialias:true; precision:mediump"
+    renderer="alpha:true; antialias:true; precision:mediump; colorManagement:true"
     vr-mode-ui="enabled:false"
     arjs="sourceType: webcam; facingMode: environment; debugUIEnabled:false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720">
     <a-marker preset="hiro">
@@ -42,46 +42,37 @@
   <div class="legend">Si no ves la cámara, revisa permisos y usa HTTPS. Puedes alternar entre Célula Animal y Vegetal con los botones.</div>
 
   <script>
-    // rutas en assets/models con Draco opcional
     const MAP = {
-      animal:  { normal: "../assets/models/Celula_animal.glb",                draco: "../assets/models/Celula_animal_draco.glb" },
-      vegetal: { normal: "../assets/models/celula_eucariota_vegetal.glb",     draco: "../assets/models/celula_eucariota_vegetal_draco.glb" }
+      animal:  { normal: "../assets/models/Celula_animal.glb",            draco: "../assets/models/Celula_animal_draco.glb" },
+      vegetal: { normal: "../assets/models/celula_eucariota_vegetal.glb", draco: "../assets/models/celula_eucariota_vegetal_draco.glb" }
     };
     const params = new URLSearchParams(location.search);
     let kind = (params.get('m') || 'animal').toLowerCase();
     if (!MAP[kind]) kind = 'animal';
 
-    const modelEl   = document.getElementById('cellModel');
-    const labelKind = document.getElementById('labelKind');
-    const btnAnimal = document.getElementById('btnAnimal');
-    const btnVegetal= document.getElementById('btnVegetal');
-    const loading   = document.getElementById('loading');
+    const modelEl = document.getElementById('cellModel');
+    const labelEl = document.getElementById('labelKind');
+    const btnA = document.getElementById('btnAnimal');
+    const btnV = document.getElementById('btnVegetal');
+    const loading = document.getElementById('loading');
 
-    function setActiveButtons() {
-      btnAnimal.classList.toggle('active', kind === 'animal');
-      btnVegetal.classList.toggle('active', kind === 'vegetal');
-      labelKind.textContent = kind === 'animal' ? 'Animal' : 'Vegetal';
-      const next = new URL(location.href);
-      next.searchParams.set('m', kind);
-      history.replaceState(null,'', next.toString());
+    function setUI(){
+      btnA.classList.toggle('active', kind==='animal');
+      btnV.classList.toggle('active', kind==='vegetal');
+      labelEl.textContent = kind==='animal' ? 'Animal' : 'Vegetal';
+      const u = new URL(location.href); u.searchParams.set('m', kind); history.replaceState(null,'', u.toString());
     }
-    async function exists(url){ try{ const r=await fetch(url+'?t='+Date.now(),{method:'HEAD'}); return r.ok; }catch{ return false; } }
-    async function resolveModelURL(){ const e=MAP[kind]; return (await exists(e.draco))? e.draco : e.normal; }
+    async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(), {method:'HEAD'}); return r.ok; }catch{return false;} }
+    async function pick(){ const e=MAP[kind]; return (await exists(e.draco)) ? e.draco : e.normal; }
+    async function load(){ loading.style.display='block'; const url=(await pick())+'#'+Date.now(); modelEl.removeAttribute('gltf-model'); setTimeout(()=>modelEl.setAttribute('gltf-model',url),30); }
 
-    async function loadModel() {
-      loading.style.display = 'block';
-      const url = (await resolveModelURL()) + '#' + Date.now(); // cache-buster
-      modelEl.removeAttribute('gltf-model');
-      setTimeout(()=> modelEl.setAttribute('gltf-model', url), 30);
-    }
-
-    btnAnimal.onclick = ()=>{ kind='animal'; setActiveButtons(); loadModel(); };
-    btnVegetal.onclick= ()=>{ kind='vegetal'; setActiveButtons(); loadModel(); };
+    btnA.onclick=()=>{ kind='animal'; setUI(); load(); };
+    btnV.onclick=()=>{ kind='vegetal'; setUI(); load(); };
 
     modelEl.addEventListener('model-loaded', ()=> loading.style.display='none');
-    modelEl.addEventListener('model-error',  e => { loading.style.display='none'; console.error('GLB error:', e.detail); alert('No se pudo cargar el modelo.'); });
+    modelEl.addEventListener('model-error',  ()=>{ loading.style.display='none'; alert('No se pudo cargar el modelo.'); });
 
-    setActiveButtons(); loadModel();
+    setUI(); load();
   </script>
 </body>
 </html>
