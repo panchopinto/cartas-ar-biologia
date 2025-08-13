@@ -39,19 +39,18 @@
     <a-entity light="type: ambient; intensity: 0.9"></a-entity>
     <a-entity light="type: directional; intensity: 0.7" position="1 1 0"></a-entity>
 
-    <a-marker preset="hiro" id="hiro">
-      <!-- PRUEBA: cubo verde. Si lo ves cuando se detecta el HIRO, el marcador está OK. (Puedes borrar estas 3 líneas) -->
-      <a-box depth="0.2" height="0.2" width="0.2" color="#4caf50" position="0 0.2 0"></a-box>
-
-      <!-- Modelo GLB -->
-      <a-entity
-        id="cellModel"
-        position="0 0 0"
-        rotation="0 0 0"
-        scale="0.40 0.40 0.40"
-        pinch-scale="min:0.2; max:3; factor:1">
-      </a-entity>
+   <a-marker
+    type="pattern"
+    url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/three.js/examples/marker-training/examples/pattern-files/pattern-hiro.patt"
+    patternRatio="0.88"
+    smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5"
+    id="hiro">
+    <!-- cubo de prueba -->
+    <a-box depth="0.2" height="0.2" width="0.2" color="#4caf50" position="0 0.2 0"></a-box>
+    <!-- tu modelo -->
+    <a-entity id="cellModel" position="0 0 0" rotation="0 0 0" scale="0.40 0.40 0.40" pinch-scale="min:0.2; max:3; factor:1"></a-entity>
     </a-marker>
+
 
     <!-- Cámara con planos ajustados para evitar clipping -->
     <a-entity camera="near:0.01; far:5000"></a-entity>
