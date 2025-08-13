@@ -1,20 +1,27 @@
 <!DOCTYPE html>
-<html><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>AR.js - Célula Vegetal (color)</title>
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
 <style>
-  body,html{margin:0;height:100%;overflow:hidden;background:#000}
+  html,body{margin:0;height:100%;overflow:hidden;background:#000}
   .legend{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);color:#fff;
           font-family:system-ui,Arial,sans-serif;padding:.6rem .9rem;line-height:1.2}
   .legend b{display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:middle;border-radius:2px}
   .chips{display:flex;gap:10px;flex-wrap:wrap;margin:.3rem 0}
   .chip{background:#111;border:1px solid #333;border-radius:12px;padding:.15rem .5rem;font-size:.9rem}
 </style>
-</head><body>
-<a-scene embedded arjs="sourceType: webcam; debugUIEnabled:false;">
-  <a-entity camera></a-entity>
+</head>
+<body>
+
+<a-scene
+  embedded
+  renderer="alpha:true; antialias:true; precision:mediump"
+  vr-mode-ui="enabled:false"
+  arjs="sourceType: webcam; facingMode: environment; videoTexture: true; debugUIEnabled:false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720">
 
   <!-- luces -->
   <a-entity light="type: ambient; intensity: 0.9"></a-entity>
@@ -50,8 +57,12 @@
              material="color:#e67e22; metalness:0.2; roughness:0.6"></a-torus>
     <a-text value="Mitocondria" color="#ffffff" position="-0.1 0.96 0.35" align="center" width="2"></a-text>
   </a-marker>
+
+  <!-- cámara explícita -->
+  <a-entity camera></a-entity>
 </a-scene>
 
+<!-- Leyenda / descripciones -->
 <div class="legend">
   <div class="chips">
     <span class="chip"><b style="background:#27ae60"></b>Pared celular: rigidez y protección</span>
@@ -61,4 +72,21 @@
     <span class="chip"><b style="background:#e67e22"></b>Mitocondria: energía (ATP)</span>
   </div>
 </div>
-</body></html>
+
+<!-- Forzar transparencia real del canvas cuando la escena ya está lista -->
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const scene = document.querySelector('a-scene');
+    scene.addEventListener('loaded', () => {
+      const r = scene.renderer;
+      if (r && r.getClearAlpha && r.setClearAlpha) {
+        r.setClearAlpha(0);
+      } else if (r && r.setClearColor) {
+        // alternativa para motores sin setClearAlpha
+        r.setClearColor(0x000000, 0);
+      }
+    });
+  });
+</script>
+</body>
+</html>
