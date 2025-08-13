@@ -25,8 +25,11 @@
   </div>
   <div id="loading" class="loading">Cargando modelo…</div>
 
-  <a-scene embedded renderer="alpha:true; antialias:true; precision:mediump" vr-mode-ui="enabled:false"
-           arjs="sourceType: webcam; facingMode: environment; debugUIEnabled:false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720">
+  <a-scene
+    embedded
+    renderer="alpha:true; antialias:true; precision:mediump; colorManagement:true"
+    vr-mode-ui="enabled:false"
+    arjs="sourceType: webcam; facingMode: environment; debugUIEnabled:false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720">
     <a-marker preset="hiro">
       <a-entity id="cellModel" position="0 0 0" rotation="0 0 0" scale="0.40 0.40 0.40"></a-entity>
     </a-marker>
@@ -35,26 +38,43 @@
 
   <script>
     const MAP = {
-      animal:  { normal: "../assets/models/Celula_animal.glb",                draco: "../assets/models/Celula_animal_draco.glb" },
-      vegetal: { normal: "../assets/models/celula_eucariota_vegetal.glb",     draco: "../assets/models/celula_eucariota_vegetal_draco.glb" }
+      animal:  { normal: "../assets/models/Celula_animal.glb",            draco: "../assets/models/Celula_animal_draco.glb" },
+      vegetal: { normal: "../assets/models/celula_eucariota_vegetal.glb", draco: "../assets/models/celula_eucariota_vegetal_draco.glb" }
     };
+
     const params = new URLSearchParams(location.search);
-    let kind = (params.get('m') || 'animal').toLowerCase(); if(!MAP[kind]) kind='animal';
-    const modelEl=document.getElementById('cellModel'), label=document.getElementById('labelKind');
-    const btnA=document.getElementById('btnAnimal'), btnV=document.getElementById('btnVegetal');
-    const loading=document.getElementById('loading');
+    let kind = (params.get('m') || 'animal').toLowerCase();
+    if (!MAP[kind]) kind = 'animal';
+
+    const modelEl = document.getElementById('cellModel');
+    const labelEl = document.getElementById('labelKind');
+    const btnA = document.getElementById('btnAnimal');
+    const btnV = document.getElementById('btnVegetal');
+    const loading = document.getElementById('loading');
 
     function setUI(){
-      btnA.classList.toggle('active',kind==='animal'); btnV.classList.toggle('active',kind==='vegetal');
-      label.textContent = kind==='animal'?'Animal':'Vegetal';
-      const u=new URL(location.href); u.searchParams.set('m',kind); history.replaceState(null,'',u.toString());
+      btnA.classList.toggle('active', kind==='animal');
+      btnV.classList.toggle('active', kind==='vegetal');
+      labelEl.textContent = kind==='animal' ? 'Animal' : 'Vegetal';
+      const u = new URL(location.href); u.searchParams.set('m', kind); history.replaceState(null,'', u.toString());
     }
-    async function exists(u){ try{const r=await fetch(u+'?t='+Date.now(),{method:'HEAD'}); return r.ok;}catch{return false;} }
-    async function pick(){ const e=MAP[kind]; return (await exists(e.draco))? e.draco : e.normal; }
-    async function load(){ loading.style.display='block'; const url=(await pick())+'#'+Date.now(); modelEl.removeAttribute('gltf-model'); setTimeout(()=>modelEl.setAttribute('gltf-model',url),30); }
-    btnA.onclick=()=>{kind='animal';setUI();load();}; btnV.onclick=()=>{kind='vegetal';setUI();load();};
-    modelEl.addEventListener('model-loaded',()=>loading.style.display='none');
-    modelEl.addEventListener('model-error', ()=>{loading.style.display='none'; alert('No se pudo cargar el modelo.');});
+
+    async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(), {method:'HEAD'}); return r.ok; }catch{return false;} }
+    async function pick(){ const e=MAP[kind]; return (await exists(e.draco)) ? e.draco : e.normal; }
+
+    async function load(){
+      loading.style.display='block';
+      const url=(await pick()) + '#' + Date.now(); // cache-buster
+      modelEl.removeAttribute('gltf-model');       // fuerza recarga real
+      setTimeout(()=> modelEl.setAttribute('gltf-model', url), 30);
+    }
+
+    btnA.onclick = ()=>{ kind='animal'; setUI(); load(); };
+    btnV.onclick = ()=>{ kind='vegetal'; setUI(); load(); };
+
+    modelEl.addEventListener('model-loaded', ()=> loading.style.display='none');
+    modelEl.addEventListener('model-error',  ()=>{ loading.style.display='none'; alert('No se pudo cargar el modelo.'); });
+
     setUI(); load();
   </script>
 </body>
