@@ -21,13 +21,6 @@
              color:#fff;background:rgba(0,0,0,.5);padding:.6rem .9rem;border-radius:10px;display:none;z-index:7}
   </style>
 </head>
-  <script>
-  document.querySelector('a-scene').addEventListener('loaded', () => {
-    const r = document.querySelector('a-scene').renderer;
-    if (r) r.setClearAlpha(0); // canvas realmente transparente
-  });
-</script>
-
 <body>
   <div class="hud">RA — Célula <span id="labelKind" style="opacity:.9">Animal</span> · Marcador <b>HIRO</b></div>
   <div class="toolbar">
@@ -37,10 +30,10 @@
   <div id="loading" class="loading">Cargando modelo…</div>
 
   <a-scene
-  embedded
-  renderer="alpha:true; antialias:true; precision:mediump; colorManagement:true"
-  vr-mode-ui="enabled:false"
-  arjs="sourceType: webcam; facingMode: environment; videoTexture: true; debugUIEnabled:false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720">
+    embedded
+    renderer="alpha:true; antialias:true; precision:mediump; colorManagement:true"
+    vr-mode-ui="enabled:false"
+    arjs="sourceType: webcam; facingMode: environment; videoTexture: true; debugUIEnabled:false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720">
 
     <!-- Luces para que el modelo PBR se vea bien -->
     <a-entity light="type: ambient; intensity: 0.9"></a-entity>
@@ -143,7 +136,7 @@
     async function load(){
       loading.style.display='block';
       const url=(await pick()) + '#' + Date.now();     // cache-buster
-      modelEl.removeAttribute('gltf-model');           // limpiar para forzar recarga real
+      modelEl.removeAttribute('gltf-model');           // forzar recarga real
       // resetear escala si cambiaste con pinch
       modelEl.object3D.scale.set(DEFAULT_SCALE.x, DEFAULT_SCALE.y, DEFAULT_SCALE.z);
       // pequeño delay para que A-Frame procese el remove
@@ -157,6 +150,17 @@
     modelEl.addEventListener('model-error',  ()=>{ loading.style.display='none'; alert('No se pudo cargar el modelo. Revisa rutas/formato.'); });
 
     setUI(); load();
+
+    /* === Forzar transparencia real del canvas cuando la escena ya está lista === */
+    const scene = document.querySelector('a-scene');
+    scene.addEventListener('loaded', () => {
+      const r = scene.renderer;
+      if (r && r.setClearAlpha) {
+        r.setClearAlpha(0);
+      } else if (r && r.setClearColor) {
+        r.setClearColor(0x000000, 0);
+      }
+    });
   </script>
 </body>
 </html>
