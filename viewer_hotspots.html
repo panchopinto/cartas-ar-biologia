@@ -13,6 +13,8 @@
     .btn{border:1px solid rgba(255,255,255,.2);background:#0d1522;color:#fff;border-radius:10px;padding:6px 10px;text-decoration:none;cursor:pointer}
     .mv{width:100%;height:100%}
     .legend{color:#9ab;font-size:12px;padding:8px 12px}
+    .error{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#1b2330;border:1px solid #3a4a63;padding:12px 14px;border-radius:10px;color:#fff;z-index:9}
+    .muted{color:#9ab;font-size:12px;margin-top:6px}
   </style>
 </head>
 <body>
@@ -27,25 +29,26 @@
       </div>
     </div>
 
-    <model-viewer id="mv" class="mv"
-      camera-controls
-      exposure="1.0"
-      shadow-intensity="1"
-      environment-image="neutral">
+    <model-viewer id="mv" class="mv" camera-controls exposure="1.0" shadow-intensity="1" environment-image="neutral">
       <div slot="poster">Cargando…</div>
-      <!-- Hotspots se crean por JS para poder cambiar entre animal/vegetal -->
+      <!-- Los hotspots se insertan por JS -->
     </model-viewer>
 
-    <div class="legend">Tip: botón para ocultar/mostrar etiquetas. Las posiciones pueden ajustarse más tarde.</div>
+    <div class="legend">Tip: botón para ocultar/mostrar etiquetas.</div>
+  </div>
+
+  <div id="err" class="error" style="display:none">
+    <div id="emsg">No se pudo cargar el modelo.</div>
+    <div class="muted" id="edbg"></div>
   </div>
 
   <script>
-    const MODELS = {
-      animal:  "assets/models/Celula_animal.glb",
-      vegetal: "assets/models/celula_eucariota_vegetal.glb"
+    const FILES = {
+      animal:  "Celula_animal.glb",
+      vegetal: "celula_eucariota_vegetal.glb"
     };
+    const BASES = ["assets/models/", "./assets/models/", "../assets/models/"];
 
-    // Posiciones aproximadas de hotspots (en metros, relativo al modelo)
     const HOTSPOTS = {
       animal: [
         {label:"Núcleo",       pos:"0.05m 0.10m 0.06m"},
@@ -68,19 +71,25 @@
 
     const q = new URLSearchParams(location.search);
     let kind = (q.get('m') || 'animal').toLowerCase();
-    if (!MODELS[kind]) kind = 'animal';
+    if (!FILES[kind]) kind = 'animal';
 
     document.getElementById('kindLabel').textContent = kind === 'animal' ? 'Animal' : 'Vegetal';
 
     const mv = document.getElementById('mv');
-    mv.src = MODELS[kind];
+    const errBox = document.getElementById('err');
+    const emsg = document.getElementById('emsg');
+    const edbg = document.getElementById('edbg');
+    const btn = document.getElementById('btnToggle');
 
-    // Construir hotspots dinámicamente
+    async function head(url){ try{ const r=await fetch(url,{method:'HEAD'}); return r.ok; }catch{return false;} }
+    async function resolvePath(file){
+      for (const b of BASES){ const u=b+file; if (await head(u)) return u; }
+      return null;
+    }
+
     function renderHotspots(kind) {
-      // Limpia anteriores
       mv.querySelectorAll('button[slot^="hotspot-"]').forEach(el => el.remove());
-      // Crea nuevos
-      HOTSPOTS[kind].forEach((h, i) => {
+      HOTSPOTS[kind].forEach((h,i)=>{
         const btn = document.createElement('button');
         btn.textContent = h.label;
         btn.className = 'btn';
@@ -91,17 +100,35 @@
         mv.appendChild(btn);
       });
     }
-    renderHotspots(kind);
 
-    // Mostrar/ocultar
-    let visible = true;
-    const btn = document.getElementById('btnToggle');
-    btn.addEventListener('click', () => {
-      visible = !visible;
-      mv.querySelectorAll('button[slot^="hotspot-"]').forEach(el => el.style.display = visible ? 'inline-block' : 'none');
-      btn.textContent = visible ? 'Ocultar etiquetas' : 'Mostrar etiquetas';
-    });
+    function showError(msg, dbg=""){
+      errBox.style.display = 'block';
+      emsg.textContent = msg;
+      edbg.textContent = dbg;
+    }
+
+    (async ()=>{
+      const file = FILES[kind];
+      const url = await resolvePath(file);
+      if(!url){
+        showError("No encontré el modelo en assets/models/.", `Busqué: ${BASES.map(b=>b+file).join(" | ")}`);
+        return;
+      }
+      mv.src = url;
+      renderHotspots(kind);
+
+      let visible = true;
+      btn.addEventListener('click', ()=>{
+        visible = !visible;
+        mv.querySelectorAll('button[slot^="hotspot-"]').forEach(el => el.style.display = visible ? 'inline-block' : 'none');
+        btn.textContent = visible ? 'Ocultar etiquetas' : 'Mostrar etiquetas';
+      });
+
+      mv.addEventListener('error', (e)=>{
+        const detail = (e && e.detail && e.detail.message) ? e.detail.message : 'Error desconocido';
+        showError("Error al cargar el modelo.", detail + " → " + url);
+      });
+    })();
   </script>
 </body>
 </html>
-
