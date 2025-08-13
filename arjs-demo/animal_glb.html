@@ -8,9 +8,7 @@
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
   <style>
     html,body{margin:0;overflow:hidden;background:#000}
-    /* Importante para permitir gestos multitáctiles sobre el canvas */
-    canvas, .a-canvas { touch-action: none; }
-
+    canvas, .a-canvas { touch-action: none; } /* gestos multitáctiles */
     .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;
          font-family:system-ui,Arial,sans-serif;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));z-index:5}
     .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px;z-index:6}
@@ -19,6 +17,7 @@
     .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
     .loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-family:system-ui,Arial,sans-serif;
              color:#fff;background:rgba(0,0,0,.5);padding:.6rem .9rem;border-radius:10px;display:none;z-index:7}
+    .status{position:fixed;left:8px;top:8px;background:rgba(0,0,0,.4);color:#fff;padding:6px 10px;border-radius:8px;font:14px system-ui;z-index:9}
   </style>
 </head>
 <body>
@@ -28,18 +27,23 @@
     <button id="btnVegetal" class="btn">Vegetal</button>
   </div>
   <div id="loading" class="loading">Cargando modelo…</div>
+  <div id="status" class="status">Buscando marcador…</div>
 
   <a-scene
     embedded
-    renderer="alpha:true; antialias:true; precision:mediump; colorManagement:true"
+    renderer="alpha:true; antialias:true; precision:mediump; colorManagement:true; physicallyCorrectLights:true; powerPreference:high-performance"
     vr-mode-ui="enabled:false"
     arjs="sourceType: webcam; facingMode: environment; videoTexture: true; debugUIEnabled:false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720">
 
-    <!-- Luces para que el modelo PBR se vea bien -->
+    <!-- Luces -->
     <a-entity light="type: ambient; intensity: 0.9"></a-entity>
     <a-entity light="type: directional; intensity: 0.7" position="1 1 0"></a-entity>
 
-    <a-marker preset="hiro">
+    <a-marker preset="hiro" id="hiro">
+      <!-- PRUEBA: cubo verde. Si lo ves cuando se detecta el HIRO, el marcador está OK. (Puedes borrar estas 3 líneas) -->
+      <a-box depth="0.2" height="0.2" width="0.2" color="#4caf50" position="0 0.2 0"></a-box>
+
+      <!-- Modelo GLB -->
       <a-entity
         id="cellModel"
         position="0 0 0"
@@ -48,11 +52,13 @@
         pinch-scale="min:0.2; max:3; factor:1">
       </a-entity>
     </a-marker>
-    <a-entity camera></a-entity>
+
+    <!-- Cámara con planos ajustados para evitar clipping -->
+    <a-entity camera="near:0.01; far:5000"></a-entity>
   </a-scene>
 
   <script>
-    /* === Gestos: zoom con dos dedos (pinch) sobre el modelo === */
+    /* === Gestos: pinch-to-zoom === */
     AFRAME.registerComponent('pinch-scale', {
       schema: { min: {default: 0.1}, max: {default: 4}, factor: {default: 1} },
       init: function () {
@@ -106,7 +112,7 @@
       }
     });
 
-    /* === Lógica de carga con Draco + fallback y cache-buster === */
+    /* === Carga de modelos (Draco + fallback) y conmutación Animal/Vegetal === */
     const DEFAULT_SCALE = {x:0.40, y:0.40, z:0.40};
     const MAP = {
       animal:  { normal: "../assets/models/Celula_animal.glb",            draco: "../assets/models/Celula_animal_draco.glb" },
@@ -122,6 +128,8 @@
     const btnA     = document.getElementById('btnAnimal');
     const btnV     = document.getElementById('btnVegetal');
     const loading  = document.getElementById('loading');
+    const statusEl = document.getElementById('status');
+    const markerEl = document.getElementById('hiro');
 
     function setUI(){
       btnA.classList.toggle('active', kind==='animal');
@@ -137,29 +145,33 @@
       loading.style.display='block';
       const url=(await pick()) + '#' + Date.now();     // cache-buster
       modelEl.removeAttribute('gltf-model');           // forzar recarga real
-      // resetear escala si cambiaste con pinch
-      modelEl.object3D.scale.set(DEFAULT_SCALE.x, DEFAULT_SCALE.y, DEFAULT_SCALE.z);
-      // pequeño delay para que A-Frame procese el remove
+      modelEl.object3D.scale.set(DEFAULT_SCALE.x, DEFAULT_SCALE.y, DEFAULT_SCALE.z); // reset pinch
       setTimeout(()=> modelEl.setAttribute('gltf-model', url), 30);
     }
 
     btnA.onclick = ()=>{ kind='animal'; setUI(); load(); };
     btnV.onclick = ()=>{ kind='vegetal'; setUI(); load(); };
 
-    modelEl.addEventListener('model-loaded', ()=> loading.style.display='none');
-    modelEl.addEventListener('model-error',  ()=>{ loading.style.display='none'; alert('No se pudo cargar el modelo. Revisa rutas/formato.'); });
+    modelEl.addEventListener('model-loaded', ()=> { loading.style.display='none'; });
+    modelEl.addEventListener('model-error',  e=> {
+      loading.style.display='none';
+      statusEl.textContent = 'Error cargando modelo ❌';
+      alert('No se pudo cargar el modelo. Revisa rutas/nombres (mayúsculas) o tamaño.');
+      console.error(e.detail);
+    });
+
+    // Indicador de detección del marcador
+    markerEl.addEventListener('markerFound', ()=> statusEl.textContent = 'Marcador detectado ✅');
+    markerEl.addEventListener('markerLost',  ()=> statusEl.textContent = 'Buscando marcador…');
 
     setUI(); load();
 
-    /* === Forzar transparencia real del canvas cuando la escena ya está lista === */
+    /* === Transparencia real del canvas cuando la escena esté lista === */
     const scene = document.querySelector('a-scene');
     scene.addEventListener('loaded', () => {
       const r = scene.renderer;
-      if (r && r.setClearAlpha) {
-        r.setClearAlpha(0);
-      } else if (r && r.setClearColor) {
-        r.setClearColor(0x000000, 0);
-      }
+      if (r && r.setClearAlpha) r.setClearAlpha(0);
+      else if (r && r.setClearColor) r.setClearColor(0x000000, 0);
     });
   </script>
 </body>
