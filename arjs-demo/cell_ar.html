@@ -8,31 +8,60 @@
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
   <style>
     html,body{margin:0;overflow:hidden;background:#000}
-    .hdr{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;
-         background:linear-gradient(180deg,rgba(0,0,0,.65),rgba(0,0,0,0));font-family:system-ui,Arial,sans-serif}
-    .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px}
-    .btn{border:1px solid rgba(255,255,255,.25);color:#fff;background:rgba(0,0,0,.35);
-         border-radius:10px;padding:6px 10px;font-family:system-ui,Arial,sans-serif;cursor:pointer}
-    .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
-    .legend{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;
-            font-family:system-ui,Arial,sans-serif;padding:.55rem .9rem;line-height:1.2;font-size:14px}
-    .loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
-             font-family:system-ui,Arial,sans-serif;color:#fff;background:rgba(0,0,0,.5);padding:.6rem .9rem;border-radius:10px;display:none}
+    .hud{
+      position:fixed;left:0;right:0;top:0;
+      padding:.55rem .8rem;color:#fff;
+      font-family:system-ui,Arial,sans-serif;
+      background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));
+      z-index:5
+    }
+    .toolbar{
+      position:fixed;right:8px;top:8px;
+      display:flex;gap:8px;z-index:6
+    }
+    .btn{
+      border:1px solid rgba(255,255,255,.25);
+      color:#fff;background:rgba(0,0,0,.35);
+      border-radius:10px;padding:6px 10px;
+      font-family:system-ui,Arial,sans-serif;
+      cursor:pointer
+    }
+    .btn.active{
+      background:rgba(60,201,255,.25);
+      border-color:#3cc9ff
+    }
+    .legend{
+      position:fixed;left:0;right:0;bottom:0;
+      background:rgba(0,0,0,.55);color:#fff;
+      font-family:system-ui,Arial,sans-serif;
+      padding:.55rem .9rem;line-height:1.2;
+      font-size:14px;z-index:5
+    }
+    .loading{
+      position:fixed;left:50%;top:50%;
+      transform:translate(-50%,-50%);
+      font-family:system-ui,Arial,sans-serif;
+      color:#fff;background:rgba(0,0,0,.5);
+      padding:.6rem .9rem;border-radius:10px;
+      display:none;z-index:7
+    }
   </style>
 </head>
 <body>
-  <div class="hdr">RA — Célula <span id="labelKind" style="opacity:.85">Animal</span> / <span style="opacity:.7">Apunta al marcador HIRO</span></div>
+  <div class="hud">
+    RA — Célula <span id="labelKind" style="opacity:.9">Animal</span> · Apunta al marcador <b>HIRO</b>
+  </div>
   <div class="toolbar">
     <button id="btnAnimal" class="btn active">Animal</button>
     <button id="btnVegetal" class="btn">Vegetal</button>
   </div>
-  <div id="loading" class="loading">Cargando modelo...</div>
+  <div id="loading" class="loading">Cargando modelo…</div>
 
   <a-scene
     embedded
     renderer="alpha:true; antialias:true; precision:mediump"
     vr-mode-ui="enabled:false"
-    arjs="sourceType: webcam; debugUIEnabled:false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720">
+    arjs="sourceType: webcam; facingMode: environment; debugUIEnabled:false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720">
     <a-marker preset="hiro">
       <a-entity id="cellModel" position="0 0 0" rotation="0 0 0" scale="0.40 0.40 0.40"></a-entity>
     </a-marker>
@@ -40,18 +69,19 @@
   </a-scene>
 
   <div class="legend">
-    • Si no ves la cámara, revisa permisos y usa HTTPS. • Puedes alternar entre Célula Animal y Vegetal con los botones de arriba.
+    Si no ves la cámara, revisa permisos y usa HTTPS.  
+    Puedes alternar entre Célula Animal y Vegetal con los botones.
   </div>
 
   <script>
     const MAP = {
-      animal: { normal: '../assets/models/Celula_animal.glb', draco: '../assets/models/Celula_animal_draco.glb' },
-      vegetal: { normal: '../assets/models/celula_eucariota_vegetal.glb', draco: '../assets/models/celula_eucariota_vegetal_draco.glb' }
+      animal:  "../assets/models/Celula_animal.glb",
+      vegetal: "../assets/models/celula_eucariota_vegetal.glb"
     };
 
     const params = new URLSearchParams(location.search);
     let kind = (params.get('m') || 'animal').toLowerCase();
-    if (!MAP[kind]) kind = 'animal';
+    if(!MAP[kind]) kind = 'animal';
 
     const modelEl   = document.getElementById('cellModel');
     const labelKind = document.getElementById('labelKind');
@@ -68,28 +98,26 @@
       history.replaceState(null,'', next.toString());
     }
 
-    async function exists(url) {
-      try {
-        const res = await fetch(url, { method: 'HEAD' });
-        return res.ok;
-      } catch(e) { return false; }
-    }
-
-    async function loadModel() {
+    function loadModel() {
       loading.style.display = 'block';
-      const entry = MAP[kind];
-      const useDraco = await exists(entry.draco);
-      const url = useDraco ? entry.draco : entry.normal;
-      modelEl.setAttribute('gltf-model', url);
+      // Forzar recarga evitando caché
+      const url = MAP[kind] + '#' + Date.now();
+      modelEl.removeAttribute('gltf-model');
+      setTimeout(() => {
+        modelEl.setAttribute('gltf-model', url);
+      }, 50);
     }
 
     btnAnimal.addEventListener('click', () => { kind = 'animal'; setActiveButtons(); loadModel(); });
     btnVegetal.addEventListener('click', () => { kind = 'vegetal'; setActiveButtons(); loadModel(); });
 
-    modelEl.addEventListener('model-loaded', () => { loading.style.display = 'none'; console.log('GLB cargado OK'); });
-    modelEl.addEventListener('model-error',  e => { loading.style.display = 'none'; console.error('GLB error:', e.detail); });
+    modelEl.addEventListener('model-loaded', () => { loading.style.display = 'none'; });
+    modelEl.addEventListener('model-error',  e => {
+      loading.style.display = 'none';
+      console.error('Error al cargar modelo:', e.detail);
+    });
 
-    // Init
+    // Inicializar
     setActiveButtons();
     loadModel();
   </script>
