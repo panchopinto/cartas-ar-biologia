@@ -5,7 +5,7 @@
   <title>RA — Célula Vegetal (HIRO)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 
-  <!-- A‑Frame + AR.js -->
+  <!-- A-Frame + AR.js -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
 
@@ -48,8 +48,8 @@
   <button id="askCam">Activar cámara</button>
 
   <div class="hud">
-    Imprime el marcador <a href="../arjs-demo/hiro_marker.png" target="_blank" rel="noopener">HIRO</a>, permite la cámara y apunta al marcador.
-    <br/>Pincha con dos dedos para <b>zoom</b> y gira con dos dedos para <b>rotar</b>.
+    Imprime el marcador <a href="../arjs-demo/hiro_marker.png" target="_blank">HIRO</a>, permite la cámara y apunta al marcador.<br/>
+    Pincha con dos dedos para <b>zoom</b> y gira con dos dedos para <b>rotar</b>.
   </div>
 
   <script>
@@ -58,16 +58,13 @@
       try {
         await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
         btn.style.display = 'none';
-        // location.reload();
       } catch (e) {
         alert('No se pudo acceder a la cámara. Revisa permisos del sitio (🔒 > Cámara > Permitir).');
-        console.error(e);
       }
     });
 
     document.getElementById('model').addEventListener('object3dset', () => console.log('✅ Modelo vegetal cargado'));
     document.getElementById('marker').addEventListener('markerFound', () => console.log('🎯 Marcador detectado'));
-    document.getElementById('marker').addEventListener('markerLost', () => console.log('… Marcador perdido'));
   </script>
 </body>
 </html>
