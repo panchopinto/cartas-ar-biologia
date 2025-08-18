@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <title>RA — Célula Vegetal (HIRO)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
+  <style>
+    html,body{margin:0;overflow:hidden;background:#000;font-family:system-ui,Arial,sans-serif}
+    .err{position:fixed;top:0;left:0;right:0;background:#b00020;color:#fff;padding:.5rem .8rem;display:none;z-index:9}
+    .hud{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);color:#fff;padding:.6rem .8rem;font-size:.9rem}
+    .hud a{color:#8ef}
+  </style>
+</head>
+<body>
+  <div id="err" class="err"></div>
+
+  <a-scene
+    embedded
+    vr-mode-ui="enabled: false"
+    renderer="colorManagement: true; physicallyCorrectLights: true; logarithmicDepthBuffer: true"
+    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false">
+
+    <!-- Luces para evitar modelo oscuro -->
+    <a-entity light="type: ambient; intensity: 1.1"></a-entity>
+    <a-entity light="type: directional; intensity: 1" position="1 2 1"></a-entity>
+
+    <!-- Marcador HIRO -->
+    <a-marker preset="hiro" id="marker">
+      <a-entity id="model"
+        gltf-model="url(../assets/models/vegetal.glb?v=2)"
+        position="0 0 0" rotation="0 0 0" scale="0.2 0.2 0.2">
+      </a-entity>
+
+      <!-- Cubo de referencia -->
+      <a-box position="0.15 0.1 0" depth="0.05" height="0.05" width="0.05" color="#3f9"></a-box>
+    </a-marker>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <div class="hud">
+    Imprime el marcador <a href="../arjs-demo/hiro_marker.png" target="_blank" rel="noopener">HIRO</a>, permite la cámara y apunta al marcador.  
+    Si no ves el modelo, revisa permisos de cámara y la luz del ambiente.
+  </div>
+
+  <script>
+    const showErr = msg => { const el = document.getElementById('err'); el.textContent = msg; el.style.display = 'block'; };
+
+    const node = document.getElementById('model');
+    node.addEventListener('object3dset', () => console.log('✅ Modelo vegetal cargado'));
+    node.addEventListener('model-error', (e) => { console.error(e); showErr('No se pudo cargar vegetal.glb'); });
+
+    const marker = document.getElementById('marker');
+    marker.addEventListener('markerFound', () => console.log('🎯 Marcador detectado'));
+    marker.addEventListener('markerLost', () => console.log('… Marcador perdido'));
+  </script>
+</body>
+</html>
