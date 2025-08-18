@@ -4,24 +4,16 @@
   <meta charset="utf-8"/>
   <title>RA — Célula (HIRO)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <!-- A-Frame estable -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <!-- AR.js para A-Frame -->
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
   <style>
     html,body{margin:0;overflow:hidden;background:#000;font-family:system-ui,Arial,sans-serif}
+    .err{position:fixed;top:0;left:0;right:0;background:#b00020;color:#fff;padding:.5rem .8rem;display:none;z-index:9}
     .hud{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);color:#fff;padding:.6rem .8rem;font-size:.9rem}
-    .hud b{color:#8ef}
-    .tabs{position:fixed;top:8px;left:8px;display:flex;gap:8px}
-    .tabs a{background:rgba(0,0,0,.6);color:#fff;text-decoration:none;padding:.4rem .6rem;border-radius:.5rem}
-    .err{position:fixed;top:0;left:0;right:0;background:#b00020;color:#fff;padding:.5rem .8rem;display:none}
+    .hud a{color:#8ef}
   </style>
 </head>
 <body>
-  <div class="tabs">
-    <a href="?m=animal">Animal</a>
-    <a href="?m=vegetal">Vegetal</a>
-  </div>
   <div id="err" class="err"></div>
 
   <a-scene
@@ -30,50 +22,39 @@
     renderer="colorManagement: true; physicallyCorrectLights: true; logarithmicDepthBuffer: true"
     arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false">
 
-    <!-- Luces: evita modelo oscuro -->
+    <!-- Luces para evitar modelo oscuro -->
     <a-entity light="type: ambient; intensity: 1.1"></a-entity>
     <a-entity light="type: directional; intensity: 1" position="1 2 1"></a-entity>
 
     <!-- Marcador HIRO -->
-    <a-marker preset="hiro">
-      <a-entity id="model" position="0 0 0" rotation="0 0 0" scale="0.2 0.2 0.2"></a-entity>
+    <a-marker preset="hiro" id="marker">
+      <a-entity id="model"
+        gltf-model="url(../assets/models/animal.glb?v=2)"
+        position="0 0 0" rotation="0 0 0" scale="0.2 0.2 0.2">
+      </a-entity>
+
+      <!-- Cubo de referencia (aparece junto al modelo para confirmar tracking) -->
+      <a-box position="0.15 0.1 0" depth="0.05" height="0.05" width="0.05" color="#39f"></a-box>
     </a-marker>
 
-    <!-- Cámara controlada por AR.js -->
     <a-entity camera></a-entity>
   </a-scene>
 
   <div class="hud">
-    <b>Instrucciones:</b> imprime el marcador <a href="../arjs-demo/hiro_marker.png" target="_blank" rel="noopener" style="color:#8ef">HIRO</a>, permite el acceso a la cámara y apunta al marcador.  
-    Si no ves el modelo, revisa permisos de cámara y que los GLB estén en <code>/assets/models/</code>.
+    Imprime el marcador <a href="../arjs-demo/hiro_marker.png" target="_blank" rel="noopener">HIRO</a>, permite la cámara y apunta al marcador.  
+    Si no ves el modelo, revisa permisos de cámara y la luz del ambiente.
   </div>
 
   <script>
-    // Selección del modelo por query param
-    const q = new URLSearchParams(location.search);
-    const key = (q.get('m') || 'animal').toLowerCase();
-    const MODELS = {
-      animal: '../assets/models/animal.glb',
-      vegetal: '../assets/models/vegetal.glb'
-    };
-    const src = MODELS[key] || MODELS.animal;
+    const showErr = msg => { const el = document.getElementById('err'); el.textContent = msg; el.style.display = 'block'; };
 
     const node = document.getElementById('model');
-    node.setAttribute('gltf-model', 'url(' + src + ')');
+    node.addEventListener('object3dset', () => console.log('✅ Modelo cargado'));
+    node.addEventListener('model-error', (e) => { console.error(e); showErr('No se pudo cargar el modelo.'); });
 
-    const showErr = msg => {
-      const el = document.getElementById('err');
-      el.textContent = msg;
-      el.style.display = 'block';
-    };
-
-    node.addEventListener('object3dset', () => {
-      console.log('Modelo cargado:', src);
-    });
-    node.addEventListener('model-error', (e) => {
-      console.error('Error de modelo', e);
-      showErr('No se pudo cargar el modelo: ' + src);
-    });
+    const marker = document.getElementById('marker');
+    marker.addEventListener('markerFound', () => console.log('🎯 Marcador detectado'));
+    marker.addEventListener('markerLost', () => console.log('… Marcador perdido'));
   </script>
 </body>
 </html>
