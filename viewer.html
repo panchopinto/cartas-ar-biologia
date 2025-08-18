@@ -2,95 +2,49 @@
 <html lang="es">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Visor 3D — Célula</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    html,body{height:100%;margin:0;background:#0b0f14;color:#e6eef7;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
-    .top{position:fixed;left:0;right:0;top:0;padding:10px 14px;background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0));z-index:5}
-    .wrap{height:100%;display:grid;grid-template-rows:auto 1fr auto}
-    .bar{display:flex;gap:8px;align-items:center}
-    .btn{border:1px solid rgba(255,255,255,.2);background:#0d1522;color:#fff;border-radius:10px;padding:6px 10px;text-decoration:none}
-    .mv{width:100%;height:100%}
-    footer{color:#9ab;font-size:12px;padding:8px 12px}
-    .error{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#1b2330;border:1px solid #3a4a63;padding:12px 14px;border-radius:10px;color:#fff;z-index:9}
-    .muted{color:#9ab;font-size:12px;margin-top:6px}
+    body{margin:0;font-family:system-ui,Arial,sans-serif;background:#111;color:#fff}
+    header{padding:10px}
+    .wrap{height:calc(100vh - 60px)}
+    model-viewer{width:100%;height:100%}
+    .tabs{padding:8px}
+    .tabs a{color:#8ef;margin-right:10px}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div class="bar">
-        <a class="btn" href="index.html">← Volver</a>
-        <div id="title" style="padding:6px 10px;border-radius:10px;background:#0d1522;border:1px solid rgba(255,255,255,.08)">
-          Célula <span id="kindLabel">Animal</span> — Visor 3D
-        </div>
-      </div>
+  <header>
+    <div class="tabs">
+      <a href="?m=animal">Animal</a>
+      <a href="?m=vegetal">Vegetal</a>
     </div>
+    <h2 id="ttl">Célula — Visor 3D</h2>
+  </header>
 
-    <model-viewer id="mv" class="mv" camera-controls auto-rotate exposure="1.0" shadow-intensity="1" environment-image="neutral">
-      <div slot="poster">Cargando…</div>
+  <div class="wrap">
+    <model-viewer id="mv"
+      src=""
+      camera-controls
+      autoplay
+      exposure="0.9"
+      shadow-intensity="1"
+      ar-modes="webxr scene-viewer quick-look">
+      Cargando…
     </model-viewer>
-
-    <footer>Tip: pellizca para zoom; arrastra para rotar; Shift + arrastre para desplazar.</footer>
-  </div>
-
-  <div id="err" class="error" style="display:none">
-    <div id="emsg">No se pudo cargar el modelo.</div>
-    <div class="muted" id="edbg"></div>
   </div>
 
   <script>
-    // nombres EXACTOS en tu repo (ojo con mayúsculas/minúsculas)
-    const FILES = {
-      animal:  "Celula_animal.glb",
-      vegetal: "celula_eucariota_vegetal.glb"
-    };
-    // probamos varias bases por si el archivo se mueve de carpeta
-    const BASES = ["assets/models/", "./assets/models/", "../assets/models/"];
-
     const q = new URLSearchParams(location.search);
-    let kind = (q.get('m') || 'animal').toLowerCase();
-    if (!FILES[kind]) kind = 'animal';
-
-    document.getElementById('kindLabel').textContent = kind === 'animal' ? 'Animal' : 'Vegetal';
-    const mv = document.getElementById('mv');
-    const errBox = document.getElementById('err');
-    const emsg = document.getElementById('emsg');
-    const edbg = document.getElementById('edbg');
-
-    async function head(url){
-      try{ const r = await fetch(url, {method:'HEAD'}); return r.ok; }catch{ return false; }
-    }
-
-    async function resolvePath() {
-      const file = FILES[kind];
-      for (const base of BASES) {
-        const url = base + file;
-        if (await head(url)) return url;
-      }
-      return null;
-    }
-
-    function showError(msg, dbg=""){
-      errBox.style.display = 'block';
-      emsg.textContent = msg;
-      edbg.textContent = dbg;
-    }
-
-    (async ()=>{
-      const url = await resolvePath();
-      if (!url) {
-        showError("No encontré el modelo en assets/models/.", `Busqué: ${BASES.map(b=>b+FILES[kind]).join(" | ")}`);
-        return;
-      }
-      mv.src = url;
-
-      mv.addEventListener('error', (e)=>{
-        const detail = (e && e.detail && e.detail.message) ? e.detail.message : 'Error desconocido';
-        showError("Error al cargar el modelo.", detail + " → " + url);
-      });
-    })();
+    const key = (q.get('m') || 'animal').toLowerCase();
+    const MAP = {
+      animal: 'assets/models/animal.glb',
+      vegetal: 'assets/models/vegetal.glb'
+    };
+    const src = MAP[key] || MAP.animal;
+    document.getElementById('mv').setAttribute('src', src);
+    document.getElementById('ttl').textContent = 'Célula ' + (key==='vegetal'?'Vegetal':'Animal') + ' — Visor 3D';
   </script>
 </body>
 </html>
