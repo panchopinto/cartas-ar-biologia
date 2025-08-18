@@ -56,13 +56,13 @@
           <b>Animal</b><br/>
           <a class="btn" href="viewer.html?m=animal" data-i18n="btn_viewer">Ver en 3D (simple)</a>
           <a class="btn" href="viewer_hotspots.html?m=animal" data-i18n="btn_hotspots">Ver en 3D con etiquetas</a>
-          <a class="btn" href="arjs-demo/animal_glb.html?m=animal" data-i18n="btn_ar">Ver en RA (HIRO)</a>
+          <a class="btn" href="arjs-demo/animal_glb.html?v=2" data-i18n="btn_ar">Ver en RA (HIRO)</a>
         </div>
         <div style="margin-top:10px">
           <b>Vegetal</b><br/>
           <a class="btn" href="viewer.html?m=vegetal" data-i18n="btn_viewer">Ver en 3D (simple)</a>
           <a class="btn" href="viewer_hotspots.html?m=vegetal" data-i18n="btn_hotspots">Ver en 3D con etiquetas</a>
-          <a class="btn" href="arjs-demo/animal_glb.html?m=vegetal" data-i18n="btn_ar">Ver en RA (HIRO)</a>
+          <a class="btn" href="arjs-demo/vegetal_glb.html?v=2" data-i18n="btn_ar">Ver en RA (HIRO)</a>
         </div>
       </div>
     </section>
@@ -119,10 +119,10 @@
     document.getElementById('btnEN').onclick = ()=> setLang('en');
     setLang(localStorage.getItem('lang') || 'es');
 
-    new QRCode(document.getElementById("qrRaAnimal"),   { text: base+"/arjs-demo/animal_glb.html?m=animal",   width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
-    new QRCode(document.getElementById("qrRaVegetal"),  { text: base+"/arjs-demo/animal_glb.html?m=vegetal",  width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
-    new QRCode(document.getElementById("qrHotAnimal"),  { text: base+"/viewer_hotspots.html?m=animal",         width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
-    new QRCode(document.getElementById("qrHotVegetal"), { text: base+"/viewer_hotspots.html?m=vegetal",        width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+    new QRCode(document.getElementById("qrRaAnimal"),   { text: base+"/arjs-demo/animal_glb.html?v=2",   width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+    new QRCode(document.getElementById("qrRaVegetal"),  { text: base+"/arjs-demo/vegetal_glb.html?v=2",  width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+    new QRCode(document.getElementById("qrHotAnimal"),  { text: base+"/viewer_hotspots.html?m=animal",   width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+    new QRCode(document.getElementById("qrHotVegetal"), { text: base+"/viewer_hotspots.html?m=vegetal",  width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
   </script>
 </body>
 </html>
