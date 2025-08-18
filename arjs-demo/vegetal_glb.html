@@ -4,55 +4,70 @@
   <meta charset="utf-8"/>
   <title>RA — Célula Vegetal (HIRO)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+
+  <!-- A‑Frame + AR.js -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
+
+  <!-- Gestos táctiles -->
+  <script src="https://unpkg.com/aframe-gesture-component/dist/aframe-gesture-component.min.js"></script>
+
   <style>
     html,body{margin:0;overflow:hidden;background:#000;font-family:system-ui,Arial,sans-serif}
-    .err{position:fixed;top:0;left:0;right:0;background:#b00020;color:#fff;padding:.5rem .8rem;display:none;z-index:9}
     .hud{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);color:#fff;padding:.6rem .8rem;font-size:.9rem}
     .hud a{color:#8ef}
+    #askCam{position:fixed;top:10px;right:10px;z-index:9999;padding:8px 10px;border-radius:10px;border:1px solid #fff3;background:#0008;color:#fff}
   </style>
 </head>
 <body>
-  <div id="err" class="err"></div>
 
   <a-scene
-  embedded
-  vr-mode-ui="enabled: false"
-  renderer="colorManagement: true; physicallyCorrectLights: true; logarithmicDepthBuffer: true; alpha: true"
-  arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; facingMode: environment">
+    embedded
+    vr-mode-ui="enabled: false"
+    renderer="colorManagement: true; physicallyCorrectLights: true; logarithmicDepthBuffer: true; alpha: true"
+    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; facingMode: environment">
 
-  <!-- Luces -->
-  <a-entity light="type: ambient; intensity: 1.1"></a-entity>
-  <a-entity light="type: directional; intensity: 1" position="1 2 1"></a-entity>
+    <!-- Luces -->
+    <a-entity light="type: ambient; intensity: 1.1"></a-entity>
+    <a-entity light="type: directional; intensity: 1" position="1 2 1"></a-entity>
 
-  <!-- Marcador + modelo (ver sección 2 para gestos) -->
-  <!-- ... tu <a-marker> con el <a-entity id="model"> va aquí ... -->
+    <!-- Marcador HIRO -->
+    <a-marker preset="hiro" id="marker">
+      <a-entity id="model"
+        gltf-model="url(../assets/models/vegetal.glb?v=3)"
+        position="0 0 0" rotation="0 0 0" scale="0.22 0.22 0.22"
+        gesture-handler="minScale:0.05; maxScale:3; rotationFactor:0.5">
+      </a-entity>
 
-  <a-entity camera></a-entity>
+      <a-box position="0.15 0.1 0" depth="0.05" height="0.05" width="0.05" color="#3f9"></a-box>
+    </a-marker>
+
+    <a-entity camera></a-entity>
   </a-scene>
 
-<!-- Botón para forzar permiso de cámara -->
-<button id="askCam"
-  style="position:fixed;top:10px;right:10px;z-index:9999;padding:8px 10px;border-radius:10px;border:1px solid #fff3;background:#0008;color:#fff">
-  Activar cámara
-</button>
+  <button id="askCam">Activar cámara</button>
 
   <div class="hud">
-    Imprime el marcador <a href="../arjs-demo/hiro_marker.png" target="_blank" rel="noopener">HIRO</a>, permite la cámara y apunta al marcador.  
-    Si no ves el modelo, revisa permisos de cámara y la luz del ambiente.
+    Imprime el marcador <a href="../arjs-demo/hiro_marker.png" target="_blank" rel="noopener">HIRO</a>, permite la cámara y apunta al marcador.
+    <br/>Pincha con dos dedos para <b>zoom</b> y gira con dos dedos para <b>rotar</b>.
   </div>
 
   <script>
-    const showErr = msg => { const el = document.getElementById('err'); el.textContent = msg; el.style.display = 'block'; };
+    const btn = document.getElementById('askCam');
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+        btn.style.display = 'none';
+        // location.reload();
+      } catch (e) {
+        alert('No se pudo acceder a la cámara. Revisa permisos del sitio (🔒 > Cámara > Permitir).');
+        console.error(e);
+      }
+    });
 
-    const node = document.getElementById('model');
-    node.addEventListener('object3dset', () => console.log('✅ Modelo vegetal cargado'));
-    node.addEventListener('model-error', (e) => { console.error(e); showErr('No se pudo cargar vegetal.glb'); });
-
-    const marker = document.getElementById('marker');
-    marker.addEventListener('markerFound', () => console.log('🎯 Marcador detectado'));
-    marker.addEventListener('markerLost', () => console.log('… Marcador perdido'));
+    document.getElementById('model').addEventListener('object3dset', () => console.log('✅ Modelo vegetal cargado'));
+    document.getElementById('marker').addEventListener('markerFound', () => console.log('🎯 Marcador detectado'));
+    document.getElementById('marker').addEventListener('markerLost', () => console.log('… Marcador perdido'));
   </script>
 </body>
 </html>
