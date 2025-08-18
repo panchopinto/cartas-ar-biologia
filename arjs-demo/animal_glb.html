@@ -16,29 +16,27 @@
 <body>
   <div id="err" class="err"></div>
 
-  <a-scene
-    embedded
-    vr-mode-ui="enabled: false"
-    renderer="colorManagement: true; physicallyCorrectLights: true; logarithmicDepthBuffer: true"
-    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false">
+ <a-scene
+  embedded
+  vr-mode-ui="enabled: false"
+  renderer="colorManagement: true; physicallyCorrectLights: true; logarithmicDepthBuffer: true; alpha: true"
+  arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; facingMode: environment">
 
-    <!-- Luces para evitar modelo oscuro -->
-    <a-entity light="type: ambient; intensity: 1.1"></a-entity>
-    <a-entity light="type: directional; intensity: 1" position="1 2 1"></a-entity>
+  <!-- Luces -->
+  <a-entity light="type: ambient; intensity: 1.1"></a-entity>
+  <a-entity light="type: directional; intensity: 1" position="1 2 1"></a-entity>
 
-    <!-- Marcador HIRO -->
-    <a-marker preset="hiro" id="marker">
-      <a-entity id="model"
-        gltf-model="url(../assets/models/animal.glb?v=2)"
-        position="0 0 0" rotation="0 0 0" scale="0.2 0.2 0.2">
-      </a-entity>
+  <!-- Marcador + modelo (ver sección 2 para gestos) -->
+  <!-- ... tu <a-marker> con el <a-entity id="model"> va aquí ... -->
 
-      <!-- Cubo de referencia (aparece junto al modelo para confirmar tracking) -->
-      <a-box position="0.15 0.1 0" depth="0.05" height="0.05" width="0.05" color="#39f"></a-box>
-    </a-marker>
-
-    <a-entity camera></a-entity>
+  <a-entity camera></a-entity>
   </a-scene>
+
+<!-- Botón para forzar permiso de cámara -->
+<button id="askCam"
+  style="position:fixed;top:10px;right:10px;z-index:9999;padding:8px 10px;border-radius:10px;border:1px solid #fff3;background:#0008;color:#fff">
+  Activar cámara
+</button>
 
   <div class="hud">
     Imprime el marcador <a href="../arjs-demo/hiro_marker.png" target="_blank" rel="noopener">HIRO</a>, permite la cámara y apunta al marcador.  
