@@ -5,11 +5,11 @@
   <title>RA — Célula Animal (HIRO)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 
-  <!-- A‑Frame + AR.js -->
+  <!-- A-Frame + AR.js -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
 
-  <!-- Gestos táctiles (pinch zoom / rotación a 2 dedos) -->
+  <!-- Gestos táctiles -->
   <script src="https://unpkg.com/aframe-gesture-component/dist/aframe-gesture-component.min.js"></script>
 
   <style>
@@ -27,7 +27,7 @@
     renderer="colorManagement: true; physicallyCorrectLights: true; logarithmicDepthBuffer: true; alpha: true"
     arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; facingMode: environment">
 
-    <!-- Luces para evitar modelo oscuro -->
+    <!-- Luces -->
     <a-entity light="type: ambient; intensity: 1.1"></a-entity>
     <a-entity light="type: directional; intensity: 1" position="1 2 1"></a-entity>
 
@@ -39,7 +39,7 @@
         gesture-handler="minScale:0.05; maxScale:3; rotationFactor:0.5">
       </a-entity>
 
-      <!-- Cubo de referencia (verás que ‘agarra’ el marcador) -->
+      <!-- Cubo de referencia -->
       <a-box position="0.15 0.1 0" depth="0.05" height="0.05" width="0.05" color="#39f"></a-box>
     </a-marker>
 
@@ -49,29 +49,23 @@
   <button id="askCam">Activar cámara</button>
 
   <div class="hud">
-    Imprime el marcador <a href="../arjs-demo/hiro_marker.png" target="_blank" rel="noopener">HIRO</a>, permite la cámara y apunta al marcador.
-    <br/>Pincha con dos dedos para <b>zoom</b> y gira con dos dedos para <b>rotar</b>.
+    Imprime el marcador <a href="../arjs-demo/hiro_marker.png" target="_blank">HIRO</a>, permite la cámara y apunta al marcador.<br/>
+    Pincha con dos dedos para <b>zoom</b> y gira con dos dedos para <b>rotar</b>.
   </div>
 
   <script>
-    // Botón para forzar permiso de cámara (evita fondo negro si el navegador no entregó el stream)
     const btn = document.getElementById('askCam');
     btn.addEventListener('click', async () => {
       try {
         await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
         btn.style.display = 'none';
-        // Si ya estaba cargada la escena y no tomó el stream, recarga suave:
-        // location.reload();
       } catch (e) {
         alert('No se pudo acceder a la cámara. Revisa permisos del sitio (🔒 > Cámara > Permitir).');
-        console.error(e);
       }
     });
 
-    // Logs útiles
     document.getElementById('model').addEventListener('object3dset', () => console.log('✅ Modelo animal cargado'));
     document.getElementById('marker').addEventListener('markerFound', () => console.log('🎯 Marcador detectado'));
-    document.getElementById('marker').addEventListener('markerLost', () => console.log('… Marcador perdido'));
   </script>
 </body>
 </html>
