@@ -1,70 +1,276 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8"/>
+  <meta charset="utf-8" />
   <title>RA — Célula Vegetal (HIRO)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 
-  <!-- A-Frame + AR.js -->
+  <!-- Versiones estables -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
-
-  <!-- Gestos táctiles -->
-  <script src="https://unpkg.com/aframe-gesture-component/dist/aframe-gesture-component.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
 
   <style>
-    html,body{margin:0;overflow:hidden;background:#000;font-family:system-ui,Arial,sans-serif}
-    .hud{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);color:#fff;padding:.6rem .8rem;font-size:.9rem}
-    .hud a{color:#8ef}
-    #askCam{position:fixed;top:10px;right:10px;z-index:9999;padding:8px 10px;border-radius:10px;border:1px solid #fff3;background:#0008;color:#fff}
+    /* Evitar fondo negro detrás del video */
+    html, body { margin:0; padding:0; height:100%; background:transparent; overflow:hidden; }
+
+    /* El video de la cámara debe llenar pantalla y quedar debajo del canvas */
+    #arjs-video, .arjs-video, video[playsinline] {
+      position: fixed !important;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      object-fit: cover;
+      z-index: 0;
+      background: transparent;
+    }
+
+    /* A-Frame canvas arriba del video */
+    canvas, .a-canvas {
+      position: fixed !important;
+      top: 0; left: 0;
+      width: 100vw !important; height: 100vh !important;
+      z-index: 2;
+      touch-action: none; /* gestos multitáctiles */
+      background: transparent !important;
+    }
+
+    /* UI por encima de todo */
+    .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;
+         font-family:system-ui,Arial,sans-serif;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));z-index:5}
+    .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px;z-index:6}
+    .btn{border:1px solid rgba(255,255,255,.25);color:#fff;background:rgba(0,0,0,.35);
+         border-radius:10px;padding:6px 10px;font-family:system-ui,Arial,sans-serif;cursor:pointer}
+    .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
+    .loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-family:system-ui,Arial,sans-serif;
+             color:#fff;background:rgba(0,0,0,.5);padding:.6rem .9rem;border-radius:10px;display:none;z-index:7}
+    .status{position:fixed;left:8px;top:8px;background:rgba(0,0,0,.4);color:#fff;padding:6px 10px;border-radius:8px;font:14px system-ui;z-index:9}
+
+    /* Botón de inicio (por si el navegador bloquea autoplay del video) */
+    .gate {
+      position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+      background: #000c; z-index: 10;
+    }
+    .gate.show { display: flex; }
+    .gate button {
+      font: 600 16px system-ui, Arial; padding: 12px 18px; border-radius: 12px;
+      border: 1px solid #fff6; color: #fff; background: #000a; cursor: pointer;
+    }
   </style>
 </head>
 <body>
+  <div class="hud">RA — Célula <span id="labelKind" style="opacity:.9">Vegetal</span> · Marcador <b>HIRO</b></div>
+  <div class="toolbar">
+    <button id="btnAnimal" class="btn">Animal</button>
+    <button id="btnVegetal" class="btn active">Vegetal</button>
+  </div>
+  <div id="loading" class="loading">Cargando modelo…</div>
+  <div id="status" class="status">Buscando marcador…</div>
+
+  <!-- Gate por si el navegador exige interacción para reproducir la cámara -->
+  <div id="gate" class="gate"><button id="startBtn">Iniciar cámara</button></div>
 
   <a-scene
     embedded
-    vr-mode-ui="enabled: false"
-    renderer="colorManagement: true; physicallyCorrectLights: true; logarithmicDepthBuffer: true; alpha: true"
-    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; facingMode: environment">
+    renderer="alpha:true; antialias:true; precision:mediump; colorManagement:true; physicallyCorrectLights:true; powerPreference:high-performance"
+    vr-mode-ui="enabled:false"
+    arjs="sourceType: webcam; facingMode: environment; videoTexture: true; debugUIEnabled:false;
+          trackingMethod: best; sourceWidth:640; sourceHeight:480; displayWidth:640; displayHeight:480"
+    style="background: transparent !important">
 
-    <!-- Luces -->
-    <a-entity light="type: ambient; intensity: 1.1"></a-entity>
-    <a-entity light="type: directional; intensity: 1" position="1 2 1"></a-entity>
+    <!-- Iluminación -->
+    <a-entity light="type: ambient; intensity: 0.9"></a-entity>
+    <a-entity light="type: directional; intensity: 0.7" position="1 1 0"></a-entity>
 
-    <!-- Marcador HIRO -->
-    <a-marker preset="hiro" id="marker">
-      <a-entity id="model"
-        gltf-model="url(../assets/models/vegetal.glb?v=3)"
-        position="0 0 0" rotation="0 0 0" scale="0.22 0.22 0.22"
-        gesture-handler="minScale:0.05; maxScale:3; rotationFactor:0.5">
+    <!-- Marker (preset HIRO) -->
+    <a-marker preset="hiro" id="hiro">
+      <!-- Cubo de prueba (puedes borrar) -->
+      <a-box depth="0.2" height="0.2" width="0.2" color="#4caf50" position="0 0.2 0"></a-box>
+
+      <!-- Modelo GLB -->
+      <a-entity
+        id="cellModel"
+        position="0 0 0"
+        rotation="0 0 0"
+        scale="0.40 0.40 0.40"
+        pinch-scale="min:0.2; max:3; factor:1">
       </a-entity>
-
-      <a-box position="0.15 0.1 0" depth="0.05" height="0.05" width="0.05" color="#3f9"></a-box>
     </a-marker>
 
-    <a-entity camera></a-entity>
+    <!-- Cámara con near/far amplios -->
+    <a-entity camera="near:0.01; far:5000"></a-entity>
   </a-scene>
 
-  <button id="askCam">Activar cámara</button>
-
-  <div class="hud">
-    Imprime el marcador <a href="../arjs-demo/hiro_marker.png" target="_blank">HIRO</a>, permite la cámara y apunta al marcador.<br/>
-    Pincha con dos dedos para <b>zoom</b> y gira con dos dedos para <b>rotar</b>.
-  </div>
-
   <script>
-    const btn = document.getElementById('askCam');
-    btn.addEventListener('click', async () => {
-      try {
-        await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
-        btn.style.display = 'none';
-      } catch (e) {
-        alert('No se pudo acceder a la cámara. Revisa permisos del sitio (🔒 > Cámara > Permitir).');
+    /* === Gestos: pinch-to-zoom === */
+    AFRAME.registerComponent('pinch-scale', {
+      schema: { min: {default: 0.1}, max: {default: 4}, factor: {default: 1} },
+      init: function () {
+        this.startDist = null; this.startScale = null; this.active = false; this.canvas = null;
+        const scene = this.el.sceneEl;
+        const add = () => {
+          this.canvas = scene.canvas;
+          if (this.canvas) this.canvas.style.touchAction = 'none';
+          this._onStart = this.onStart.bind(this);
+          this._onMove  = this.onMove.bind(this);
+          this._onEnd   = this.onEnd.bind(this);
+          this.canvas.addEventListener('touchstart', this._onStart, {passive:false});
+          this.canvas.addEventListener('touchmove',  this._onMove,  {passive:false});
+          this.canvas.addEventListener('touchend',   this._onEnd);
+          this.canvas.addEventListener('touchcancel',this._onEnd);
+        };
+        scene.canvas ? add() : scene.addEventListener('render-target-loaded', add);
+      },
+      remove: function () {
+        if (!this.canvas) return;
+        this.canvas.removeEventListener('touchstart', this._onStart);
+        this.canvas.removeEventListener('touchmove',  this._onMove);
+        this.canvas.removeEventListener('touchend',   this._onEnd);
+        this.canvas.removeEventListener('touchcancel',this._onEnd);
+      },
+      onStart: function (e) {
+        if (e.touches.length === 2) {
+          e.preventDefault();
+          this.active = true;
+          this.startDist = this.getDist(e.touches[0], e.touches[1]);
+          this.startScale = this.el.object3D.scale.clone();
+        }
+      },
+      onMove: function (e) {
+        if (!this.active || e.touches.length !== 2) return;
+        e.preventDefault();
+        const newDist = this.getDist(e.touches[0], e.touches[1]);
+        const k = (newDist / this.startDist) * this.data.factor;
+        const min = this.data.min, max = this.data.max;
+        const sx = THREE.MathUtils.clamp(this.startScale.x * k, min, max);
+        const sy = THREE.MathUtils.clamp(this.startScale.y * k, min, max);
+        const sz = THREE.MathUtils.clamp(this.startScale.z * k, min, max);
+        this.el.object3D.scale.set(sx, sy, sz);
+      },
+      onEnd: function (e) {
+        if (e.touches.length < 2) { this.active = false; this.startDist = null; }
+      },
+      getDist: function (t1, t2) {
+        const dx = t1.clientX - t2.clientX, dy = t1.clientY - t2.clientY;
+        return Math.hypot(dx, dy);
       }
     });
 
-    document.getElementById('model').addEventListener('object3dset', () => console.log('✅ Modelo vegetal cargado'));
-    document.getElementById('marker').addEventListener('markerFound', () => console.log('🎯 Marcador detectado'));
+    /* === Carga de modelos (Draco + fallback) y conmutación Animal/Vegetal === */
+    const DEFAULT_SCALE = {x:0.40, y:0.40, z:0.40};
+    const MAP = {
+      animal:  { normal: "../assets/models/Celula_animal.glb",            draco: "../assets/models/Celula_animal_draco.glb" },
+      vegetal: { normal: "../assets/models/celula_eucariota_vegetal.glb", draco: "../assets/models/celula_eucariota_vegetal_draco.glb" }
+    };
+
+    // Por defecto vegetal
+    const params = new URLSearchParams(location.search);
+    let kind = (params.get('m') || 'vegetal').toLowerCase();
+    if (!MAP[kind]) kind = 'vegetal';
+
+    const modelEl  = document.getElementById('cellModel');
+    const labelEl  = document.getElementById('labelKind');
+    const btnA     = document.getElementById('btnAnimal');
+    const btnV     = document.getElementById('btnVegetal');
+    const loading  = document.getElementById('loading');
+    const statusEl = document.getElementById('status');
+    const markerEl = document.getElementById('hiro');
+    const gate     = document.getElementById('gate');
+    const startBtn = document.getElementById('startBtn');
+
+    function setUI(){
+      btnA.classList.toggle('active', kind==='animal');
+      btnV.classList.toggle('active', kind==='vegetal');
+      labelEl.textContent = kind==='animal' ? 'Animal' : 'Vegetal';
+      const u = new URL(location.href); u.searchParams.set('m', kind); history.replaceState(null,'', u.toString());
+    }
+
+    async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(), {method:'HEAD'}); return r.ok; }catch{return false;} }
+    async function pick(){ const e=MAP[kind]; return (await exists(e.draco)) ? e.draco : e.normal; }
+
+    async function load(){
+      loading.style.display='block';
+      const url=(await pick()) + '#' + Date.now();     // cache-buster
+      modelEl.removeAttribute('gltf-model');           // forzar recarga real
+      modelEl.object3D.scale.set(DEFAULT_SCALE.x, DEFAULT_SCALE.y, DEFAULT_SCALE.z); // reset pinch
+      setTimeout(()=> modelEl.setAttribute('gltf-model', url), 30);
+    }
+
+    btnA.onclick = ()=>{ kind='animal'; setUI(); load(); };
+    btnV.onclick = ()=>{ kind='vegetal'; setUI(); load(); };
+
+    modelEl.addEventListener('model-loaded', ()=> { loading.style.display='none'; });
+    modelEl.addEventListener('model-error',  e=> {
+      loading.style.display='none';
+      statusEl.textContent = 'Error cargando modelo ❌';
+      alert('No se pudo cargar el modelo. Revisa rutas/nombres (mayúsculas) o tamaño.');
+      console.error(e.detail);
+    });
+
+    // Indicador de detección del marcador
+    markerEl.addEventListener('markerFound', ()=> statusEl.textContent = 'Marcador detectado ✅');
+    markerEl.addEventListener('markerLost',  ()=> statusEl.textContent = 'Buscando marcador…');
+
+    /* === Transparencia real del canvas cuando la escena esté lista === */
+    const scene = document.querySelector('a-scene');
+    scene.addEventListener('loaded', () => {
+      const r = scene.renderer;
+      if (r && r.setClearAlpha) r.setClearAlpha(0);
+      else if (r && r.setClearColor) r.setClearColor(0x000000, 0);
+    });
+
+    /* === Video fix: forzar atributos y estilo del video de la cámara === */
+    function styleArVideo(v){
+      if (!v) return;
+      v.setAttribute('playsinline','');
+      v.setAttribute('webkit-playsinline','');
+      v.muted = true;
+      v.autoplay = true;
+      v.style.position = 'fixed';
+      v.style.top = '0'; v.style.left = '0';
+      v.style.width = '100vw'; v.style.height = '100vh';
+      v.style.objectFit = 'cover';
+      v.style.zIndex = '0';
+      v.style.background = 'transparent';
+    }
+
+    function findArVideo(){
+      // AR.js suele usar id="arjs-video" o clase "arjs-video"
+      return document.getElementById('arjs-video') ||
+             document.querySelector('.arjs-video') ||
+             document.querySelector('video');
+    }
+
+    async function ensureVideoPlayback(){
+      const v = findArVideo();
+      if (!v) return false;
+      styleArVideo(v);
+      try {
+        await v.play();
+        return true;
+      } catch (e) {
+        // Navegador exige interacción
+        return false;
+      }
+    }
+
+    // Mostrar “gate” si el video no arranca solo
+    async function tryStartCameraWithGate(){
+      // Espera a que AR.js inserte el video
+      let tries = 0;
+      while (!findArVideo() && tries < 50) {
+        await new Promise(r=>setTimeout(r,100));
+        tries++;
+      }
+      const ok = await ensureVideoPlayback();
+      gate.classList.toggle('show', !ok);
+    }
+
+    startBtn.addEventListener('click', async ()=>{
+      const ok = await ensureVideoPlayback();
+      if (ok) gate.classList.remove('show');
+    });
+
+    setUI();
+    load();
+    tryStartCameraWithGate();
   </script>
 </body>
 </html>
