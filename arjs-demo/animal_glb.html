@@ -4,12 +4,35 @@
   <meta charset="utf-8" />
   <title>RA — Célula (HIRO)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+
   <!-- Versiones estables -->
-  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
+
   <style>
-    html,body{margin:0;overflow:hidden;background:#000}
-    canvas, .a-canvas { touch-action: none; } /* gestos multitáctiles */
+    /* Evitar fondo negro detrás del video */
+    html, body { margin:0; padding:0; height:100%; background:transparent; overflow:hidden; }
+
+    /* El video de la cámara debe llenar pantalla y quedar debajo del canvas */
+    #arjs-video, .arjs-video, video[playsinline] {
+      position: fixed !important;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      object-fit: cover;
+      z-index: 0;
+      background: transparent;
+    }
+
+    /* A-Frame canvas arriba del video */
+    canvas, .a-canvas {
+      position: fixed !important;
+      top: 0; left: 0;
+      width: 100vw !important; height: 100vh !important;
+      z-index: 2;
+      touch-action: none; /* gestos multitáctiles */
+      background: transparent !important;
+    }
+
+    /* UI por encima de todo */
     .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;
          font-family:system-ui,Arial,sans-serif;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));z-index:5}
     .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px;z-index:6}
@@ -19,6 +42,17 @@
     .loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-family:system-ui,Arial,sans-serif;
              color:#fff;background:rgba(0,0,0,.5);padding:.6rem .9rem;border-radius:10px;display:none;z-index:7}
     .status{position:fixed;left:8px;top:8px;background:rgba(0,0,0,.4);color:#fff;padding:6px 10px;border-radius:8px;font:14px system-ui;z-index:9}
+
+    /* Botón de inicio (por si el navegador bloquea autoplay del video) */
+    .gate {
+      position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+      background: #000c; z-index: 10;
+    }
+    .gate.show { display: flex; }
+    .gate button {
+      font: 600 16px system-ui, Arial; padding: 12px 18px; border-radius: 12px;
+      border: 1px solid #fff6; color: #fff; background: #000a; cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -30,20 +64,24 @@
   <div id="loading" class="loading">Cargando modelo…</div>
   <div id="status" class="status">Buscando marcador…</div>
 
+  <!-- Gate por si el navegador exige interacción para reproducir la cámara -->
+  <div id="gate" class="gate"><button id="startBtn">Iniciar cámara</button></div>
+
   <a-scene
     embedded
     renderer="alpha:true; antialias:true; precision:mediump; colorManagement:true; physicallyCorrectLights:true; powerPreference:high-performance"
     vr-mode-ui="enabled:false"
-    arjs="sourceType: webcam; facingMode: environment; videoTexture: true; debugUIEnabled:true;
-          trackingMethod: best; sourceWidth:640; sourceHeight:480; displayWidth:640; displayHeight:480">
+    arjs="sourceType: webcam; facingMode: environment; videoTexture: true; debugUIEnabled:false;
+          trackingMethod: best; sourceWidth:640; sourceHeight:480; displayWidth:640; displayHeight:480"
+    style="background: transparent !important">
 
     <!-- Iluminación -->
     <a-entity light="type: ambient; intensity: 0.9"></a-entity>
     <a-entity light="type: directional; intensity: 0.7" position="1 1 0"></a-entity>
 
-    <!-- Marker (preset estable) -->
+    <!-- Marker (preset HIRO) -->
     <a-marker preset="hiro" id="hiro">
-      <!-- PRUEBA: cubo verde. Si aparece al detectar el HIRO, el tracking está OK. (Puedes borrarlo luego) -->
+      <!-- Cubo de prueba (puedes borrar) -->
       <a-box depth="0.2" height="0.2" width="0.2" color="#4caf50" position="0 0.2 0"></a-box>
 
       <!-- Modelo GLB -->
@@ -118,8 +156,8 @@
     /* === Carga de modelos (Draco + fallback) y conmutación Animal/Vegetal === */
     const DEFAULT_SCALE = {x:0.40, y:0.40, z:0.40};
     const MAP = {
-      animal:  { normal: "../assets/models/animal.glb",  draco: "../assets/models/animal_draco.glb" },
-      vegetal: { normal: "../assets/models/vegetal.glb", draco: "../assets/models/vegetal_draco.glb" }
+      animal:  { normal: "../assets/models/Celula_animal.glb",            draco: "../assets/models/Celula_animal_draco.glb" },
+      vegetal: { normal: "../assets/models/celula_eucariota_vegetal.glb", draco: "../assets/models/celula_eucariota_vegetal_draco.glb" }
     };
 
     const params = new URLSearchParams(location.search);
@@ -133,6 +171,8 @@
     const loading  = document.getElementById('loading');
     const statusEl = document.getElementById('status');
     const markerEl = document.getElementById('hiro');
+    const gate     = document.getElementById('gate');
+    const startBtn = document.getElementById('startBtn');
 
     function setUI(){
       btnA.classList.toggle('active', kind==='animal');
@@ -167,8 +207,6 @@
     markerEl.addEventListener('markerFound', ()=> statusEl.textContent = 'Marcador detectado ✅');
     markerEl.addEventListener('markerLost',  ()=> statusEl.textContent = 'Buscando marcador…');
 
-    setUI(); load();
-
     /* === Transparencia real del canvas cuando la escena esté lista === */
     const scene = document.querySelector('a-scene');
     scene.addEventListener('loaded', () => {
@@ -176,6 +214,62 @@
       if (r && r.setClearAlpha) r.setClearAlpha(0);
       else if (r && r.setClearColor) r.setClearColor(0x000000, 0);
     });
+
+    /* === Video fix: forzar atributos y estilo del video de la cámara === */
+    function styleArVideo(v){
+      if (!v) return;
+      v.setAttribute('playsinline','');
+      v.setAttribute('webkit-playsinline','');
+      v.muted = true;
+      v.autoplay = true;
+      v.style.position = 'fixed';
+      v.style.top = '0'; v.style.left = '0';
+      v.style.width = '100vw'; v.style.height = '100vh';
+      v.style.objectFit = 'cover';
+      v.style.zIndex = '0';
+      v.style.background = 'transparent';
+    }
+
+    function findArVideo(){
+      // AR.js suele usar id="arjs-video" o clase "arjs-video"
+      return document.getElementById('arjs-video') ||
+             document.querySelector('.arjs-video') ||
+             document.querySelector('video');
+    }
+
+    async function ensureVideoPlayback(){
+      const v = findArVideo();
+      if (!v) return false;
+      styleArVideo(v);
+      try {
+        await v.play();
+        return true;
+      } catch (e) {
+        // Navegador exige interacción
+        return false;
+      }
+    }
+
+    // Mostrar “gate” si el video no arranca solo
+    async function tryStartCameraWithGate(){
+      // Espera a que AR.js inserte el video
+      let tries = 0;
+      while (!findArVideo() && tries < 50) {
+        await new Promise(r=>setTimeout(r,100));
+        tries++;
+      }
+      const ok = await ensureVideoPlayback();
+      gate.classList.toggle('show', !ok);
+    }
+
+    startBtn.addEventListener('click', async ()=>{
+      const ok = await ensureVideoPlayback();
+      if (ok) gate.classList.remove('show');
+    });
+
+    setUI();
+    load();
+    tryStartCameraWithGate();
   </script>
 </body>
 </html>
