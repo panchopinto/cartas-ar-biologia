@@ -5,10 +5,12 @@
   <title>RA — Célula (Animal / Vegetal)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 
+  <!-- Librerías -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
 
   <style>
+    /* Fondo realmente transparente y video detrás del canvas */
     html, body { margin:0; padding:0; height:100%; background:transparent; overflow:hidden; }
     #arjs-video, .arjs-video, video, video[playsinline]{
       position:fixed !important; inset:0 !important;
@@ -21,6 +23,8 @@
       width:100vw !important; height:100vh !important;
       z-index:2 !important; touch-action:none; background:transparent !important;
     }
+
+    /* UI */
     .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;
          font-family:system-ui,Arial,sans-serif;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));z-index:5}
     .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px;z-index:6}
@@ -49,34 +53,36 @@
     embedded
     renderer="alpha:true; antialias:true; precision:mediump; colorManagement:true; physicallyCorrectLights:true; powerPreference:high-performance"
     vr-mode-ui="enabled:false"
-    arjs="sourceType: webcam; facingMode: environment; videoTexture: true; debugUIEnabled:false;"
+    arjs="sourceType: webcam; facingMode: environment; videoTexture: true; debugUIEnabled:true;"
     style="background: transparent !important">
 
+    <!-- Luces -->
     <a-entity light="type: ambient; intensity: 0.9"></a-entity>
     <a-entity light="type: directional; intensity: 0.7" position="1 1 0"></a-entity>
 
-   <!-- Reemplaza tu marcador por este -->
-<a-marker id="hiro"
-          type="pattern"
-          url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/three.js/examples/marker-training/examples/pattern-files/pattern-hiro.patt"
-          emitevents="true">
-  <!-- CUBO DE PRUEBA (déjalo por ahora para verificar detección) -->
-  <a-box color="#4caf50" depth="0.2" height="0.2" width="0.2" position="0 0.2 0"></a-box>
+    <!-- Marcador HIRO con patrón explícito -->
+    <a-marker id="hiro"
+              type="pattern"
+              url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/three.js/examples/marker-training/examples/pattern-files/pattern-hiro.patt"
+              emitevents="true">
 
-  <!-- Tu modelo (se quedará además del cubo) -->
-  <a-entity id="cellModel"
-            position="0 0 0"
-            rotation="0 0 0"
-            scale="0.40 0.40 0.40"
-            pinch-scale="min:0.2; max:3; factor:1"></a-entity>
-</a-marker>
+      <!-- Cubo de prueba: déjalo para verificar detección -->
+      <a-box color="#4caf50" depth="0.2" height="0.2" width="0.2" position="0 0.2 0"></a-box>
 
+      <!-- Modelo -->
+      <a-entity id="cellModel"
+        position="0 0 0"
+        rotation="0 0 0"
+        scale="0.40 0.40 0.40"
+        pinch-scale="min:0.2; max:3; factor:1">
+      </a-entity>
+    </a-marker>
 
     <a-entity camera="near:0.01; far:5000"></a-entity>
   </a-scene>
 
   <script>
-    // -------- Gestos: Pinch-to-zoom --------
+    /* ===== Gestos: Pinch-to-zoom ===== */
     AFRAME.registerComponent('pinch-scale', {
       schema:{min:{default:0.1},max:{default:4},factor:{default:1}},
       init:function(){
@@ -104,25 +110,27 @@
       onEnd:function(e){ if(e.touches.length<2){ this.active=false; this.startDist=null; } }
     });
 
-    // -------- Modelos --------
-    const MAP={
-      animal:{ normal:"../assets/models/animal.glb",   draco:"../assets/models/animal_draco.glb"   },
-      vegetal:{normal:"../assets/models/vegetal.glb",  draco:"../assets/models/vegetal_draco.glb"  }
+    /* ===== Modelos ===== */
+    const MAP = {
+      animal:  { normal: "../assets/models/animal.glb",   draco: "../assets/models/animal_draco.glb" },
+      vegetal: { normal: "../assets/models/vegetal.glb",  draco: "../assets/models/vegetal_draco.glb" }
     };
-    const params=new URLSearchParams(location.search);
-    let kind=(params.get('m')||'animal').toLowerCase(); if(!MAP[kind]) kind='animal';
-    const camPref=(params.get('cam')||'environment');          // 'environment' | 'user'
-    const debugOn = params.get('debug')==='1';
 
-    const modelEl=document.getElementById('cellModel');
-    const labelEl=document.getElementById('labelKind');
-    const btnA=document.getElementById('btnAnimal');
-    const btnV=document.getElementById('btnVegetal');
-    const loading=document.getElementById('loading');
-    const statusEl=document.getElementById('status');
-    const markerEl=document.getElementById('hiro');
-    const gate=document.getElementById('gate');
-    const startBtn=document.getElementById('startBtn');
+    const params   = new URLSearchParams(location.search);
+    let   kind     = (params.get('m')||'animal').toLowerCase();
+    if (!MAP[kind]) kind='animal';
+    const camPref  = (params.get('cam')||'environment'); // 'environment' | 'user'
+    const debugOn  = params.get('debug')==='1';
+
+    const modelEl  = document.getElementById('cellModel');
+    const labelEl  = document.getElementById('labelKind');
+    const btnA     = document.getElementById('btnAnimal');
+    const btnV     = document.getElementById('btnVegetal');
+    const loading  = document.getElementById('loading');
+    const statusEl = document.getElementById('status');
+    const markerEl = document.getElementById('hiro');
+    const gate     = document.getElementById('gate');
+    const startBtn = document.getElementById('startBtn');
 
     function setUI(){
       btnA.classList.toggle('active',kind==='animal');
@@ -135,7 +143,7 @@
 
     async function load(){
       loading.style.display='block';
-      const url=(await pick())+'#'+Date.now();
+      const url=(await pick())+'#'+Date.now(); // cache-buster
       modelEl.removeAttribute('gltf-model');
       modelEl.object3D.scale.set(0.40,0.40,0.40);
       setTimeout(()=>modelEl.setAttribute('gltf-model',url),30);
@@ -144,17 +152,22 @@
     btnA.onclick=()=>{ kind='animal'; setUI(); load(); };
     btnV.onclick=()=>{ kind='vegetal'; setUI(); load(); };
 
-    modelEl.addEventListener('model-loaded',()=>loading.style.display='none');
-    modelEl.addEventListener('model-error', e=>{ loading.style.display='none'; alert('No se pudo cargar el modelo. Revisa rutas/nombres.'); console.error(e.detail); });
+    modelEl.addEventListener('model-loaded',()=> loading.style.display='none');
+    modelEl.addEventListener('model-error', e=>{
+      loading.style.display='none';
+      alert('No se pudo cargar el modelo. Revisa rutas/nombres (mayúsculas).');
+      console.error(e.detail);
+    });
 
-    markerEl.addEventListener('markerFound',()=>statusEl.textContent='Marcador detectado ✅');
-    markerEl.addEventListener('markerLost', ()=>statusEl.textContent='Buscando marcador…');
+    // Estado del marcador
+    markerEl.addEventListener('markerFound', ()=>{ statusEl.textContent='Marcador detectado ✅'; console.log('[AR] markerFound'); });
+    markerEl.addEventListener('markerLost',  ()=>{ statusEl.textContent='Buscando marcador…'; console.log('[AR] markerLost'); });
 
-    // -------- Transparencia real del renderer --------
+    // Transparencia real del renderer
     const scene=document.querySelector('a-scene');
     scene.addEventListener('loaded',()=>{ const r=scene.renderer; if(r&&r.setClearAlpha) r.setClearAlpha(0); else if(r&&r.setClearColor) r.setClearColor(0x000000,0); });
 
-    // -------- Cámara: forzar stream y adjuntarlo al <video> de AR.js --------
+    /* ===== Cámara: forzar stream y adjuntarlo al <video> de AR.js ===== */
     function findArVideo(){
       return document.getElementById('arjs-video') || document.querySelector('.arjs-video') || document.querySelector('video');
     }
@@ -169,8 +182,8 @@
     let forcedStream=null;
     async function getCameraStream(){
       try{
-        const stream=await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ideal:camPref}, width:{ideal:1280}, height:{ideal:720} }, audio:false });
-        forcedStream=stream; return stream;
+        const s=await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ideal:camPref}, width:{ideal:1280}, height:{ideal:720} }, audio:false });
+        forcedStream=s; return s;
       }catch(e){ console.warn('getUserMedia falló:',e); return null; }
     }
     async function attachStreamToArVideo(){
@@ -188,7 +201,7 @@
     }
     startBtn.addEventListener('click', ensureCameraOrShowGate);
 
-    // -------- Debug opcional --------
+    // Debug opcional
     if (debugOn){
       const el=document.createElement('div');
       el.style.cssText='position:fixed;left:8px;bottom:8px;background:rgba(0,0,0,.45);color:#fff;padding:6px 8px;border-radius:8px;font:12px system-ui;z-index:9';
@@ -196,7 +209,7 @@
       setInterval(()=>{ const v=findArVideo(); el.textContent = v ? `video:${v.videoWidth}x${v.videoHeight} ${v.paused?'paused':'playing'} rs=${v.readyState}` : 'video: none'; }, 500);
     }
 
-    // -------- Arranque --------
+    // Arranque
     setUI(); load(); ensureCameraOrShowGate();
   </script>
 </body>
