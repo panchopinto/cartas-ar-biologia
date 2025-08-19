@@ -10,45 +10,20 @@
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
 
   <style>
-    /* Fondo realmente transparente; nada de negro */
-    html, body { margin:0; padding:0; height:100%; background:transparent; overflow:hidden; }
+html, body { margin:0; height:100%; overflow:hidden; background:transparent; }
+#arjs-video, .arjs-video, video, video[playsinline]{
+  position:fixed !important; inset:0 !important;
+  width:100vw !important; height:100vh !important;
+  object-fit:cover !important; z-index:1 !important;
+  display:block !important; background:transparent !important;
+}
+canvas, .a-canvas{
+  position:fixed !important; inset:0 !important;
+  width:100vw !important; height:100vh !important;
+  z-index:2 !important; touch-action:none; background:transparent !important;
+}
+</style>
 
-    /* Video de la cámara debajo del canvas, pantalla completa */
-    #arjs-video, .arjs-video, video, video[playsinline] {
-      position: fixed !important;
-      inset: 0 !important;
-      width: 100vw !important; height: 100vh !important;
-      object-fit: cover !important;
-      z-index: 1 !important;        /* debajo del canvas */
-      display: block !important;
-      background: transparent !important;
-    }
-
-    /* Canvas de A‑Frame arriba del video */
-    canvas, .a-canvas {
-      position: fixed !important; inset: 0 !important;
-      width: 100vw !important; height: 100vh !important;
-      z-index: 2 !important;
-      touch-action: none;
-      background: transparent !important;
-    }
-
-    /* UI */
-    .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;
-         font-family:system-ui,Arial,sans-serif;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));z-index:5}
-    .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px;z-index:6}
-    .btn{border:1px solid rgba(255,255,255,.25);color:#fff;background:rgba(0,0,0,.35);
-         border-radius:10px;padding:6px 10px;font-family:system-ui,Arial,sans-serif;cursor:pointer}
-    .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
-    .loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
-             font-family:system-ui,Arial,sans-serif;color:#fff;background:rgba(0,0,0,.5);padding:.6rem .9rem;border-radius:10px;display:none;z-index:7}
-    .status{position:fixed;left:8px;top:8px;background:rgba(0,0,0,.4);color:#fff;padding:6px 10px;border-radius:8px;font:14px system-ui;z-index:9}
-
-    /* Botón “Iniciar cámara” (si el navegador bloquea autoplay) */
-    .gate { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000c; z-index:10; }
-    .gate.show { display:flex; }
-    .gate button { font:600 16px system-ui,Arial; padding:12px 18px; border-radius:12px; border:1px solid #fff6; color:#fff; background:#000a; cursor:pointer; }
-  </style>
 </head>
 <body>
   <div class="hud">RA — Célula <span id="labelKind" style="opacity:.9">Animal</span> · Marcador <b>HIRO</b></div>
@@ -230,5 +205,107 @@
 
     setUI(); load(); tryStartCameraWithGate();
   </script>
+  <script>
+// ---------- UTILIDADES ----------
+function findArVideo(){
+  return document.getElementById('arjs-video') ||
+         document.querySelector('.arjs-video') ||
+         document.querySelector('video');
+}
+function styleArVideo(v){
+  if (!v) return;
+  v.setAttribute('playsinline',''); v.setAttribute('webkit-playsinline','');
+  v.muted = true; v.autoplay = true;
+  v.style.position='fixed'; v.style.inset='0';
+  v.style.width='100vw'; v.style.height='100vh';
+  v.style.objectFit='cover'; v.style.zIndex='1'; v.style.display='block';
+}
+
+// ---------- NUEVO: pedir la cámara y conectar el stream al <video> de AR.js ----------
+let forcedStream = null;
+
+async function getCameraStream(){
+  try{
+    // trasera ideal; si falla, el SO elige
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal:'environment' }, width:{ideal:1280}, height:{ideal:720} },
+      audio: false
+    });
+    forcedStream = stream;
+    return stream;
+  }catch(e){
+    console.warn('getUserMedia falló:', e);
+    return null;
+  }
+}
+
+async function attachStreamToArVideo(){
+  // Espera a que AR.js inserte el <video>
+  let tries = 0;
+  while (!findArVideo() && tries < 60){ await new Promise(r=>setTimeout(r,100)); tries++; }
+  const v = findArVideo();
+  if (!v) return false;
+
+  styleArVideo(v);
+
+  // Si aún no tenemos stream, pídelo
+  if (!forcedStream){
+    forcedStream = await getCameraStream();
+    if (!forcedStream) return false;
+  }
+
+  try{
+    // Conecta el stream directamente al video de AR.js
+    v.srcObject = forcedStream;
+    await v.play();
+    return true;
+  }catch(e){
+    console.warn('No se pudo reproducir el video con el stream forzado:', e);
+    return false;
+  }
+}
+
+// ---------- GATE / BOTÓN INICIAR ----------
+async function startCameraFlow(){
+  // 1) intenta que el <video> existente reproduzca
+  const v0 = findArVideo();
+  if (v0){
+    styleArVideo(v0);
+    try{ await v0.play(); return true; }catch{}
+  }
+  // 2) si no, fuerza stream y conéctalo al <video> de AR.js
+  const ok = await attachStreamToArVideo();
+  return ok;
+}
+
+// Llama a esto al final de tu setup (o reemplaza tu tryStartCameraWithGate por esto):
+async function ensureCameraOrShowGate(){
+  const gate = document.getElementById('gate');
+  const ok = await startCameraFlow();
+  gate?.classList.toggle('show', !ok);
+}
+
+document.getElementById('startBtn')?.addEventListener('click', async ()=>{
+  const gate = document.getElementById('gate');
+  const ok = await startCameraFlow();
+  if (ok) gate?.classList.remove('show');
+});
+
+// ----- DEBUG opcional en pantalla -----
+(function debugOverlay(){
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;left:8px;bottom:8px;background:rgba(0,0,0,.45);color:#fff;padding:6px 8px;border-radius:8px;font:12px system-ui;z-index:9';
+  document.body.appendChild(el);
+  setInterval(()=>{
+    const v = findArVideo();
+    const st = v ? `video:${v.videoWidth}x${v.videoHeight} ${v.paused?'paused':'playing'} rs=${v.readyState}` : 'video: none';
+    el.textContent = st;
+  }, 500);
+})();
+
+// Lánzalo (si ya llamas a algo similar, déjalo y añade esto al final):
+ensureCameraOrShowGate();
+</script>
+
 </body>
 </html>
