@@ -58,11 +58,14 @@
   </div>
 
   <script>
-    const base = location.origin + location.pathname.replace(/[^\/]*$/, '');
-    const urlAnimal  = base + "arjs-demo/animal_glb.html?m=animal";
-    const urlVegetal = base + "aarjs-demo/vegetal_glb.html?m=vegetal";
-    new QRCode(document.getElementById("qrAnimal"),  { text: urlAnimal,  width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
-    new QRCode(document.getElementById("qrVegetal"), { text: urlVegetal, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
-  </script>
+  const base = location.origin + location.pathname.replace(/[^\/]*$/, '');
+  // Unificamos: todo va a cell_ar.html con ?m=
+  const urlAnimal  = base + "arjs-demo/cell_ar.html?m=animal";
+  const urlVegetal = base + "arjs-demo/cell_ar.html?m=vegetal";
+
+  new QRCode(document.getElementById("qrAnimal"),  { text: urlAnimal,  width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+  new QRCode(document.getElementById("qrVegetal"), { text: urlVegetal, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+</script>
+
 </body>
 </html>
