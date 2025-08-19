@@ -55,14 +55,22 @@
     <a-entity light="type: ambient; intensity: 0.9"></a-entity>
     <a-entity light="type: directional; intensity: 0.7" position="1 1 0"></a-entity>
 
-    <a-marker preset="hiro" id="hiro">
-      <a-entity id="cellModel"
-        position="0 0 0"
-        rotation="0 0 0"
-        scale="0.40 0.40 0.40"
-        pinch-scale="min:0.2; max:3; factor:1">
-      </a-entity>
-    </a-marker>
+   <!-- Reemplaza tu marcador por este -->
+<a-marker id="hiro"
+          type="pattern"
+          url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/three.js/examples/marker-training/examples/pattern-files/pattern-hiro.patt"
+          emitevents="true">
+  <!-- CUBO DE PRUEBA (déjalo por ahora para verificar detección) -->
+  <a-box color="#4caf50" depth="0.2" height="0.2" width="0.2" position="0 0.2 0"></a-box>
+
+  <!-- Tu modelo (se quedará además del cubo) -->
+  <a-entity id="cellModel"
+            position="0 0 0"
+            rotation="0 0 0"
+            scale="0.40 0.40 0.40"
+            pinch-scale="min:0.2; max:3; factor:1"></a-entity>
+</a-marker>
+
 
     <a-entity camera="near:0.01; far:5000"></a-entity>
   </a-scene>
