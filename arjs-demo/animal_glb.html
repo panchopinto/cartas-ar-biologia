@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <title>RA — Célula (HIRO)</title>
+  <title>RA — Célula (HIRO) · Animal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 
   <!-- A-Frame + AR.js -->
@@ -45,7 +45,18 @@
     .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
     .loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-family:system-ui,Arial,sans-serif;
              color:#fff;background:rgba(0,0,0,.5);padding:.6rem .9rem;border-radius:10px;display:none;z-index:7}
-    .status{position:fixed;left:8px;top:8px;background:rgba(0,0,0,.4);color:#fff;padding:6px 10px;border-radius:8px;font:14px system-ui;z-index:9}
+
+    /* Estado (movido más abajo) */
+    .status{
+      position:fixed;left:8px;
+      top: calc(60px + env(safe-area-inset-top)); /* ↓ más abajo para no acoplarse */
+      background:rgba(0,0,0,.40); color:#fff; padding:6px 10px;
+      border:1px solid rgba(255,255,255,.24); border-radius:8px; font:14px system-ui; z-index:9
+    }
+    .status.ok{
+      background:rgba(16,185,129,.20);
+      border-color:rgba(34,197,94,.45);
+    }
 
     /* Controles táctiles */
     .controls {
@@ -60,6 +71,15 @@
       text-align:center; cursor:pointer;
       box-shadow: 0 4px 14px rgba(0,0,0,.25);
     }
+
+    /* Panel sliders */
+    .panel{
+      position:fixed; left:10px; bottom:10px; z-index:8;
+      padding:10px 12px; background:rgba(0,0,0,.45);
+      border:1px solid rgba(255,255,255,.28); border-radius:12px; min-width:230px
+    }
+    .panel label{display:flex; align-items:center; gap:8px; font:600 13px system-ui; color:#fff; margin:6px 0}
+    .panel input[type="range"]{width:160px}
 
     /* Gate para iniciar cámara cuando el navegador lo exige */
     .gate {
@@ -78,6 +98,7 @@
   <div class="toolbar">
     <button id="btnAnimal" class="btn active">Animal</button>
     <button id="btnVegetal" class="btn">Vegetal</button>
+    <button id="btnAuto" class="btn" title="Auto-rotación">Auto</button>
   </div>
   <div id="loading" class="loading">Cargando modelo…</div>
   <div id="status" class="status">Buscando marcador…</div>
@@ -88,8 +109,18 @@
     <div class="ctrl" id="reset" title="Reset">⟲</div>
     <div class="ctrl" id="rotR" title="Rotar derecha">↷</div>
     <div class="ctrl" id="zoomOut" title="Zoom -">−</div>
-    <div class="ctrl" id="dummy" style="opacity:.25; pointer-events:none;">•</div>
+    <div class="ctrl" style="opacity:.25; pointer-events:none;">•</div>
     <div class="ctrl" id="zoomIn" title="Zoom +">+</div>
+  </div>
+
+  <!-- Panel sliders -->
+  <div class="panel" id="panel">
+    <label>Zoom
+      <input type="range" id="scaleRange" min="0.20" max="3.00" step="0.01" value="0.40">
+    </label>
+    <label>Vel. rotación
+      <input type="range" id="speedRange" min="-60" max="60" step="1" value="20">
+    </label>
   </div>
 
   <!-- Gate por si el navegador exige interacción para reproducir la cámara -->
@@ -117,7 +148,8 @@
         scale="0.40 0.40 0.40"
         gesture-handler="minScale:0.20; maxScale:3.0; rotFactor:0.5"
         pinch-scale="min:0.20; max:3.0; factor:1"
-        tap-reset="scale:0.40; rotYdeg:0">
+        tap-reset="scale:0.40; rotYdeg:0"
+        auto-rotator="enabled:false; speed:20">
       </a-entity>
     </a-marker>
 
@@ -216,11 +248,24 @@
       }
     });
 
+    // Auto-rotación
+    AFRAME.registerComponent('auto-rotator', {
+      schema: { speed:{default:20}, enabled:{default:false} },
+      tick: function(t, dt){
+        if (!this.data.enabled) return;
+        this.el.object3D.rotation.y += THREE.MathUtils.degToRad(this.data.speed) * (dt/1000);
+      }
+    });
+
     /* ===================== APP ===================== */
-    const DEFAULT_SCALE = {x:0.40, y:0.40, z:0.40};
+    const DEFAULT_SCALE_ANIMAL = 0.40;
+    const INIT = {
+      animal:  { scale: DEFAULT_SCALE_ANIMAL, rotYdeg: 0 },
+      vegetal: { scale: 0.36, rotYdeg: 0 }
+    };
     const MIN_SCALE = 0.20, MAX_SCALE = 3.0;
-    const ROT_STEP_DEG = 8; // rotación por click de botón
-    const ZOOM_STEP = 1.12; // factor de zoom por click
+    const ROT_STEP_DEG = 8;
+    const ZOOM_STEP = 1.12;
 
     const MAP = {
       animal:  { normal: "../assets/models/animal.glb",  draco: "../assets/models/animal_draco.glb" },
@@ -235,6 +280,7 @@
     const labelEl  = document.getElementById('labelKind');
     const btnA     = document.getElementById('btnAnimal');
     const btnV     = document.getElementById('btnVegetal');
+    const btnAuto  = document.getElementById('btnAuto');
     const loading  = document.getElementById('loading');
     const statusEl = document.getElementById('status');
     const markerEl = document.getElementById('hiro');
@@ -246,6 +292,9 @@
     const zoomIn = document.getElementById('zoomIn');
     const zoomOut = document.getElementById('zoomOut');
     const resetBtn = document.getElementById('reset');
+
+    const scaleRange = document.getElementById('scaleRange');
+    const speedRange = document.getElementById('speedRange');
 
     function setUI(){
       btnA.classList.toggle('active', kind==='animal');
@@ -260,26 +309,49 @@
     async function load(){
       loading.style.display='block';
       const url=(await pick()) + '#' + Date.now();
+      const init = INIT[kind] || INIT.animal;
+
       modelEl.removeAttribute('gltf-model');
-      modelEl.object3D.scale.set(DEFAULT_SCALE.x, DEFAULT_SCALE.y, DEFAULT_SCALE.z);
-      modelEl.object3D.rotation.set(0,0,0);
+      modelEl.object3D.scale.set(init.scale, init.scale, init.scale);
+      modelEl.object3D.rotation.set(0, THREE.MathUtils.degToRad(init.rotYdeg), 0);
+      scaleRange.value = init.scale;
+
+      // apaga auto-rotación al cargar (se re-activa si el botón está activo)
+      modelEl.setAttribute('auto-rotator', `enabled:${btnAuto.classList.contains('active')}; speed:${parseFloat(speedRange.value)}`);
+
       setTimeout(()=> modelEl.setAttribute('gltf-model', url), 30);
     }
 
+    // Botonera animal/vegetal
     btnA.onclick = ()=>{ kind='animal'; setUI(); load(); };
     btnV.onclick = ()=>{ kind='vegetal'; setUI(); load(); };
 
+    // Auto-rotación
+    btnAuto.onclick = () => {
+      const enabled = !btnAuto.classList.contains('active');
+      btnAuto.classList.toggle('active', enabled);
+      modelEl.setAttribute('auto-rotator', `enabled:${enabled}; speed:${parseFloat(speedRange.value)}`);
+    };
+
+    // Estado de carga
     modelEl.addEventListener('model-loaded', ()=> { loading.style.display='none'; });
     modelEl.addEventListener('model-error',  e=> {
       loading.style.display='none';
       statusEl.textContent = 'Error cargando modelo ❌';
+      statusEl.classList.remove('ok');
       alert('No se pudo cargar el modelo. Revisa rutas/nombres (mayúsculas) o tamaño.');
       console.error(e.detail);
     });
 
     // Estado del marcador
-    markerEl.addEventListener('markerFound', ()=> statusEl.textContent = 'Marcador detectado ✅');
-    markerEl.addEventListener('markerLost',  ()=> statusEl.textContent = 'Buscando marcador…');
+    markerEl.addEventListener('markerFound', ()=>{
+      statusEl.textContent = 'Marcador detectado ✅';
+      statusEl.classList.add('ok');
+    });
+    markerEl.addEventListener('markerLost',  ()=>{
+      statusEl.textContent = 'Buscando marcador…';
+      statusEl.classList.remove('ok');
+    });
 
     // Transparencia del renderer
     const scene = document.querySelector('a-scene');
@@ -311,11 +383,11 @@
     async function tryStartCameraWithGate(){
       let tries=0; while(!findArVideo() && tries<50){ await new Promise(r=>setTimeout(r,100)); tries++; }
       const ok = await ensureVideoPlayback();
-      gate.classList.toggle('show', !ok);
+      document.getElementById('gate').classList.toggle('show', !ok);
     }
-    startBtn.addEventListener('click', async ()=>{
+    document.getElementById('startBtn').addEventListener('click', async ()=>{
       const ok = await ensureVideoPlayback();
-      if (ok) gate.classList.remove('show');
+      if (ok) document.getElementById('gate').classList.remove('show');
     });
 
     /* --------- Controles on-screen ---------- */
@@ -323,6 +395,7 @@
     function setScaleUniform(s){
       s = clampScale(s);
       modelEl.object3D.scale.set(s,s,s);
+      scaleRange.value = s.toFixed(2);
     }
     rotL.addEventListener('click', ()=> {
       modelEl.object3D.rotation.y += THREE.MathUtils.degToRad(ROT_STEP_DEG);
@@ -339,11 +412,24 @@
       setScaleUniform(s);
     });
     resetBtn.addEventListener('click', ()=> {
-      modelEl.object3D.scale.set(DEFAULT_SCALE.x, DEFAULT_SCALE.y, DEFAULT_SCALE.z);
-      modelEl.object3D.rotation.set(0,0,0);
+      const init = INIT[kind] || INIT.animal;
+      modelEl.object3D.scale.set(init.scale, init.scale, init.scale);
+      modelEl.object3D.rotation.set(0, THREE.MathUtils.degToRad(init.rotYdeg), 0);
+      scaleRange.value = init.scale;
     });
 
-    // Evitar que los botones “absorban” el gesto y no hagan scroll accidental
+    // Sliders
+    scaleRange.addEventListener('input', () => {
+      const s = parseFloat(scaleRange.value);
+      setScaleUniform(s);
+    });
+    speedRange.addEventListener('input', () => {
+      const enabled = btnAuto.classList.contains('active');
+      modelEl.setAttribute('auto-rotator', `enabled:${enabled}; speed:${parseFloat(speedRange.value)}`);
+    });
+
+    // Evitar que panel/controles absorban gestos de la escena
+    document.getElementById('panel').addEventListener('touchstart', e=> e.stopPropagation(), {passive:true});
     document.getElementById('controls').addEventListener('touchstart', e=> e.stopPropagation(), {passive:true});
 
     /* --------- Arranque --------- */
