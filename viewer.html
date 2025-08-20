@@ -9,7 +9,6 @@
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
   canvas,.a-canvas{position:fixed;inset:0;width:100vw!important;height:100vh!important;background:#000!important}
 
-  /* HUD y botones */
   .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;font:600 14px system-ui;z-index:5;
        background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0))}
   .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px;z-index:6}
@@ -17,14 +16,12 @@
        border-radius:10px;padding:6px 10px;font:600 13px system-ui;cursor:pointer}
   .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
 
-  /* Progreso verde radiactivo */
   .progress{position:fixed;left:50%;transform:translateX(-50%);top:90px;z-index:9;width:min(60vw,520px);height:10px;
             background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden;display:none;border:1px solid rgba(57,255,20,.35)}
   .progress .bar{width:0%;height:100%;background:linear-gradient(90deg,#39ff14,#bfff00);
                  box-shadow:0 0 12px #39ff14,0 0 24px #39ff14;transition:width .15s ease}
   .progress .pct{position:absolute;right:0;top:-22px;font:700 12px system-ui;color:#bfff00;text-shadow:0 0 8px #39ff14}
 
-  /* Panel Info educativo */
   .infoPanel{position:fixed;left:10px;top:100px;z-index:8;width:min(360px,86vw);max-height:60vh;overflow:auto;padding:12px;
              background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.28);border-radius:14px;backdrop-filter:blur(2px)}
   .infoPanel h3{margin:0 0 6px;font:700 16px system-ui;color:#fff}
@@ -35,21 +32,31 @@
   .chip{padding:6px 8px;border-radius:999px;font:700 12px system-ui;color:#132;background:rgba(57,255,20,.15);border:1px solid #39ff14;
         box-shadow:0 0 8px rgba(57,255,20,.5) inset,0 0 6px rgba(57,255,20,.25)}
 
-  /* Controles */
   .controls{position:fixed;right:10px;bottom:10px;z-index:8;display:grid;grid-template-columns:repeat(3,48px);grid-gap:8px}
   .ctrl{width:48px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.45);color:#fff;
         font:600 20px/48px system-ui;text-align:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25)}
 
-  /* Panel sliders (compacto) */
   .panel{position:fixed;left:10px;bottom:10px;z-index:8;padding:8px 10px;background:rgba(0,0,0,.45);
          border:1px solid rgba(255,255,255,.28);border-radius:10px;min-width:190px}
   .panel label{display:flex;align-items:center;gap:6px;font:600 12px system-ui;color:#fff;margin:4px 0}
   .panel input[type=range]{width:130px}
+
+  /* EDITOR */
+  .editor{position:fixed;right:10px;top:100px;z-index:9;display:none;gap:8px;flex-direction:column;
+          background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.28);border-radius:12px;padding:10px;min-width:220px}
+  .editor.show{display:flex}
+  .editor h4{margin:0 0 6px;font:700 13px system-ui;color:#cfe6ff}
+  .row{display:flex;align-items:center;gap:6px}
+  select, input[type=number]{font:600 12px system-ui;padding:4px 6px;border-radius:8px;border:1px solid #3cc9ff;background:#021525;color:#e8fbff}
+  .nudge{display:grid;grid-template-columns:repeat(3,40px);grid-gap:6px;justify-content:center}
+  .nudge button{height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.45);color:#fff;cursor:pointer}
+  .editor .small{font:600 12px system-ui;padding:6px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.4);color:#fff;cursor:pointer}
   @media (max-width:480px){
     .panel{padding:6px 8px;min-width:170px}
     .panel input[type=range]{width:110px}
     .controls{grid-gap:6px}
     .ctrl{width:44px;height:44px;font:600 18px/44px system-ui}
+    .editor{right:8px;top:90px;min-width:200px}
   }
 </style>
 </head>
@@ -60,6 +67,7 @@
     <button id="btnVegetal" class="btn">Vegetal</button>
     <button id="btnAuto" class="btn" title="Auto-rotación">Auto</button>
     <button id="btnInfo" class="btn active" title="Ver/Ocultar ficha">Info</button>
+    <button id="btnEdit" class="btn" title="Editar hotspots">Editar</button>
   </div>
 
   <!-- Progreso -->
@@ -83,6 +91,30 @@
     <label>Vel. rotación <input type="range" id="speedRange" min="-60" max="60" step="1" value="20"></label>
   </div>
 
+  <!-- Editor -->
+  <div class="editor" id="editor">
+    <h4>Ajuste de hotspots</h4>
+    <div class="row">
+      <label for="hsSelect" style="color:#e9f2ff;font:600 12px system-ui;">Hotspot:</label>
+      <select id="hsSelect"></select>
+    </div>
+    <div class="row">
+      <label for="step" style="color:#e9f2ff;font:600 12px system-ui;">Paso:</label>
+      <input id="step" type="number" step="0.001" min="0.001" value="0.01" style="width:80px"/>
+      <button id="dragToggle" class="small" title="Arrastrar sobre modelo">Arrastrar: ON</button>
+    </div>
+    <div class="nudge">
+      <button id="upY">+Y</button><button disabled></button><button id="upZ">+Z</button>
+      <button id="leftX">−X</button><button id="centerSel">◎</button><button id="rightX">+X</button>
+      <button id="downY">−Y</button><button disabled></button><button id="downZ">−Z</button>
+    </div>
+    <div class="row" style="justify-content:space-between;margin-top:6px">
+      <button id="saveLocal" class="small">Guardar local</button>
+      <button id="copyJSON" class="small">Copiar JSON</button>
+      <button id="resetHS" class="small">Reset</button>
+    </div>
+  </div>
+
   <a-scene embedded renderer="antialias:true;precision:mediump" background="color: #000">
     <a-entity light="type:ambient; intensity:0.9"></a-entity>
     <a-entity light="type:directional; intensity:0.8" position="1 1 0"></a-entity>
@@ -95,14 +127,14 @@
       tap-reset="scale:0.40; rotYdeg:0"
       auto-rotator="enabled:false; speed:20"></a-entity>
 
-    <!-- Cámara con cursor para clicks en hotspots -->
+    <!-- Cámara y cursor para clicks -->
     <a-entity id="cameraRig">
       <a-entity camera position="0 0 1.4" cursor="rayOrigin: mouse" raycaster="objects: .hs-click"></a-entity>
     </a-entity>
   </a-scene>
 
 <script>
-/* ====== Gestos (touch + rueda) y mouse ====== */
+/* ====== Gestos y utilidades ====== */
 AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},minScale:{default:0.05},maxScale:{default:3.0}},
   init:function(){this.oneFinger=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
     t.addEventListener('touchstart',e=>{if(e.touches.length===1){this.oneFinger=true;this.lastX=e.touches[0].clientX;}},{passive:false});
@@ -110,20 +142,16 @@ AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},min
       this.el.object3D.rotation.y-=(dx*this.data.rotFactor)*Math.PI/180;e.preventDefault();}},{passive:false});
     t.addEventListener('touchend',()=>{this.oneFinger=false;},{passive:false});
     t.addEventListener('touchcancel',()=>{this.oneFinger=false;},{passive:false});
-    t.addEventListener('wheel',e=>{e.preventDefault();const dir=e.deltaY>0?0.9:1.1;
-      const s=this.el.object3D.scale.x*dir;const cl=THREE.MathUtils.clamp(s,this.data.min,this.data.max);
-      this.el.object3D.scale.set(cl,cl,cl);},{passive:false});
+    t.addEventListener('wheel',e=>{e.preventDefault();const dir=e.deltaY>0?0.9:1.1;const s=this.el.object3D.scale.x*dir;
+      const cl=THREE.MathUtils.clamp(s,this.data.min,this.data.max);this.el.object3D.scale.set(cl,cl,cl);},{passive:false});
   }; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
-
-AFRAME.registerComponent('mouse-drag-rotate',{
-  schema:{factor:{default:0.45}},
+AFRAME.registerComponent('mouse-drag-rotate',{schema:{factor:{default:0.45}},
   init:function(){this.drag=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
     t.addEventListener('mousedown',e=>{this.drag=true;this.lastX=e.clientX;});
     window.addEventListener('mouseup',()=>{this.drag=false;});
     window.addEventListener('mousemove',e=>{ if(!this.drag) return; const dx=e.clientX-this.lastX; this.lastX=e.clientX;
       this.el.object3D.rotation.y -= (dx*this.data.factor)*Math.PI/180; });
   }; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
-
 AFRAME.registerComponent('pinch-scale',{schema:{min:{default:0.1},max:{default:4},factor:{default:1}},
   init:function(){this.active=false;this.startDist=0;this.startScale=this.el.object3D.scale.clone();const s=this.el.sceneEl;const add=()=>{const c=s.canvas||s;
     c.addEventListener('touchstart',e=>{if(e.touches.length===2){this.active=true;const dx=e.touches[0].clientX-e.touches[1].clientX;const dy=e.touches[0].clientY-e.touches[1].clientY;
@@ -133,20 +161,15 @@ AFRAME.registerComponent('pinch-scale',{schema:{min:{default:0.1},max:{default:4
       this.el.object3D.scale.set(sX,sX,sX);e.preventDefault();},{passive:false});
     const end=()=>{this.active=false;};c.addEventListener('touchend',end,{passive:false});c.addEventListener('touchcancel',end,{passive:false});};
   s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
-
 AFRAME.registerComponent('tap-reset',{schema:{scale:{default:1},rotYdeg:{default:0}},init:function(){this.lastTap=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
   t.addEventListener('touchend',()=>{const n=performance.now();if(n-this.lastTap<300){const sc=this.data.scale;this.el.object3D.scale.set(sc,sc,sc);
     this.el.object3D.rotation.y=THREE.MathUtils.degToRad(this.data.rotYdeg);}this.lastTap=n;},{passive:true});};s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
-
 AFRAME.registerComponent('auto-rotator',{schema:{speed:{default:20},enabled:{default:false}},tick:function(t,dt){
-  if(!this.data.enabled)return; this.el.object3D.rotation.y+=THREE.MathUtils.degToRad(this.data.speed)*(dt/1000);
-}});
-
-/* Hace que un entity siempre mire a la cámara (para tooltips) */
+  if(!this.data.enabled)return; this.el.object3D.rotation.y+=THREE.MathUtils.degToRad(this.data.speed)*(dt/1000);}});
 AFRAME.registerComponent('billboard',{tick:function(){const cam=this.el.sceneEl&&this.el.sceneEl.camera;if(!cam)return;this.el.object3D.quaternion.copy(cam.el.object3D.quaternion);}});
 
-/* ====== Hotspots ====== */
-const HS={
+/* ====== Hotspots (default) ====== */
+const HS_DEFAULT={
   animal:[
     {name:'Núcleo',desc:'Controla la célula y guarda el ADN.',pos:[0,0.12,0]},
     {name:'Mitocondrias',desc:'Producen ATP (energía).',pos:[0.18,0.06,0.04]},
@@ -168,61 +191,27 @@ const HS={
     {name:'Ribosomas',desc:'Síntesis de proteínas.',pos:[0.0,0.16,0.16]}
   ]
 };
-
-function clearHotspots(){
-  const old=document.getElementById('hsRoot'); if(old&&old.parentNode) old.parentNode.removeChild(old);
-}
-function makeHotspots(kind){
-  clearHotspots(); const items=HS[kind]||[];
-  const root=document.createElement('a-entity'); root.setAttribute('id','hsRoot'); modelEl.appendChild(root);
-  items.forEach(item=>{
-    const wrap=document.createElement('a-entity'); wrap.setAttribute('position', item.pos.join(' '));
-    const dot=document.createElement('a-entity'); dot.classList.add('hs-click');
-    dot.setAttribute('geometry', `primitive: sphere; radius: ${item.diff?0.055:0.035}`);
-    dot.setAttribute('material', `color:${item.diff?'#39ff14':'#00d4ff'}; emissive:${item.diff?'#39ff14':'#00a0ff'}; emissiveIntensity:0.85; metalness:0; roughness:0.3; side: double`);
-    if(item.diff){ dot.setAttribute('animation','property: scale; dir: alternate; dur:800; loop:true; to:1.25 1.25 1.25; easing:easeInOutSine'); }
-
-    const tip=document.createElement('a-entity'); tip.setAttribute('position','0 0.12 0'); tip.setAttribute('visible','false'); tip.setAttribute('billboard','');
-    const bg=document.createElement('a-entity'); bg.setAttribute('geometry','primitive: plane; width: 0.60; height: auto'); bg.setAttribute('material','color:#000; opacity:0.78; side: double');
-    const txt=document.createElement('a-text'); txt.setAttribute('value',`${item.name}: ${item.desc}`); txt.setAttribute('color','#fff'); txt.setAttribute('align','center'); txt.setAttribute('width','1.3'); txt.setAttribute('wrap-count','30');
-    tip.appendChild(bg); tip.appendChild(txt);
-
-    wrap.appendChild(dot); wrap.appendChild(tip);
-    wrap.addEventListener('click', ()=>{
-      root.querySelectorAll('[visible="true"]').forEach(el=> el.setAttribute('visible','false'));
-      tip.setAttribute('visible','true'); setTimeout(()=>{ if(tip.getAttribute('visible')==='true') tip.setAttribute('visible','false'); }, 5000);
-    });
-
-    root.appendChild(wrap);
-  });
+const STORAGE_KEY = k => `hs_positions_v1_${k}`;
+function loadCustom(kind){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY(kind))||'null'); }catch{ return null; } }
+function saveCustom(kind,data){ localStorage.setItem(STORAGE_KEY(kind), JSON.stringify(data)); }
+function getHotspots(kind){
+  const custom = loadCustom(kind);
+  if (!custom) return HS_DEFAULT[kind];
+  // Merge: respeta desc & diff del default
+  const byName = new Map(HS_DEFAULT[kind].map(x=>[x.name,x]));
+  return custom.map(c=>({ ...byName.get(c.name)||{}, ...c }));
 }
 
 /* ====== App ====== */
 const INIT={ animal:{scale:0.40,rotYdeg:0}, vegetal:{scale:0.36,rotYdeg:0} };
 const MIN_SCALE=0.20, MAX_SCALE=3.0, ROT_STEP_DEG=8, ZOOM_STEP=1.12;
-
-/* Ajusta estas rutas si tus modelos están en otra carpeta */
 const MAP={ 
   animal:{normal:"./assets/models/animal.glb",draco:"./assets/models/animal_draco.glb"},
   vegetal:{normal:"./assets/models/vegetal.glb",draco:"./assets/models/vegetal_draco.glb"}
 };
-
-const CONTENT={
-  animal:{titulo:"Célula Animal",
-    componentes:[["Núcleo","Controla la célula y guarda el ADN."],["Membrana plasmática","Delimita y regula el intercambio de sustancias."],
-      ["Citoplasma","Medio donde ocurren reacciones químicas."],["Ribosomas","Fabrican proteínas."],["R.E. rugoso","Sintetiza y procesa proteínas."],
-      ["R.E. liso","Sintetiza lípidos y detoxifica."],["Aparato de Golgi","Empaqueta y distribuye proteínas/lípidos."],
-      ["Mitocondrias","Producen ATP (energía)."],["Lisosomas","Digieren desechos y partículas."],["Peroxisomas","Metabolismo de peróxidos."],
-      ["Citoesqueleto","Forma, soporte y transporte interno."],["Centriolos","Organizan huso mitótico en división celular."]],
-    diferencia:["Sin pared celular","Sin cloroplastos","Vacuolas pequeñas y múltiples","Centriolos presentes","Lisosomas abundantes"]},
-  vegetal:{titulo:"Célula Vegetal",
-    componentes:[["Núcleo","Controla la célula y guarda el ADN."],["Membrana plasmática","Regula el intercambio con el exterior."],
-      ["Pared celular (celulosa)","Aporta rigidez y protección."],["Citoplasma","Medio de reacciones celulares."],
-      ["Ribosomas","Síntesis de proteínas."],["R.E. rugoso/liso","Proteínas y lípidos."],["Aparato de Golgi","Empaque y secreción."],
-      ["Mitocondrias","Producción de ATP."],["Vacuola central","Almacenamiento y turgencia (presión interna)."],
-      ["Cloroplastos","Fotosíntesis: luz → energía química."],["Plasmodesmos","Canales de comunicación entre células vegetales."],
-      ["Citoesqueleto","Estructura y transporte."]],
-    diferencia:["Pared celular (celulosa)","Cloroplastos (fotosíntesis)","Vacuola central grande","Plasmodesmos","Sin centriolos típicos"]}
+const CONTENT={ /* igual que antes, recortado por brevedad */ 
+  animal:{titulo:"Célula Animal", componentes:[["Núcleo","Controla la célula y guarda el ADN."],["Membrana plasmática","Delimita y regula el intercambio de sustancias."],["Citoplasma","Medio donde ocurren reacciones químicas."],["Ribosomas","Fabrican proteínas."],["R.E. rugoso","Sintetiza y procesa proteínas."],["R.E. liso","Sintetiza lípidos y detoxifica."],["Aparato de Golgi","Empaqueta y distribuye proteínas/lípidos."],["Mitocondrias","Producen ATP (energía)."],["Lisosomas","Digieren desechos y partículas."],["Peroxisomas","Metabolismo de peróxidos."],["Citoesqueleto","Forma, soporte y transporte interno."],["Centriolos","Organizan huso mitótico en división celular."]], diferencia:["Sin pared celular","Sin cloroplastos","Vacuolas pequeñas y múltiples","Centriolos presentes","Lisosomas abundantes"]},
+  vegetal:{titulo:"Célula Vegetal", componentes:[["Núcleo","Controla la célula y guarda el ADN."],["Membrana plasmática","Regula el intercambio con el exterior."],["Pared celular (celulosa)","Aporta rigidez y protección."],["Citoplasma","Medio de reacciones celulares."],["Ribosomas","Síntesis de proteínas."],["R.E. rugoso/liso","Proteínas y lípidos."],["Aparato de Golgi","Empaque y secreción."],["Mitocondrias","Producción de ATP."],["Vacuola central","Almacenamiento y turgencia (presión interna)."],["Cloroplastos","Fotosíntesis: luz → energía química."],["Plasmodesmos","Canales de comunicación entre células vegetales."],["Citoesqueleto","Estructura y transporte."]], diferencia:["Pared celular (celulosa)","Cloroplastos (fotosíntesis)","Vacuola central grande","Plasmodesmos","Sin centriolos típicos"]}
 };
 
 const params=new URLSearchParams(location.search);
@@ -234,11 +223,14 @@ const btnA=document.getElementById('btnAnimal');
 const btnV=document.getElementById('btnVegetal');
 const btnAuto=document.getElementById('btnAuto');
 const btnInfo=document.getElementById('btnInfo');
+const btnEdit=document.getElementById('btnEdit');
 const rotL=document.getElementById('rotL'), rotR=document.getElementById('rotR');
 const zoomIn=document.getElementById('zoomIn'), zoomOut=document.getElementById('zoomOut');
 const resetBtn=document.getElementById('reset'), centerBtn=document.getElementById('center');
 const scaleRange=document.getElementById('scaleRange'), speedRange=document.getElementById('speedRange');
 const infoPanel=document.getElementById('infoPanel');
+const editor=document.getElementById('editor'); const hsSelect=document.getElementById('hsSelect');
+const stepInput=document.getElementById('step'); const dragToggle=document.getElementById('dragToggle');
 
 /* Progreso */
 const progress=document.getElementById('progress'); const progressBar=document.getElementById('progressBar'); const progressPct=document.getElementById('progressPct');
@@ -247,7 +239,7 @@ function setProgress(p){ const v=Math.max(0,Math.min(1,p||0)); progressBar.style
 function hideProgress(){ setProgress(1); setTimeout(()=>{progress.style.display='none';},300); }
 const manager=THREE.DefaultLoadingManager; manager.onStart=()=>showProgress(0); manager.onProgress=(u,l,t)=>{if(t&&t>0)setProgress(l/t)}; manager.onLoad=()=>hideProgress();
 
-/* Info EDU */
+/* Info */
 function renderInfo(k){ const c=CONTENT[k]; let html=`<h3>${c.titulo}</h3><h4>Componentes y función</h4><ul>`;
   for(const [n,d] of c.componentes){ html+=`<li><b>${n}:</b> ${d}</li>`;} html+=`</ul><h4>Se diferencia por…</h4><div class="chips">`;
   for(const it of c.diferencia){ html+=`<span class="chip">${it}</span>`;} html+=`</div>`; infoPanel.innerHTML=html; }
@@ -258,6 +250,108 @@ function setUI(){ btnA.classList.toggle('active',kind==='animal'); btnV.classLis
 /* Utilidades */
 async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(),{method:'HEAD'}); return r.ok; }catch{return false;} }
 async function pick(){ const e=MAP[kind]; return (await exists(e.draco))?e.draco:e.normal; }
+
+/* Hotspots runtime */
+let hsData=[], hsRoot=null, hsRecords=[], selected=0, editMode=false, dragOn=true;
+function clearHotspots(){ const old=document.getElementById('hsRoot'); if(old&&old.parentNode) old.parentNode.removeChild(old); hsRecords=[]; }
+function getCurrentPositions(){ return hsRecords.map(r=>({name:r.name, pos:[r.wrap.object3D.position.x, r.wrap.object3D.position.y, r.wrap.object3D.position.z], diff:r.diff, desc:r.desc})); }
+function populateSelect(){ hsSelect.innerHTML=''; hsRecords.forEach((r,i)=>{ const opt=document.createElement('option'); opt.value=i; opt.textContent=r.name; hsSelect.appendChild(opt); }); hsSelect.value=selected; }
+function highlightSelected(){ hsRecords.forEach((r,i)=> r.halo.setAttribute('visible', i==selected)); }
+function makeHotspots(kind){
+  clearHotspots();
+  hsData = getHotspots(kind);
+  hsRoot = document.createElement('a-entity'); hsRoot.setAttribute('id','hsRoot'); modelEl.appendChild(hsRoot);
+  hsData.forEach(item=>{
+    const wrap=document.createElement('a-entity'); wrap.setAttribute('position', item.pos.join(' '));
+    const dot=document.createElement('a-entity'); dot.classList.add('hs-click');
+    dot.setAttribute('geometry', `primitive: sphere; radius: ${item.diff?0.055:0.035}`);
+    dot.setAttribute('material', `color:${item.diff?'#39ff14':'#00d4ff'}; emissive:${item.diff?'#39ff14':'#00a0ff'}; emissiveIntensity:0.85; metalness:0; roughness:0.3; side: double`);
+    if(item.diff){ dot.setAttribute('animation','property: scale; dir: alternate; dur:800; loop:true; to:1.25 1.25 1.25; easing:easeInOutSine'); }
+    const halo=document.createElement('a-entity'); halo.setAttribute('geometry','primitive: torus; radius: 0.08; radiusTubular: 0.005'); halo.setAttribute('material','color:#fff; emissive:#3cc9ff; emissiveIntensity:0.8; opacity:0.85'); halo.setAttribute('rotation','90 0 0'); halo.setAttribute('visible','false');
+
+    const tip=document.createElement('a-entity'); tip.setAttribute('position','0 0.12 0'); tip.setAttribute('visible','false'); tip.setAttribute('billboard','');
+    const bg=document.createElement('a-entity'); bg.setAttribute('geometry','primitive: plane; width: 0.60; height: auto'); bg.setAttribute('material','color:#000; opacity:0.78; side: double');
+    const txt=document.createElement('a-text'); txt.setAttribute('value',`${item.name}: ${item.desc}`); txt.setAttribute('color','#fff'); txt.setAttribute('align','center'); txt.setAttribute('width','1.3'); txt.setAttribute('wrap-count','30');
+    tip.appendChild(bg); tip.appendChild(txt);
+
+    const rec={name:item.name, diff:item.diff, desc:item.desc, wrap, dot, tip, halo};
+    wrap.appendChild(dot); wrap.appendChild(halo); wrap.appendChild(tip);
+    wrap.addEventListener('click', ()=>{ if(!editMode){ // abrir tooltip
+        hsRoot.querySelectorAll('[visible="true"]').forEach(el=> el.setAttribute('visible','false'));
+        tip.setAttribute('visible','true'); setTimeout(()=>{ if(tip.getAttribute('visible')==='true') tip.setAttribute('visible','false'); }, 5000);
+      }else{ // seleccionar en modo edición
+        selected = hsRecords.indexOf(rec); populateSelect(); highlightSelected();
+      }
+    });
+    hsRoot.appendChild(wrap); hsRecords.push(rec);
+  });
+  populateSelect(); highlightSelected();
+}
+
+/* Editor */
+btnEdit.onclick=()=>{ editMode=!editMode; btnEdit.classList.toggle('active',editMode); editor.classList.toggle('show',editMode); };
+hsSelect.addEventListener('change',()=>{ selected=parseInt(hsSelect.value||0,10)||0; highlightSelected(); });
+document.getElementById('centerSel').onclick=()=>{ const r=hsRecords[selected]; r.wrap.object3D.position.set(0,0,0); };
+function stepVal(){ return Math.max(0.001, parseFloat(stepInput.value)||0.01); }
+document.getElementById('leftX').onclick =()=>{ hsRecords[selected].wrap.object3D.position.x -= stepVal(); };
+document.getElementById('rightX').onclick=()=>{ hsRecords[selected].wrap.object3D.position.x += stepVal(); };
+document.getElementById('upY').onclick   =()=>{ hsRecords[selected].wrap.object3D.position.y += stepVal(); };
+document.getElementById('downY').onclick =()=>{ hsRecords[selected].wrap.object3D.position.y -= stepVal(); };
+document.getElementById('upZ').onclick   =()=>{ hsRecords[selected].wrap.object3D.position.z += stepVal(); };
+document.getElementById('downZ').onclick =()=>{ hsRecords[selected].wrap.object3D.position.z -= stepVal(); };
+dragToggle.onclick=()=>{ dragOn=!dragOn; dragToggle.textContent = `Arrastrar: ${dragOn?'ON':'OFF'}`; };
+
+document.getElementById('saveLocal').onclick=()=>{
+  const data = getCurrentPositions(); saveCustom(kind, data);
+  alert('Hotspots guardados en este navegador para '+kind.toUpperCase());
+};
+document.getElementById('copyJSON').onclick=()=>{
+  const data = JSON.stringify(getCurrentPositions(), null, 2);
+  navigator.clipboard?.writeText(data); alert('JSON copiado al portapapeles');
+};
+document.getElementById('resetHS').onclick=()=>{
+  localStorage.removeItem(STORAGE_KEY(kind));
+  clearHotspots(); makeHotspots(kind); alert('Hotspots reiniciados (valores por defecto).');
+};
+
+/* Drag sobre superficie del modelo en modo edición */
+(function enableSurfaceDrag(){
+  const scene = document.querySelector('a-scene');
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  function getIntersectPoint(evt){
+    const canvas = scene.canvas; if(!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const x = ( (evt.touches?evt.touches[0].clientX:evt.clientX) - rect.left ) / rect.width;
+    const y = ( (evt.touches?evt.touches[0].clientY:evt.clientY) - rect.top ) / rect.height;
+    mouse.set( x*2 - 1, - (y*2 - 1) );
+    raycaster.setFromCamera(mouse, scene.camera);
+    const mesh = modelEl.getObject3D('mesh'); if(!mesh) return null;
+    // Intersecta contra TODOS los submeshes
+    const intersects = raycaster.intersectObject(mesh, true);
+    return intersects && intersects[0] ? intersects[0].point : null;
+  }
+  function toLocal(pWorld){
+    const p = pWorld.clone();
+    modelEl.object3D.worldToLocal(p);
+    return p;
+  }
+  const handle = (evt)=>{
+    if(!editMode || !dragOn) return;
+    const p = getIntersectPoint(evt); if(!p) return;
+    const loc = toLocal(p);
+    const r=hsRecords[selected]; r.wrap.object3D.position.copy(loc);
+  };
+  scene.addEventListener('loaded', ()=>{
+    const c = scene.canvas || scene;
+    c.addEventListener('pointerdown', handle);
+    c.addEventListener('touchstart', handle, {passive:false});
+  }, {once:true});
+})();
+
+/* Info EDU + UI general */
+function setUIAndURL(){ setUI(); const u=new URL(location.href); u.searchParams.set('m',kind); history.replaceState(null,'',u.toString()); }
+function renderInfoAndSelect(){ renderInfo(kind); }
 
 /* Carga del modelo */
 async function load(){
@@ -271,17 +365,16 @@ async function load(){
   scaleRange.value=init.scale;
 
   modelEl.setAttribute('auto-rotator',`enabled:${btnAuto.classList.contains('active')}; speed:${parseFloat(speedRange.value)}`);
-  clearHotspots(); // limpia los anteriores antes de recargar
+  clearHotspots();
   setTimeout(()=>modelEl.setAttribute('gltf-model',url),30);
 }
 
 /* Botones */
-btnA.onclick=()=>{kind='animal'; setUI(); load();};
-btnV.onclick=()=>{kind='vegetal'; setUI(); load();};
+btnA.onclick=()=>{ kind='animal'; setUIAndURL(); load(); renderInfoAndSelect(); };
+btnV.onclick=()=>{ kind='vegetal'; setUIAndURL(); load(); renderInfoAndSelect(); };
 btnAuto.onclick=()=>{ const enabled=!btnAuto.classList.contains('active'); btnAuto.classList.toggle('active',enabled);
   modelEl.setAttribute('auto-rotator',`enabled:${enabled}; speed:${parseFloat(speedRange.value)}`);};
 btnInfo.onclick=()=>{ const v=infoPanel.style.display!=='none'; infoPanel.style.display=v?'none':'block'; btnInfo.classList.toggle('active',!v);};
-
 modelEl.addEventListener('model-loaded',()=>{ hideProgress(); makeHotspots(kind); });
 modelEl.addEventListener('model-error',e=>{ hideProgress(); alert('No se pudo cargar el modelo.'); console.error(e.detail);});
 
@@ -299,7 +392,7 @@ scaleRange.addEventListener('input',()=> setScaleUniform(parseFloat(scaleRange.v
 speedRange.addEventListener('input',()=>{ const en=btnAuto.classList.contains('active'); modelEl.setAttribute('auto-rotator',`enabled:${en}; speed:${parseFloat(speedRange.value)}`); });
 
 /* Inicio */
-setUI(); load();
+setUI(); renderInfoAndSelect(); load();
 </script>
 </body>
 </html>
