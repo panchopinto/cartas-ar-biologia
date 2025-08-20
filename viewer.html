@@ -95,8 +95,9 @@
       tap-reset="scale:0.40; rotYdeg:0"
       auto-rotator="enabled:false; speed:20"></a-entity>
 
+    <!-- Cámara con cursor para clicks en hotspots -->
     <a-entity id="cameraRig">
-      <a-entity camera position="0 0 1.4"></a-entity>
+      <a-entity camera position="0 0 1.4" cursor="rayOrigin: mouse" raycaster="objects: .hs-click"></a-entity>
     </a-entity>
   </a-scene>
 
@@ -140,6 +141,61 @@ AFRAME.registerComponent('tap-reset',{schema:{scale:{default:1},rotYdeg:{default
 AFRAME.registerComponent('auto-rotator',{schema:{speed:{default:20},enabled:{default:false}},tick:function(t,dt){
   if(!this.data.enabled)return; this.el.object3D.rotation.y+=THREE.MathUtils.degToRad(this.data.speed)*(dt/1000);
 }});
+
+/* Hace que un entity siempre mire a la cámara (para tooltips) */
+AFRAME.registerComponent('billboard',{tick:function(){const cam=this.el.sceneEl&&this.el.sceneEl.camera;if(!cam)return;this.el.object3D.quaternion.copy(cam.el.object3D.quaternion);}});
+
+/* ====== Hotspots ====== */
+const HS={
+  animal:[
+    {name:'Núcleo',desc:'Controla la célula y guarda el ADN.',pos:[0,0.12,0]},
+    {name:'Mitocondrias',desc:'Producen ATP (energía).',pos:[0.18,0.06,0.04]},
+    {name:'Aparato de Golgi',desc:'Empaqueta y distribuye proteínas/lípidos.',pos:[0.12,0.00,-0.15]},
+    {name:'Ribosomas',desc:'Sintetizan proteínas.',pos:[-0.18,0.08,0]},
+    {name:'Lisosomas',desc:'Digestión celular de desechos.',pos:[-0.12,-0.02,0.14],diff:true},
+    {name:'Centriolos',desc:'Organizan huso mitótico.',pos:[0.16,0.14,-0.02],diff:true},
+    {name:'Membrana plasmática',desc:'Delimita e intercambio.',pos:[0,-0.08,0.2]},
+    {name:'Citoplasma',desc:'Medio de reacciones químicas.',pos:[-0.06,0.02,-0.18]}
+  ],
+  vegetal:[
+    {name:'Núcleo',desc:'Controla la célula y guarda el ADN.',pos:[0,0.12,0]},
+    {name:'Cloroplastos',desc:'Fotosíntesis: luz → energía química.',pos:[0.18,0.05,0],diff:true},
+    {name:'Vacuola central',desc:'Almacenamiento y turgencia.',pos:[-0.12,0.02,-0.1],diff:true},
+    {name:'Pared celular',desc:'Rigidez y protección (celulosa).',pos:[0,0,-0.22],diff:true},
+    {name:'Plasmodesmos',desc:'Comunicación entre células vegetales.',pos:[-0.20,0.00,0.12],diff:true},
+    {name:'Aparato de Golgi',desc:'Empaque y secreción.',pos:[0.12,0,-0.15]},
+    {name:'Mitocondrias',desc:'Producción de ATP.',pos:[-0.18,0.06,0.02]},
+    {name:'Ribosomas',desc:'Síntesis de proteínas.',pos:[0.0,0.16,0.16]}
+  ]
+};
+
+function clearHotspots(){
+  const old=document.getElementById('hsRoot'); if(old&&old.parentNode) old.parentNode.removeChild(old);
+}
+function makeHotspots(kind){
+  clearHotspots(); const items=HS[kind]||[];
+  const root=document.createElement('a-entity'); root.setAttribute('id','hsRoot'); modelEl.appendChild(root);
+  items.forEach(item=>{
+    const wrap=document.createElement('a-entity'); wrap.setAttribute('position', item.pos.join(' '));
+    const dot=document.createElement('a-entity'); dot.classList.add('hs-click');
+    dot.setAttribute('geometry', `primitive: sphere; radius: ${item.diff?0.055:0.035}`);
+    dot.setAttribute('material', `color:${item.diff?'#39ff14':'#00d4ff'}; emissive:${item.diff?'#39ff14':'#00a0ff'}; emissiveIntensity:0.85; metalness:0; roughness:0.3; side: double`);
+    if(item.diff){ dot.setAttribute('animation','property: scale; dir: alternate; dur:800; loop:true; to:1.25 1.25 1.25; easing:easeInOutSine'); }
+
+    const tip=document.createElement('a-entity'); tip.setAttribute('position','0 0.12 0'); tip.setAttribute('visible','false'); tip.setAttribute('billboard','');
+    const bg=document.createElement('a-entity'); bg.setAttribute('geometry','primitive: plane; width: 0.60; height: auto'); bg.setAttribute('material','color:#000; opacity:0.78; side: double');
+    const txt=document.createElement('a-text'); txt.setAttribute('value',`${item.name}: ${item.desc}`); txt.setAttribute('color','#fff'); txt.setAttribute('align','center'); txt.setAttribute('width','1.3'); txt.setAttribute('wrap-count','30');
+    tip.appendChild(bg); tip.appendChild(txt);
+
+    wrap.appendChild(dot); wrap.appendChild(tip);
+    wrap.addEventListener('click', ()=>{
+      root.querySelectorAll('[visible="true"]').forEach(el=> el.setAttribute('visible','false'));
+      tip.setAttribute('visible','true'); setTimeout(()=>{ if(tip.getAttribute('visible')==='true') tip.setAttribute('visible','false'); }, 5000);
+    });
+
+    root.appendChild(wrap);
+  });
+}
 
 /* ====== App ====== */
 const INIT={ animal:{scale:0.40,rotYdeg:0}, vegetal:{scale:0.36,rotYdeg:0} };
@@ -215,6 +271,7 @@ async function load(){
   scaleRange.value=init.scale;
 
   modelEl.setAttribute('auto-rotator',`enabled:${btnAuto.classList.contains('active')}; speed:${parseFloat(speedRange.value)}`);
+  clearHotspots(); // limpia los anteriores antes de recargar
   setTimeout(()=>modelEl.setAttribute('gltf-model',url),30);
 }
 
@@ -225,6 +282,7 @@ btnAuto.onclick=()=>{ const enabled=!btnAuto.classList.contains('active'); btnAu
   modelEl.setAttribute('auto-rotator',`enabled:${enabled}; speed:${parseFloat(speedRange.value)}`);};
 btnInfo.onclick=()=>{ const v=infoPanel.style.display!=='none'; infoPanel.style.display=v?'none':'block'; btnInfo.classList.toggle('active',!v);};
 
+modelEl.addEventListener('model-loaded',()=>{ hideProgress(); makeHotspots(kind); });
 modelEl.addEventListener('model-error',e=>{ hideProgress(); alert('No se pudo cargar el modelo.'); console.error(e.detail);});
 
 /* Controles */
