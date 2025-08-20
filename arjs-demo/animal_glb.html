@@ -57,13 +57,23 @@
     }
 
     /* Panel sliders */
+    /* Panel sliders (compacto) */
     .panel{
       position:fixed; left:10px; bottom:10px; z-index:8;
-      padding:10px 12px; background:rgba(0,0,0,.45);
-      border:1px solid rgba(255,255,255,.28); border-radius:12px; min-width:230px
+      padding:8px 10px; background:rgba(0,0,0,.45);
+      border:1px solid rgba(255,255,255,.28); border-radius:10px; min-width:190px
     }
-    .panel label{display:flex; align-items:center; gap:8px; font:600 13px system-ui; color:#fff; margin:6px 0}
-    .panel input[type="range"]{width:160px}
+    .panel label{display:flex; align-items:center; gap:6px; font:600 12px system-ui; color:#fff; margin:4px 0}
+    .panel input[type="range"]{width:130px}
+    
+    /* Ajuste extra en pantallas pequeñas */
+    @media (max-width:480px){
+      .panel{padding:6px 8px; min-width:170px}
+      .panel input[type="range"]{width:110px}
+      /* opcional: hacer un pelín más pequeños los botones de la derecha */
+      .controls{grid-gap:6px}
+      .ctrl{width:44px; height:44px; font:600 18px/44px system-ui}
+    }
 
     /* Panel educativo */
     .infoPanel{
