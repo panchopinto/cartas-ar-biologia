@@ -5,15 +5,19 @@
   <title>RA — Célula (HIRO)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 
-  <!-- Versiones estables -->
+  <!-- A-Frame + AR.js -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
 
   <style>
-    /* Evitar fondo negro detrás del video */
-    html, body { margin:0; padding:0; height:100%; background:transparent; overflow:hidden; }
+    /* Bloqueo de desplazamientos/gestos del navegador */
+    html, body {
+      margin:0; padding:0; height:100%;
+      background:transparent; overflow:hidden;
+      touch-action:none; overscroll-behavior:contain;
+    }
 
-    /* El video de la cámara debe llenar pantalla y quedar debajo del canvas */
+    /* Video de la cámara (debajo del canvas) */
     #arjs-video, .arjs-video, video[playsinline] {
       position: fixed !important;
       top: 0; left: 0; width: 100vw; height: 100vh;
@@ -22,17 +26,17 @@
       background: transparent;
     }
 
-    /* A-Frame canvas arriba del video */
+    /* Canvas de A-Frame */
     canvas, .a-canvas {
       position: fixed !important;
       top: 0; left: 0;
       width: 100vw !important; height: 100vh !important;
       z-index: 2;
-      touch-action: none; /* gestos multitáctiles */
+      touch-action: none !important;
       background: transparent !important;
     }
 
-    /* UI por encima de todo */
+    /* UI */
     .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;
          font-family:system-ui,Arial,sans-serif;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));z-index:5}
     .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px;z-index:6}
@@ -43,7 +47,21 @@
              color:#fff;background:rgba(0,0,0,.5);padding:.6rem .9rem;border-radius:10px;display:none;z-index:7}
     .status{position:fixed;left:8px;top:8px;background:rgba(0,0,0,.4);color:#fff;padding:6px 10px;border-radius:8px;font:14px system-ui;z-index:9}
 
-    /* Botón de inicio (por si el navegador bloquea autoplay del video) */
+    /* Controles táctiles */
+    .controls {
+      position: fixed; right: 10px; bottom: 10px; z-index: 8;
+      display: grid; grid-template-columns: repeat(3, 48px); grid-gap: 8px;
+      user-select: none;
+    }
+    .ctrl {
+      width: 48px; height: 48px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.28);
+      background: rgba(0,0,0,.45); color:#fff; font: 600 20px/48px system-ui,Arial;
+      text-align:center; cursor:pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,.25);
+    }
+
+    /* Gate para iniciar cámara cuando el navegador lo exige */
     .gate {
       position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
       background: #000c; z-index: 10;
@@ -64,99 +82,148 @@
   <div id="loading" class="loading">Cargando modelo…</div>
   <div id="status" class="status">Buscando marcador…</div>
 
+  <!-- Controles -->
+  <div class="controls" id="controls">
+    <div class="ctrl" id="rotL" title="Rotar izquierda">↶</div>
+    <div class="ctrl" id="reset" title="Reset">⟲</div>
+    <div class="ctrl" id="rotR" title="Rotar derecha">↷</div>
+    <div class="ctrl" id="zoomOut" title="Zoom -">−</div>
+    <div class="ctrl" id="dummy" style="opacity:.25; pointer-events:none;">•</div>
+    <div class="ctrl" id="zoomIn" title="Zoom +">+</div>
+  </div>
+
   <!-- Gate por si el navegador exige interacción para reproducir la cámara -->
   <div id="gate" class="gate"><button id="startBtn">Iniciar cámara</button></div>
 
   <a-scene
     embedded
-    renderer="alpha:true; antialias:true; precision:mediump; colorManagement:true; physicallyCorrectLights:true; powerPreference:high-performance"
-    vr-mode-ui="enabled:false"
-    arjs="sourceType: webcam; facingMode: environment; videoTexture: true; debugUIEnabled:false;
-          trackingMethod: best; sourceWidth:640; sourceHeight:480; displayWidth:640; displayHeight:480"
-    style="background: transparent !important">
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+    renderer="antialias: true; precision: mediump"
+    arjs="sourceType: webcam; sourceWidth: 1280; sourceHeight: 720; debugUIEnabled: false;"
+    style="background:#000">
 
     <!-- Iluminación -->
     <a-entity light="type: ambient; intensity: 0.9"></a-entity>
     <a-entity light="type: directional; intensity: 0.7" position="1 1 0"></a-entity>
 
-    <!-- Marker (preset HIRO) -->
-    <a-marker preset="hiro" id="hiro">
-      <!-- Cubo de prueba (puedes borrar) -->
-      <a-box depth="0.2" height="0.2" width="0.2" color="#4caf50" position="0 0.2 0"></a-box>
-
-      <!-- Modelo GLB -->
+    <!-- Marker HIRO -->
+    <a-marker preset="hiro" id="hiro" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5">
+      <!-- Modelo -->
       <a-entity
         id="cellModel"
         position="0 0 0"
         rotation="0 0 0"
         scale="0.40 0.40 0.40"
-        pinch-scale="min:0.2; max:3; factor:1">
+        gesture-handler="minScale:0.20; maxScale:3.0; rotFactor:0.5"
+        pinch-scale="min:0.20; max:3.0; factor:1"
+        tap-reset="scale:0.40; rotYdeg:0">
       </a-entity>
     </a-marker>
 
-    <!-- Cámara con near/far amplios -->
-    <a-entity camera="near:0.01; far:5000"></a-entity>
+    <!-- Cámara -->
+    <a-entity camera></a-entity>
   </a-scene>
 
   <script>
-    /* === Gestos: pinch-to-zoom === */
-    AFRAME.registerComponent('pinch-scale', {
-      schema: { min: {default: 0.1}, max: {default: 4}, factor: {default: 1} },
-      init: function () {
-        this.startDist = null; this.startScale = null; this.active = false; this.canvas = null;
-        const scene = this.el.sceneEl;
-        const add = () => {
-          this.canvas = scene.canvas;
-          if (this.canvas) this.canvas.style.touchAction = 'none';
-          this._onStart = this.onStart.bind(this);
-          this._onMove  = this.onMove.bind(this);
-          this._onEnd   = this.onEnd.bind(this);
-          this.canvas.addEventListener('touchstart', this._onStart, {passive:false});
-          this.canvas.addEventListener('touchmove',  this._onMove,  {passive:false});
-          this.canvas.addEventListener('touchend',   this._onEnd);
-          this.canvas.addEventListener('touchcancel',this._onEnd);
+    /* ===================== GESTOS ===================== */
+    // 1 dedo: rotación Y
+    AFRAME.registerComponent('gesture-handler', {
+      schema: { rotFactor:{default:0.45}, minScale:{default:0.05}, maxScale:{default:3.0} },
+      init: function(){
+        this.oneFinger=false; this.lastX=0;
+        this.scene=this.el.sceneEl;
+        const add=()=>{
+          const t=this.scene.canvas||this.scene;
+          t.addEventListener('touchstart',e=>{ if(e.touches.length===1){ this.oneFinger=true; this.lastX=e.touches[0].clientX; } }, {passive:false});
+          t.addEventListener('touchmove', e=>{
+            if(this.oneFinger && e.touches.length===1){
+              const dx=e.touches[0].clientX - this.lastX;
+              this.lastX=e.touches[0].clientX;
+              this.el.object3D.rotation.y -= (dx*this.data.rotFactor)*Math.PI/180;
+              e.preventDefault();
+            }
+          }, {passive:false});
+          t.addEventListener('touchend', ()=>{ this.oneFinger=false; }, {passive:false});
+          t.addEventListener('touchcancel', ()=>{ this.oneFinger=false; }, {passive:false});
         };
-        scene.canvas ? add() : scene.addEventListener('render-target-loaded', add);
-      },
-      remove: function () {
-        if (!this.canvas) return;
-        this.canvas.removeEventListener('touchstart', this._onStart);
-        this.canvas.removeEventListener('touchmove',  this._onMove);
-        this.canvas.removeEventListener('touchend',   this._onEnd);
-        this.canvas.removeEventListener('touchcancel',this._onEnd);
-      },
-      onStart: function (e) {
-        if (e.touches.length === 2) {
-          e.preventDefault();
-          this.active = true;
-          this.startDist = this.getDist(e.touches[0], e.touches[1]);
-          this.startScale = this.el.object3D.scale.clone();
-        }
-      },
-      onMove: function (e) {
-        if (!this.active || e.touches.length !== 2) return;
-        e.preventDefault();
-        const newDist = this.getDist(e.touches[0], e.touches[1]);
-        const k = (newDist / this.startDist) * this.data.factor;
-        const min = this.data.min, max = this.data.max;
-        const sx = THREE.MathUtils.clamp(this.startScale.x * k, min, max);
-        const sy = THREE.MathUtils.clamp(this.startScale.y * k, min, max);
-        const sz = THREE.MathUtils.clamp(this.startScale.z * k, min, max);
-        this.el.object3D.scale.set(sx, sy, sz);
-      },
-      onEnd: function (e) {
-        if (e.touches.length < 2) { this.active = false; this.startDist = null; }
-      },
-      getDist: function (t1, t2) {
-        const dx = t1.clientX - t2.clientX, dy = t1.clientY - t2.clientY;
-        return Math.hypot(dx, dy);
+        this.scene.hasLoaded ? add() : this.scene.addEventListener('loaded', add, {once:true});
       }
     });
 
-    /* === Carga de modelos (Draco + fallback) y conmutación Animal/Vegetal === */
+    // Pinch: zoom
+    AFRAME.registerComponent('pinch-scale', {
+      schema:{ min:{default:0.1}, max:{default:4}, factor:{default:1} },
+      init:function(){
+        this.active=false; this.startDist=0; this.startScale=this.el.object3D.scale.clone();
+        const s=this.el.sceneEl; const add=()=>{
+          const c=s.canvas||s;
+          c.addEventListener('touchstart',e=>{
+            if(e.touches.length===2){ this.active=true;
+              const dx=e.touches[0].clientX - e.touches[1].clientX;
+              const dy=e.touches[0].clientY - e.touches[1].clientY;
+              this.startDist=Math.hypot(dx,dy);
+              this.startScale=this.el.object3D.scale.clone();
+              e.preventDefault();
+            }
+          },{passive:false});
+          c.addEventListener('touchmove',e=>{
+            if(!this.active||e.touches.length!==2) return;
+            const dx=e.touches[0].clientX - e.touches[1].clientX;
+            const dy=e.touches[0].clientY - e.touches[1].clientY;
+            const dist=Math.hypot(dx,dy);
+            const k=(dist/this.startDist)*this.data.factor;
+            const sX=THREE.MathUtils.clamp(this.startScale.x*k,this.data.min,this.data.max);
+            const sY=THREE.MathUtils.clamp(this.startScale.y*k,this.data.min,this.data.max);
+            const sZ=THREE.MathUtils.clamp(this.startScale.z*k,this.data.min,this.data.max);
+            this.el.object3D.scale.set(sX,sY,sZ);
+            e.preventDefault();
+          },{passive:false});
+          const end=()=>{ this.active=false; };
+          c.addEventListener('touchend', end, {passive:false});
+          c.addEventListener('touchcancel', end, {passive:false});
+
+          // Zoom con rueda (PC)
+          c.addEventListener('wheel', (e)=>{
+            e.preventDefault();
+            const dir = e.deltaY>0 ? 0.9 : 1.1;
+            const s=this.el.object3D.scale.x*dir;
+            const cl=THREE.MathUtils.clamp(s, this.data.min, this.data.max);
+            this.el.object3D.scale.set(cl,cl,cl);
+          }, {passive:false});
+        };
+        s.hasLoaded ? add() : s.addEventListener('loaded', add, {once:true});
+      }
+    });
+
+    // Doble toque: reset
+    AFRAME.registerComponent('tap-reset', {
+      schema:{ scale:{default:1}, rotYdeg:{default:0} },
+      init:function(){
+        this.lastTap=0;
+        const s=this.el.sceneEl; const add=()=>{
+          const t=s.canvas||s;
+          t.addEventListener('touchend',()=>{
+            const now=performance.now();
+            if(now-this.lastTap<300){
+              const sc=this.data.scale; this.el.object3D.scale.set(sc,sc,sc);
+              this.el.object3D.rotation.y = THREE.MathUtils.degToRad(this.data.rotYdeg);
+            }
+            this.lastTap=now;
+          }, {passive:true});
+        };
+        s.hasLoaded ? add() : s.addEventListener('loaded', add, {once:true});
+      }
+    });
+
+    /* ===================== APP ===================== */
     const DEFAULT_SCALE = {x:0.40, y:0.40, z:0.40};
+    const MIN_SCALE = 0.20, MAX_SCALE = 3.0;
+    const ROT_STEP_DEG = 8; // rotación por click de botón
+    const ZOOM_STEP = 1.12; // factor de zoom por click
+
     const MAP = {
-      animal:  { normal: "../assets/models/animal.glb",            draco: "../assets/models/animal_draco.glb" },
+      animal:  { normal: "../assets/models/animal.glb",  draco: "../assets/models/animal_draco.glb" },
       vegetal: { normal: "../assets/models/vegetal.glb", draco: "../assets/models/vegetal_draco.glb" }
     };
 
@@ -174,6 +241,12 @@
     const gate     = document.getElementById('gate');
     const startBtn = document.getElementById('startBtn');
 
+    const rotL = document.getElementById('rotL');
+    const rotR = document.getElementById('rotR');
+    const zoomIn = document.getElementById('zoomIn');
+    const zoomOut = document.getElementById('zoomOut');
+    const resetBtn = document.getElementById('reset');
+
     function setUI(){
       btnA.classList.toggle('active', kind==='animal');
       btnV.classList.toggle('active', kind==='vegetal');
@@ -186,9 +259,10 @@
 
     async function load(){
       loading.style.display='block';
-      const url=(await pick()) + '#' + Date.now();     // cache-buster
-      modelEl.removeAttribute('gltf-model');           // forzar recarga real
-      modelEl.object3D.scale.set(DEFAULT_SCALE.x, DEFAULT_SCALE.y, DEFAULT_SCALE.z); // reset pinch
+      const url=(await pick()) + '#' + Date.now();
+      modelEl.removeAttribute('gltf-model');
+      modelEl.object3D.scale.set(DEFAULT_SCALE.x, DEFAULT_SCALE.y, DEFAULT_SCALE.z);
+      modelEl.object3D.rotation.set(0,0,0);
       setTimeout(()=> modelEl.setAttribute('gltf-model', url), 30);
     }
 
@@ -203,11 +277,11 @@
       console.error(e.detail);
     });
 
-    // Indicador de detección del marcador
+    // Estado del marcador
     markerEl.addEventListener('markerFound', ()=> statusEl.textContent = 'Marcador detectado ✅');
     markerEl.addEventListener('markerLost',  ()=> statusEl.textContent = 'Buscando marcador…');
 
-    /* === Transparencia real del canvas cuando la escena esté lista === */
+    // Transparencia del renderer
     const scene = document.querySelector('a-scene');
     scene.addEventListener('loaded', () => {
       const r = scene.renderer;
@@ -215,58 +289,64 @@
       else if (r && r.setClearColor) r.setClearColor(0x000000, 0);
     });
 
-    /* === Video fix: forzar atributos y estilo del video de la cámara === */
+    /* --------- Video / Cámara ---------- */
     function styleArVideo(v){
       if (!v) return;
-      v.setAttribute('playsinline','');
-      v.setAttribute('webkit-playsinline','');
-      v.muted = true;
-      v.autoplay = true;
-      v.style.position = 'fixed';
-      v.style.top = '0'; v.style.left = '0';
-      v.style.width = '100vw'; v.style.height = '100vh';
-      v.style.objectFit = 'cover';
-      v.style.zIndex = '0';
-      v.style.background = 'transparent';
+      v.setAttribute('playsinline',''); v.setAttribute('webkit-playsinline','');
+      v.muted = true; v.autoplay = true;
+      v.style.position='fixed'; v.style.top='0'; v.style.left='0';
+      v.style.width='100vw'; v.style.height='100vh';
+      v.style.objectFit='cover'; v.style.zIndex='0'; v.style.background='transparent';
     }
-
     function findArVideo(){
-      // AR.js suele usar id="arjs-video" o clase "arjs-video"
       return document.getElementById('arjs-video') ||
              document.querySelector('.arjs-video') ||
              document.querySelector('video');
     }
-
     async function ensureVideoPlayback(){
-      const v = findArVideo();
-      if (!v) return false;
+      const v = findArVideo(); if (!v) return false;
       styleArVideo(v);
-      try {
-        await v.play();
-        return true;
-      } catch (e) {
-        // Navegador exige interacción
-        return false;
-      }
+      try { await v.play(); return true; } catch { return false; }
     }
-
-    // Mostrar “gate” si el video no arranca solo
     async function tryStartCameraWithGate(){
-      // Espera a que AR.js inserte el video
-      let tries = 0;
-      while (!findArVideo() && tries < 50) {
-        await new Promise(r=>setTimeout(r,100));
-        tries++;
-      }
+      let tries=0; while(!findArVideo() && tries<50){ await new Promise(r=>setTimeout(r,100)); tries++; }
       const ok = await ensureVideoPlayback();
       gate.classList.toggle('show', !ok);
     }
-
     startBtn.addEventListener('click', async ()=>{
       const ok = await ensureVideoPlayback();
       if (ok) gate.classList.remove('show');
     });
 
+    /* --------- Controles on-screen ---------- */
+    function clampScale(s){ return Math.min(Math.max(s, MIN_SCALE), MAX_SCALE); }
+    function setScaleUniform(s){
+      s = clampScale(s);
+      modelEl.object3D.scale.set(s,s,s);
+    }
+    rotL.addEventListener('click', ()=> {
+      modelEl.object3D.rotation.y += THREE.MathUtils.degToRad(ROT_STEP_DEG);
+    });
+    rotR.addEventListener('click', ()=> {
+      modelEl.object3D.rotation.y -= THREE.MathUtils.degToRad(ROT_STEP_DEG);
+    });
+    zoomIn.addEventListener('click', ()=> {
+      const s = modelEl.object3D.scale.x * ZOOM_STEP;
+      setScaleUniform(s);
+    });
+    zoomOut.addEventListener('click', ()=> {
+      const s = modelEl.object3D.scale.x / ZOOM_STEP;
+      setScaleUniform(s);
+    });
+    resetBtn.addEventListener('click', ()=> {
+      modelEl.object3D.scale.set(DEFAULT_SCALE.x, DEFAULT_SCALE.y, DEFAULT_SCALE.z);
+      modelEl.object3D.rotation.set(0,0,0);
+    });
+
+    // Evitar que los botones “absorban” el gesto y no hagan scroll accidental
+    document.getElementById('controls').addEventListener('touchstart', e=> e.stopPropagation(), {passive:true});
+
+    /* --------- Arranque --------- */
     setUI();
     load();
     tryStartCameraWithGate();
