@@ -2,37 +2,23 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <title>RA — Célula Vegetal (HIRO)</title>
+  <title>RA — Célula (HIRO) · Vegetal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 
-  <!-- Versiones estables -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
 
   <style>
-    /* Evitar fondo negro detrás del video */
-    html, body { margin:0; padding:0; height:100%; background:transparent; overflow:hidden; }
-
-    /* El video de la cámara debe llenar pantalla y quedar debajo del canvas */
+    html, body { margin:0; padding:0; height:100%;
+      background:transparent; overflow:hidden; touch-action:none; overscroll-behavior:contain; }
     #arjs-video, .arjs-video, video[playsinline] {
-      position: fixed !important;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      object-fit: cover;
-      z-index: 0;
-      background: transparent;
+      position: fixed !important; top:0; left:0; width:100vw; height:100vh;
+      object-fit: cover; z-index:0; background: transparent;
     }
-
-    /* A-Frame canvas arriba del video */
     canvas, .a-canvas {
-      position: fixed !important;
-      top: 0; left: 0;
-      width: 100vw !important; height: 100vh !important;
-      z-index: 2;
-      touch-action: none; /* gestos multitáctiles */
-      background: transparent !important;
+      position: fixed !important; top:0; left:0; width:100vw !important; height:100vh !important;
+      z-index:2; touch-action:none !important; background: transparent !important;
     }
-
-    /* UI por encima de todo */
     .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;
          font-family:system-ui,Arial,sans-serif;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));z-index:5}
     .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px;z-index:6}
@@ -41,18 +27,36 @@
     .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
     .loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-family:system-ui,Arial,sans-serif;
              color:#fff;background:rgba(0,0,0,.5);padding:.6rem .9rem;border-radius:10px;display:none;z-index:7}
-    .status{position:fixed;left:8px;top:8px;background:rgba(0,0,0,.4);color:#fff;padding:6px 10px;border-radius:8px;font:14px system-ui;z-index:9}
 
-    /* Botón de inicio (por si el navegador bloquea autoplay del video) */
-    .gate {
-      position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
-      background: #000c; z-index: 10;
+    /* Estado (movido más abajo) */
+    .status{
+      position:fixed;left:8px;
+      top: calc(60px + env(safe-area-inset-top)); /* ↓ más abajo para no acoplarse */
+      background:rgba(0,0,0,.40); color:#fff; padding:6px 10px;
+      border:1px solid rgba(255,255,255,.24); border-radius:8px; font:14px system-ui; z-index:9
     }
-    .gate.show { display: flex; }
-    .gate button {
-      font: 600 16px system-ui, Arial; padding: 12px 18px; border-radius: 12px;
-      border: 1px solid #fff6; color: #fff; background: #000a; cursor: pointer;
+    .status.ok{
+      background:rgba(16,185,129,.20);
+      border-color:rgba(34,197,94,.45);
     }
+
+    .controls { position: fixed; right: 10px; bottom: 10px; z-index: 8;
+      display: grid; grid-template-columns: repeat(3, 48px); grid-gap: 8px; user-select: none; }
+    .ctrl { width:48px; height:48px; border-radius:12px; border:1px solid rgba(255,255,255,.28);
+      background:rgba(0,0,0,.45); color:#fff; font:600 20px/48px system-ui,Arial; text-align:center;
+      cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.25); }
+
+    .panel{
+      position:fixed; left:10px; bottom:10px; z-index:8;
+      padding:10px 12px; background:rgba(0,0,0,.45);
+      border:1px solid rgba(255,255,255,.28); border-radius:12px; min-width:230px
+    }
+    .panel label{display:flex; align-items:center; gap:8px; font:600 13px system-ui; color:#fff; margin:6px 0}
+    .panel input[type="range"]{width:160px}
+
+    .gate { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000c; z-index:10; }
+    .gate.show { display:flex; }
+    .gate button { font:600 16px system-ui,Arial; padding:12px 18px; border-radius:12px; border:1px solid #fff6; color:#fff; background:#000a; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -60,217 +64,178 @@
   <div class="toolbar">
     <button id="btnAnimal" class="btn">Animal</button>
     <button id="btnVegetal" class="btn active">Vegetal</button>
+    <button id="btnAuto" class="btn" title="Auto-rotación">Auto</button>
   </div>
   <div id="loading" class="loading">Cargando modelo…</div>
   <div id="status" class="status">Buscando marcador…</div>
 
-  <!-- Gate por si el navegador exige interacción para reproducir la cámara -->
+  <div class="controls" id="controls">
+    <div class="ctrl" id="rotL" title="Rotar izquierda">↶</div>
+    <div class="ctrl" id="reset" title="Reset">⟲</div>
+    <div class="ctrl" id="rotR" title="Rotar derecha">↷</div>
+    <div class="ctrl" id="zoomOut" title="Zoom -">−</div>
+    <div class="ctrl" style="opacity:.25; pointer-events:none;">•</div>
+    <div class="ctrl" id="zoomIn" title="Zoom +">+</div>
+  </div>
+
+  <div class="panel" id="panel">
+    <label>Zoom
+      <input type="range" id="scaleRange" min="0.20" max="3.00" step="0.01" value="0.36">
+    </label>
+    <label>Vel. rotación
+      <input type="range" id="speedRange" min="-60" max="60" step="1" value="20">
+    </label>
+  </div>
+
   <div id="gate" class="gate"><button id="startBtn">Iniciar cámara</button></div>
 
   <a-scene
     embedded
-    renderer="alpha:true; antialias:true; precision:mediump; colorManagement:true; physicallyCorrectLights:true; powerPreference:high-performance"
-    vr-mode-ui="enabled:false"
-    arjs="sourceType: webcam; facingMode: environment; videoTexture: true; debugUIEnabled:false;
-          trackingMethod: best; sourceWidth:640; sourceHeight:480; displayWidth:640; displayHeight:480"
-    style="background: transparent !important">
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+    renderer="antialias: true; precision: mediump"
+    arjs="sourceType: webcam; sourceWidth: 1280; sourceHeight: 720; debugUIEnabled: false;"
+    style="background:#000">
 
-    <!-- Iluminación -->
     <a-entity light="type: ambient; intensity: 0.9"></a-entity>
     <a-entity light="type: directional; intensity: 0.7" position="1 1 0"></a-entity>
 
-    <!-- Marker (preset HIRO) -->
-    <a-marker preset="hiro" id="hiro">
-      <!-- Cubo de prueba (puedes borrar) -->
-      <a-box depth="0.2" height="0.2" width="0.2" color="#4caf50" position="0 0.2 0"></a-box>
-
-      <!-- Modelo GLB -->
-      <a-entity
-        id="cellModel"
-        position="0 0 0"
-        rotation="0 0 0"
-        scale="0.40 0.40 0.40"
-        pinch-scale="min:0.2; max:3; factor:1">
-      </a-entity>
+    <a-marker preset="hiro" id="hiro" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5">
+      <a-entity id="cellModel"
+        position="0 0 0" rotation="0 0 0" scale="0.36 0.36 0.36"
+        gesture-handler="minScale:0.20; maxScale:3.0; rotFactor:0.5"
+        pinch-scale="min:0.20; max:3.0; factor:1"
+        tap-reset="scale:0.36; rotYdeg:0"
+        auto-rotator="enabled:false; speed:20"></a-entity>
     </a-marker>
 
-    <!-- Cámara con near/far amplios -->
-    <a-entity camera="near:0.01; far:5000"></a-entity>
+    <a-entity camera></a-entity>
   </a-scene>
 
   <script>
-    /* === Gestos: pinch-to-zoom === */
-    AFRAME.registerComponent('pinch-scale', {
-      schema: { min: {default: 0.1}, max: {default: 4}, factor: {default: 1} },
-      init: function () {
-        this.startDist = null; this.startScale = null; this.active = false; this.canvas = null;
-        const scene = this.el.sceneEl;
-        const add = () => {
-          this.canvas = scene.canvas;
-          if (this.canvas) this.canvas.style.touchAction = 'none';
-          this._onStart = this.onStart.bind(this);
-          this._onMove  = this.onMove.bind(this);
-          this._onEnd   = this.onEnd.bind(this);
-          this.canvas.addEventListener('touchstart', this._onStart, {passive:false});
-          this.canvas.addEventListener('touchmove',  this._onMove,  {passive:false});
-          this.canvas.addEventListener('touchend',   this._onEnd);
-          this.canvas.addEventListener('touchcancel',this._onEnd);
-        };
-        scene.canvas ? add() : scene.addEventListener('render-target-loaded', add);
-      },
-      remove: function () {
-        if (!this.canvas) return;
-        this.canvas.removeEventListener('touchstart', this._onStart);
-        this.canvas.removeEventListener('touchmove',  this._onMove);
-        this.canvas.removeEventListener('touchend',   this._onEnd);
-        this.canvas.removeEventListener('touchcancel',this._onEnd);
-      },
-      onStart: function (e) {
-        if (e.touches.length === 2) {
-          e.preventDefault();
-          this.active = true;
-          this.startDist = this.getDist(e.touches[0], e.touches[1]);
-          this.startScale = this.el.object3D.scale.clone();
-        }
-      },
-      onMove: function (e) {
-        if (!this.active || e.touches.length !== 2) return;
-        e.preventDefault();
-        const newDist = this.getDist(e.touches[0], e.touches[1]);
-        const k = (newDist / this.startDist) * this.data.factor;
-        const min = this.data.min, max = this.data.max;
-        const sx = THREE.MathUtils.clamp(this.startScale.x * k, min, max);
-        const sy = THREE.MathUtils.clamp(this.startScale.y * k, min, max);
-        const sz = THREE.MathUtils.clamp(this.startScale.z * k, min, max);
-        this.el.object3D.scale.set(sx, sy, sz);
-      },
-      onEnd: function (e) {
-        if (e.touches.length < 2) { this.active = false; this.startDist = null; }
-      },
-      getDist: function (t1, t2) {
-        const dx = t1.clientX - t2.clientX, dy = t1.clientY - t2.clientY;
-        return Math.hypot(dx, dy);
+    /* ====== Gestos ====== */
+    AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},minScale:{default:0.05},maxScale:{default:3.0}},
+      init:function(){this.oneFinger=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
+        t.addEventListener('touchstart',e=>{if(e.touches.length===1){this.oneFinger=true;this.lastX=e.touches[0].clientX;}},{passive:false});
+        t.addEventListener('touchmove',e=>{if(this.oneFinger&&e.touches.length===1){const dx=e.touches[0].clientX-this.lastX;this.lastX=e.touches[0].clientX;
+          this.el.object3D.rotation.y-=(dx*this.data.rotFactor)*Math.PI/180;e.preventDefault();}},{passive:false});
+        t.addEventListener('touchend',()=>{this.oneFinger=false;},{passive:false});t.addEventListener('touchcancel',()=>{this.oneFinger=false;},{passive:false});};
+        s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
+    AFRAME.registerComponent('pinch-scale',{schema:{min:{default:0.1},max:{default:4},factor:{default:1}},
+      init:function(){this.active=false;this.startDist=0;this.startScale=this.el.object3D.scale.clone();const s=this.el.sceneEl;const add=()=>{const c=s.canvas||s;
+        c.addEventListener('touchstart',e=>{if(e.touches.length===2){this.active=true;const dx=e.touches[0].clientX-e.touches[1].clientX;const dy=e.touches[0].clientY-e.touches[1].clientY;
+          this.startDist=Math.hypot(dx,dy);this.startScale=this.el.object3D.scale.clone();e.preventDefault();}}, {passive:false});
+        c.addEventListener('touchmove',e=>{if(!this.active||e.touches.length!==2)return;const dx=e.touches[0].clientX-e.touches[1].clientX;const dy=e.touches[0].clientY-e.touches[1].clientY;
+          const dist=Math.hypot(dx,dy);const k=(dist/this.startDist)*this.data.factor;const sx=THREE.MathUtils.clamp(this.startScale.x*k,this.data.min,this.data.max);
+          const sy=THREE.MathUtils.clamp(this.startScale.y*k,this.data.min,this.data.max);const sz=THREE.MathUtils.clamp(this.startScale.z*k,this.data.min,this.data.max);
+          this.el.object3D.scale.set(sx,sy,sz);e.preventDefault();},{passive:false});
+        const end=()=>{this.active=false;};c.addEventListener('touchend',end,{passive:false});c.addEventListener('touchcancel',end,{passive:false});
+        c.addEventListener('wheel',e=>{e.preventDefault();const dir=e.deltaY>0?0.9:1.1;const sc=this.el.object3D.scale.x*dir;
+          const cl=THREE.MathUtils.clamp(sc,this.data.min,this.data.max);this.el.object3D.scale.set(cl,cl,cl);},{passive:false});};
+        s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
+    AFRAME.registerComponent('tap-reset',{schema:{scale:{default:1},rotYdeg:{default:0}},init:function(){this.lastTap=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
+      t.addEventListener('touchend',()=>{const n=performance.now();if(n-this.lastTap<300){const sc=this.data.scale;this.el.object3D.scale.set(sc,sc,sc);
+        this.el.object3D.rotation.y=THREE.MathUtils.degToRad(this.data.rotYdeg);}this.lastTap=n;},{passive:true});};s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
+
+    // Auto-rotación
+    AFRAME.registerComponent('auto-rotator', {
+      schema: { speed:{default:20}, enabled:{default:false} },
+      tick: function(t, dt){
+        if (!this.data.enabled) return;
+        this.el.object3D.rotation.y += THREE.MathUtils.degToRad(this.data.speed) * (dt/1000);
       }
     });
 
-    /* === Carga de modelos (Draco + fallback) y conmutación Animal/Vegetal === */
-    const DEFAULT_SCALE = {x:0.40, y:0.40, z:0.40};
-    const MAP = {
-      animal:  { normal: "../assets/models/animal.glb",            draco: "../assets/models/animal_draco.glb" },
-      vegetal: { normal: "../assets/models/vegetal.glb", draco: "../assets/models/vegetal_draco.glb" }
-    };
+    /* ====== App ====== */
+    const INIT={ animal:{scale:0.40,rotYdeg:0}, vegetal:{scale:0.36,rotYdeg:0} };
+    const MIN_SCALE=0.20, MAX_SCALE=3.0, ROT_STEP_DEG=8, ZOOM_STEP=1.12;
+    const MAP={ animal:{normal:"../assets/models/animal.glb",draco:"../assets/models/animal_draco.glb"},
+                vegetal:{normal:"../assets/models/vegetal.glb",draco:"../assets/models/vegetal_draco.glb"} };
 
-    // Por defecto vegetal
-    const params = new URLSearchParams(location.search);
-    let kind = (params.get('m') || 'vegetal').toLowerCase();
-    if (!MAP[kind]) kind = 'vegetal';
+    const params=new URLSearchParams(location.search);
+    let kind=(params.get('m')||'vegetal').toLowerCase(); if(!MAP[kind]) kind='vegetal';
 
-    const modelEl  = document.getElementById('cellModel');
-    const labelEl  = document.getElementById('labelKind');
-    const btnA     = document.getElementById('btnAnimal');
-    const btnV     = document.getElementById('btnVegetal');
-    const loading  = document.getElementById('loading');
-    const statusEl = document.getElementById('status');
-    const markerEl = document.getElementById('hiro');
-    const gate     = document.getElementById('gate');
-    const startBtn = document.getElementById('startBtn');
+    const modelEl=document.getElementById('cellModel');
+    const labelEl=document.getElementById('labelKind');
+    const btnA=document.getElementById('btnAnimal');
+    const btnV=document.getElementById('btnVegetal');
+    const btnAuto=document.getElementById('btnAuto');
+    const loading=document.getElementById('loading');
+    const statusEl=document.getElementById('status');
+    const markerEl=document.getElementById('hiro');
+    const gate=document.getElementById('gate');
+    const startBtn=document.getElementById('startBtn');
 
-    function setUI(){
-      btnA.classList.toggle('active', kind==='animal');
-      btnV.classList.toggle('active', kind==='vegetal');
-      labelEl.textContent = kind==='animal' ? 'Animal' : 'Vegetal';
-      const u = new URL(location.href); u.searchParams.set('m', kind); history.replaceState(null,'', u.toString());
-    }
+    const rotL=document.getElementById('rotL'), rotR=document.getElementById('rotR');
+    const zoomIn=document.getElementById('zoomIn'), zoomOut=document.getElementById('zoomOut');
+    const resetBtn=document.getElementById('reset');
 
-    async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(), {method:'HEAD'}); return r.ok; }catch{return false;} }
-    async function pick(){ const e=MAP[kind]; return (await exists(e.draco)) ? e.draco : e.normal; }
+    const scaleRange=document.getElementById('scaleRange');
+    const speedRange=document.getElementById('speedRange');
+
+    function setUI(){ btnA.classList.toggle('active',kind==='animal'); btnV.classList.toggle('active',kind==='vegetal');
+      labelEl.textContent=kind==='animal'?'Animal':'Vegetal';
+      const u=new URL(location.href); u.searchParams.set('m',kind); history.replaceState(null,'',u.toString()); }
+
+    async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(),{method:'HEAD'}); return r.ok; }catch{return false;} }
+    async function pick(){ const e=MAP[kind]; return (await exists(e.draco))?e.draco:e.normal; }
 
     async function load(){
       loading.style.display='block';
-      const url=(await pick()) + '#' + Date.now();     // cache-buster
-      modelEl.removeAttribute('gltf-model');           // forzar recarga real
-      modelEl.object3D.scale.set(DEFAULT_SCALE.x, DEFAULT_SCALE.y, DEFAULT_SCALE.z); // reset pinch
-      setTimeout(()=> modelEl.setAttribute('gltf-model', url), 30);
+      const url=(await pick())+'#'+Date.now();
+      const init=INIT[kind]||INIT.vegetal;
+
+      modelEl.removeAttribute('gltf-model');
+      modelEl.object3D.scale.set(init.scale,init.scale,init.scale);
+      modelEl.object3D.rotation.set(0,THREE.MathUtils.degToRad(init.rotYdeg),0);
+      scaleRange.value=init.scale;
+
+      modelEl.setAttribute('auto-rotator', `enabled:${btnAuto.classList.contains('active')}; speed:${parseFloat(speedRange.value)}`);
+
+      setTimeout(()=>modelEl.setAttribute('gltf-model',url),30);
     }
 
-    btnA.onclick = ()=>{ kind='animal'; setUI(); load(); };
-    btnV.onclick = ()=>{ kind='vegetal'; setUI(); load(); };
+    btnA.onclick=()=>{kind='animal'; setUI(); load();};
+    btnV.onclick=()=>{kind='vegetal'; setUI(); load();};
 
-    modelEl.addEventListener('model-loaded', ()=> { loading.style.display='none'; });
-    modelEl.addEventListener('model-error',  e=> {
-      loading.style.display='none';
-      statusEl.textContent = 'Error cargando modelo ❌';
-      alert('No se pudo cargar el modelo. Revisa rutas/nombres (mayúsculas) o tamaño.');
-      console.error(e.detail);
-    });
+    btnAuto.onclick=()=>{ const enabled=!btnAuto.classList.contains('active');
+      btnAuto.classList.toggle('active',enabled);
+      modelEl.setAttribute('auto-rotator', `enabled:${enabled}; speed:${parseFloat(speedRange.value)}`); };
 
-    // Indicador de detección del marcador
-    markerEl.addEventListener('markerFound', ()=> statusEl.textContent = 'Marcador detectado ✅');
-    markerEl.addEventListener('markerLost',  ()=> statusEl.textContent = 'Buscando marcador…');
+    modelEl.addEventListener('model-loaded',()=>{loading.style.display='none';});
+    modelEl.addEventListener('model-error',e=>{loading.style.display='none'; statusEl.textContent='Error cargando modelo ❌';
+      statusEl.classList.remove('ok'); alert('No se pudo cargar el modelo. Revisa rutas/nombres (mayúsculas) o tamaño.'); console.error(e.detail);});
 
-    /* === Transparencia real del canvas cuando la escena esté lista === */
-    const scene = document.querySelector('a-scene');
-    scene.addEventListener('loaded', () => {
-      const r = scene.renderer;
-      if (r && r.setClearAlpha) r.setClearAlpha(0);
-      else if (r && r.setClearColor) r.setClearColor(0x000000, 0);
-    });
+    markerEl.addEventListener('markerFound',()=>{ statusEl.textContent='Marcador detectado ✅'; statusEl.classList.add('ok'); });
+    markerEl.addEventListener('markerLost', ()=>{ statusEl.textContent='Buscando marcador…'; statusEl.classList.remove('ok'); });
 
-    /* === Video fix: forzar atributos y estilo del video de la cámara === */
-    function styleArVideo(v){
-      if (!v) return;
-      v.setAttribute('playsinline','');
-      v.setAttribute('webkit-playsinline','');
-      v.muted = true;
-      v.autoplay = true;
-      v.style.position = 'fixed';
-      v.style.top = '0'; v.style.left = '0';
-      v.style.width = '100vw'; v.style.height = '100vh';
-      v.style.objectFit = 'cover';
-      v.style.zIndex = '0';
-      v.style.background = 'transparent';
-    }
+    const scene=document.querySelector('a-scene');
+    scene.addEventListener('loaded',()=>{const r=scene.renderer; if(r&&r.setClearAlpha) r.setClearAlpha(0); else if(r&&r.setClearColor) r.setClearColor(0x000000,0);});
 
-    function findArVideo(){
-      // AR.js suele usar id="arjs-video" o clase "arjs-video"
-      return document.getElementById('arjs-video') ||
-             document.querySelector('.arjs-video') ||
-             document.querySelector('video');
-    }
+    function styleArVideo(v){ if(!v) return; v.setAttribute('playsinline',''); v.setAttribute('webkit-playsinline','');
+      v.muted=true; v.autoplay=true; Object.assign(v.style,{position:'fixed',top:'0',left:'0',width:'100vw',height:'100vh',objectFit:'cover',zIndex:'0',background:'transparent'}); }
+    function findArVideo(){ return document.getElementById('arjs-video')||document.querySelector('.arjs-video')||document.querySelector('video'); }
+    async function ensureVideoPlayback(){ const v=findArVideo(); if(!v) return false; styleArVideo(v); try{await v.play(); return true;}catch{return false;} }
+    async function tryStartCameraWithGate(){ let tries=0; while(!findArVideo()&&tries<50){ await new Promise(r=>setTimeout(r,100)); tries++; } const ok=await ensureVideoPlayback(); gate.classList.toggle('show',!ok); }
+    startBtn.addEventListener('click', async ()=>{ const ok=await ensureVideoPlayback(); if(ok) gate.classList.remove('show'); });
 
-    async function ensureVideoPlayback(){
-      const v = findArVideo();
-      if (!v) return false;
-      styleArVideo(v);
-      try {
-        await v.play();
-        return true;
-      } catch (e) {
-        // Navegador exige interacción
-        return false;
-      }
-    }
+    function clampScale(s){ return Math.min(Math.max(s,MIN_SCALE),MAX_SCALE); }
+    function setScaleUniform(s){ s=clampScale(s); modelEl.object3D.scale.set(s,s,s); scaleRange.value=s.toFixed(2); }
+    rotL.addEventListener('click',()=>{ modelEl.object3D.rotation.y += THREE.MathUtils.degToRad(ROT_STEP_DEG); });
+    rotR.addEventListener('click',()=>{ modelEl.object3D.rotation.y -= THREE.MathUtils.degToRad(ROT_STEP_DEG); });
+    zoomIn.addEventListener('click',()=>{ setScaleUniform(modelEl.object3D.scale.x * ZOOM_STEP); });
+    zoomOut.addEventListener('click',()=>{ setScaleUniform(modelEl.object3D.scale.x / ZOOM_STEP); });
+    resetBtn.addEventListener('click',()=>{ const init=INIT[kind]||INIT.vegetal; modelEl.object3D.scale.set(init.scale,init.scale,init.scale);
+      modelEl.object3D.rotation.set(0,THREE.MathUtils.degToRad(init.rotYdeg),0); scaleRange.value=init.scale; });
 
-    // Mostrar “gate” si el video no arranca solo
-    async function tryStartCameraWithGate(){
-      // Espera a que AR.js inserte el video
-      let tries = 0;
-      while (!findArVideo() && tries < 50) {
-        await new Promise(r=>setTimeout(r,100));
-        tries++;
-      }
-      const ok = await ensureVideoPlayback();
-      gate.classList.toggle('show', !ok);
-    }
+    scaleRange.addEventListener('input', ()=>{ const s=parseFloat(scaleRange.value); setScaleUniform(s); });
+    speedRange.addEventListener('input', ()=>{ const enabled=btnAuto.classList.contains('active');
+      modelEl.setAttribute('auto-rotator', `enabled:${enabled}; speed:${parseFloat(speedRange.value)}`); });
 
-    startBtn.addEventListener('click', async ()=>{
-      const ok = await ensureVideoPlayback();
-      if (ok) gate.classList.remove('show');
-    });
+    document.getElementById('panel').addEventListener('touchstart', e=> e.stopPropagation(), {passive:true});
+    document.getElementById('controls').addEventListener('touchstart', e=> e.stopPropagation(), {passive:true});
 
-    setUI();
-    load();
-    tryStartCameraWithGate();
+    setUI(); load(); tryStartCameraWithGate();
   </script>
 </body>
 </html>
