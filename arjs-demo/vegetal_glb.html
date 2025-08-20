@@ -9,8 +9,8 @@
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
 
   <style>
-    html, body { margin:0; padding:0; height:100%;
-      background:transparent; overflow:hidden; touch-action:none; overscroll-behavior:contain; }
+    html, body { margin:0; padding:0; height:100%; background:transparent; overflow:hidden;
+                 touch-action:none; overscroll-behavior:contain; }
     #arjs-video, .arjs-video, video[playsinline] {
       position: fixed !important; top:0; left:0; width:100vw; height:100vh;
       object-fit: cover; z-index:0; background: transparent;
@@ -19,6 +19,7 @@
       position: fixed !important; top:0; left:0; width:100vw !important; height:100vh !important;
       z-index:2; touch-action:none !important; background: transparent !important;
     }
+
     .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;
          font-family:system-ui,Arial,sans-serif;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));z-index:5}
     .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px;z-index:6}
@@ -28,17 +29,13 @@
     .loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-family:system-ui,Arial,sans-serif;
              color:#fff;background:rgba(0,0,0,.5);padding:.6rem .9rem;border-radius:10px;display:none;z-index:7}
 
-    /* Estado (movido más abajo) */
     .status{
       position:fixed;left:8px;
-      top: calc(60px + env(safe-area-inset-top)); /* ↓ más abajo para no acoplarse */
+      top: calc(60px + env(safe-area-inset-top));
       background:rgba(0,0,0,.40); color:#fff; padding:6px 10px;
       border:1px solid rgba(255,255,255,.24); border-radius:8px; font:14px system-ui; z-index:9
     }
-    .status.ok{
-      background:rgba(16,185,129,.20);
-      border-color:rgba(34,197,94,.45);
-    }
+    .status.ok{ background:rgba(16,185,129,.20); border-color:rgba(34,197,94,.45); }
 
     .controls { position: fixed; right: 10px; bottom: 10px; z-index: 8;
       display: grid; grid-template-columns: repeat(3, 48px); grid-gap: 8px; user-select: none; }
@@ -46,13 +43,47 @@
       background:rgba(0,0,0,.45); color:#fff; font:600 20px/48px system-ui,Arial; text-align:center;
       cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.25); }
 
-    .panel{
-      position:fixed; left:10px; bottom:10px; z-index:8;
+    .panel{ position:fixed; left:10px; bottom:10px; z-index:8;
       padding:10px 12px; background:rgba(0,0,0,.45);
-      border:1px solid rgba(255,255,255,.28); border-radius:12px; min-width:230px
-    }
+      border:1px solid rgba(255,255,255,.28); border-radius:12px; min-width:230px }
     .panel label{display:flex; align-items:center; gap:8px; font:600 13px system-ui; color:#fff; margin:6px 0}
     .panel input[type="range"]{width:160px}
+
+    .infoPanel{
+      position:fixed; left:10px;
+      top: calc(100px + env(safe-area-inset-top)); z-index:8;
+      width:min(360px, 86vw); max-height:60vh; overflow:auto;
+      padding:12px; background:rgba(0,0,0,.55);
+      border:1px solid rgba(255,255,255,.28); border-radius:14px; backdrop-filter: blur(2px);
+    }
+    .infoPanel h3{margin:0 0 6px 0; font:700 16px system-ui; color:#fff}
+    .infoPanel h4{margin:10px 0 6px 0; font:700 13px system-ui; color:#cfe6ff}
+    .infoPanel ul{margin:0; padding-left:16px}
+    .infoPanel li{margin:2px 0; color:#e9f2ff; font:13px system-ui}
+    .chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:4px}
+    .chip{
+      padding:6px 8px; border-radius:999px; font:700 12px system-ui;
+      color:#132; background:rgba(57,255,20,.15); border:1px solid #39ff14;
+      box-shadow:0 0 8px rgba(57,255,20,.5) inset, 0 0 6px rgba(57,255,20,.25);
+    }
+
+    .progress {
+      position: fixed; left:50%; transform: translateX(-50%);
+      top: calc(90px + env(safe-area-inset-top)); z-index:9;
+      width: min(60vw, 520px); height: 10px;
+      background: rgba(255,255,255,.15); border-radius:999px; overflow:hidden; display:none;
+      border:1px solid rgba(57,255,20,.35);
+    }
+    .progress .bar{
+      width:0%; height:100%;
+      background: linear-gradient(90deg, #39ff14, #bfff00);
+      box-shadow: 0 0 12px #39ff14, 0 0 24px #39ff14;
+      transition: width .15s ease;
+    }
+    .progress .pct{
+      position:absolute; right:0; top:-22px; font:700 12px system-ui; color:#bfff00;
+      text-shadow: 0 0 8px #39ff14;
+    }
 
     .gate { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000c; z-index:10; }
     .gate.show { display:flex; }
@@ -65,9 +96,17 @@
     <button id="btnAnimal" class="btn">Animal</button>
     <button id="btnVegetal" class="btn active">Vegetal</button>
     <button id="btnAuto" class="btn" title="Auto-rotación">Auto</button>
+    <button id="btnInfo" class="btn active" title="Ver/Ocultar ficha">Info</button>
   </div>
   <div id="loading" class="loading">Cargando modelo…</div>
   <div id="status" class="status">Buscando marcador…</div>
+
+  <div class="progress" id="progress">
+    <div class="bar" id="progressBar"></div>
+    <div class="pct" id="progressPct">0%</div>
+  </div>
+
+  <div class="infoPanel" id="infoPanel"></div>
 
   <div class="controls" id="controls">
     <div class="ctrl" id="rotL" title="Rotar izquierda">↶</div>
@@ -113,7 +152,7 @@
   </a-scene>
 
   <script>
-    /* ====== Gestos ====== */
+    /* ====== Gestos / Auto ====== */
     AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},minScale:{default:0.05},maxScale:{default:3.0}},
       init:function(){this.oneFinger=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
         t.addEventListener('touchstart',e=>{if(e.touches.length===1){this.oneFinger=true;this.lastX=e.touches[0].clientX;}},{passive:false});
@@ -136,21 +175,54 @@
     AFRAME.registerComponent('tap-reset',{schema:{scale:{default:1},rotYdeg:{default:0}},init:function(){this.lastTap=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
       t.addEventListener('touchend',()=>{const n=performance.now();if(n-this.lastTap<300){const sc=this.data.scale;this.el.object3D.scale.set(sc,sc,sc);
         this.el.object3D.rotation.y=THREE.MathUtils.degToRad(this.data.rotYdeg);}this.lastTap=n;},{passive:true});};s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
-
-    // Auto-rotación
-    AFRAME.registerComponent('auto-rotator', {
-      schema: { speed:{default:20}, enabled:{default:false} },
-      tick: function(t, dt){
-        if (!this.data.enabled) return;
-        this.el.object3D.rotation.y += THREE.MathUtils.degToRad(this.data.speed) * (dt/1000);
-      }
-    });
+    AFRAME.registerComponent('auto-rotator',{schema:{speed:{default:20},enabled:{default:false}},tick:function(t,dt){
+      if(!this.data.enabled)return; this.el.object3D.rotation.y+=THREE.MathUtils.degToRad(this.data.speed)*(dt/1000);
+    }});
 
     /* ====== App ====== */
     const INIT={ animal:{scale:0.40,rotYdeg:0}, vegetal:{scale:0.36,rotYdeg:0} };
     const MIN_SCALE=0.20, MAX_SCALE=3.0, ROT_STEP_DEG=8, ZOOM_STEP=1.12;
     const MAP={ animal:{normal:"../assets/models/animal.glb",draco:"../assets/models/animal_draco.glb"},
                 vegetal:{normal:"../assets/models/vegetal.glb",draco:"../assets/models/vegetal_draco.glb"} };
+
+    const CONTENT = {
+      animal: {
+        titulo: "Célula Animal",
+        componentes: [
+          ["Núcleo","Controla la célula y guarda el ADN."],
+          ["Membrana plasmática","Delimita y regula el intercambio de sustancias."],
+          ["Citoplasma","Medio donde ocurren reacciones químicas."],
+          ["Ribosomas","Fabrican proteínas."],
+          ["R.E. rugoso","Sintetiza y procesa proteínas."],
+          ["R.E. liso","Sintetiza lípidos y detoxifica."],
+          ["Aparato de Golgi","Empaqueta y distribuye proteínas/lípidos."],
+          ["Mitocondrias","Producen ATP (energía)."],
+          ["Lisosomas","Digieren desechos y partículas."],
+          ["Peroxisomas","Metabolismo de peróxidos."],
+          ["Citoesqueleto","Forma, soporte y transporte interno."],
+          ["Centriolos","Organizan huso mitótico en división celular."]
+        ],
+        diferencia: ["Sin pared celular","Sin cloroplastos","Vacuolas pequeñas y múltiples","Centriolos presentes","Lisosomas abundantes"]
+      },
+      vegetal: {
+        titulo: "Célula Vegetal",
+        componentes: [
+          ["Núcleo","Controla la célula y guarda el ADN."],
+          ["Membrana plasmática","Regula el intercambio con el exterior."],
+          ["Pared celular (celulosa)","Aporta rigidez y protección."],
+          ["Citoplasma","Medio de reacciones celulares."],
+          ["Ribosomas","Síntesis de proteínas."],
+          ["R.E. rugoso/liso","Proteínas y lípidos."],
+          ["Aparato de Golgi","Empaque y secreción."],
+          ["Mitocondrias","Producción de ATP."],
+          ["Vacuola central","Almacenamiento y turgencia (presión interna)."],
+          ["Cloroplastos","Fotosíntesis: luz → energía química."],
+          ["Plasmodesmos","Canales de comunicación entre células vegetales."],
+          ["Citoesqueleto","Estructura y transporte."]
+        ],
+        diferencia: ["Pared celular (celulosa)","Cloroplastos (fotosíntesis)","Vacuola central grande","Plasmodesmos","Sin centriolos típicos"]
+      }
+    };
 
     const params=new URLSearchParams(location.search);
     let kind=(params.get('m')||'vegetal').toLowerCase(); if(!MAP[kind]) kind='vegetal';
@@ -160,6 +232,7 @@
     const btnA=document.getElementById('btnAnimal');
     const btnV=document.getElementById('btnVegetal');
     const btnAuto=document.getElementById('btnAuto');
+    const btnInfo=document.getElementById('btnInfo');
     const loading=document.getElementById('loading');
     const statusEl=document.getElementById('status');
     const markerEl=document.getElementById('hiro');
@@ -173,17 +246,46 @@
     const scaleRange=document.getElementById('scaleRange');
     const speedRange=document.getElementById('speedRange');
 
+    const infoPanel = document.getElementById('infoPanel');
+
+    const progress = document.getElementById('progress');
+    const progressBar = document.getElementById('progressBar');
+    const progressPct = document.getElementById('progressPct');
+
+    function showProgress(p){ progress.style.display='block'; setProgress(p); }
+    function setProgress(p){
+      const v=Math.max(0,Math.min(1,p||0));
+      progressBar.style.width=(v*100).toFixed(0)+'%';
+      progressPct.textContent=(v*100).toFixed(0)+'%';
+    }
+    function hideProgress(){ setProgress(1); setTimeout(()=>{progress.style.display='none';},300); }
+
+    const manager = THREE.DefaultLoadingManager;
+    manager.onStart = function(){ showProgress(0); };
+    manager.onProgress = function(url, itemsLoaded, itemsTotal){ if(itemsTotal&&itemsTotal>0) setProgress(itemsLoaded/itemsTotal); };
+    manager.onLoad = function(){ hideProgress(); };
+
+    function renderInfo(kind){
+      const c=CONTENT[kind]; if(!c) return;
+      let html = `<h3>${c.titulo}</h3><h4>Componentes y función</h4><ul>`;
+      for (const [n,d] of c.componentes){ html += `<li><b>${n}:</b> ${d}</li>`; }
+      html += `</ul><h4>Se diferencia por…</h4><div class="chips">`;
+      for (const it of c.diferencia){ html += `<span class="chip">${it}</span>`; }
+      html += `</div>`;
+      infoPanel.innerHTML = html;
+    }
+
     function setUI(){ btnA.classList.toggle('active',kind==='animal'); btnV.classList.toggle('active',kind==='vegetal');
       labelEl.textContent=kind==='animal'?'Animal':'Vegetal';
+      renderInfo(kind);
       const u=new URL(location.href); u.searchParams.set('m',kind); history.replaceState(null,'',u.toString()); }
 
     async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(),{method:'HEAD'}); return r.ok; }catch{return false;} }
     async function pick(){ const e=MAP[kind]; return (await exists(e.draco))?e.draco:e.normal; }
 
     async function load(){
-      loading.style.display='block';
-      const url=(await pick())+'#'+Date.now();
-      const init=INIT[kind]||INIT.vegetal;
+      loading.style.display='block'; showProgress(0);
+      const url=(await pick())+'#'+Date.now(); const init=INIT[kind]||INIT.vegetal;
 
       modelEl.removeAttribute('gltf-model');
       modelEl.object3D.scale.set(init.scale,init.scale,init.scale);
@@ -202,9 +304,15 @@
       btnAuto.classList.toggle('active',enabled);
       modelEl.setAttribute('auto-rotator', `enabled:${enabled}; speed:${parseFloat(speedRange.value)}`); };
 
-    modelEl.addEventListener('model-loaded',()=>{loading.style.display='none';});
-    modelEl.addEventListener('model-error',e=>{loading.style.display='none'; statusEl.textContent='Error cargando modelo ❌';
-      statusEl.classList.remove('ok'); alert('No se pudo cargar el modelo. Revisa rutas/nombres (mayúsculas) o tamaño.'); console.error(e.detail);});
+    btnInfo.onclick=()=>{ const visible = infoPanel.style.display !== 'none';
+      infoPanel.style.display = visible ? 'none' : 'block';
+      btnInfo.classList.toggle('active', !visible);
+    };
+
+    modelEl.addEventListener('model-loaded',()=>{loading.style.display='none'; hideProgress();});
+    modelEl.addEventListener('model-error',e=>{loading.style.display='none'; hideProgress();
+      statusEl.textContent='Error cargando modelo ❌'; statusEl.classList.remove('ok');
+      alert('No se pudo cargar el modelo. Revisa rutas/nombres (mayúsculas) o tamaño.'); console.error(e.detail);});
 
     markerEl.addEventListener('markerFound',()=>{ statusEl.textContent='Marcador detectado ✅'; statusEl.classList.add('ok'); });
     markerEl.addEventListener('markerLost', ()=>{ statusEl.textContent='Buscando marcador…'; statusEl.classList.remove('ok'); });
@@ -228,12 +336,13 @@
     resetBtn.addEventListener('click',()=>{ const init=INIT[kind]||INIT.vegetal; modelEl.object3D.scale.set(init.scale,init.scale,init.scale);
       modelEl.object3D.rotation.set(0,THREE.MathUtils.degToRad(init.rotYdeg),0); scaleRange.value=init.scale; });
 
-    scaleRange.addEventListener('input', ()=>{ const s=parseFloat(scaleRange.value); setScaleUniform(s); });
+    scaleRange.addEventListener('input', ()=>{ setScaleUniform(parseFloat(scaleRange.value)); });
     speedRange.addEventListener('input', ()=>{ const enabled=btnAuto.classList.contains('active');
       modelEl.setAttribute('auto-rotator', `enabled:${enabled}; speed:${parseFloat(speedRange.value)}`); });
 
     document.getElementById('panel').addEventListener('touchstart', e=> e.stopPropagation(), {passive:true});
     document.getElementById('controls').addEventListener('touchstart', e=> e.stopPropagation(), {passive:true});
+    infoPanel.addEventListener('touchstart', e=> e.stopPropagation(), {passive:true});
 
     setUI(); load(); tryStartCameraWithGate();
   </script>
