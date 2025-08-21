@@ -56,7 +56,6 @@
       cursor:pointer; box-shadow: 0 4px 14px rgba(0,0,0,.25);
     }
 
-    /* Panel sliders */
     /* Panel sliders (compacto) */
     .panel{
       position:fixed; left:10px; bottom:10px; z-index:8;
@@ -70,7 +69,6 @@
     @media (max-width:480px){
       .panel{padding:6px 8px; min-width:170px}
       .panel input[type="range"]{width:110px}
-      /* opcional: hacer un pelín más pequeños los botones de la derecha */
       .controls{grid-gap:6px}
       .ctrl{width:44px; height:44px; font:600 18px/44px system-ui}
     }
@@ -95,7 +93,7 @@
       box-shadow:0 0 8px rgba(57,255,20,.5) inset, 0 0 6px rgba(57,255,20,.25);
     }
 
-    /* Barra de progreso verde radiactivo */
+    /* Barra de progreso */
     .progress {
       position: fixed; left:50%; transform: translateX(-50%);
       top: calc(90px + env(safe-area-inset-top)); z-index:9;
@@ -266,7 +264,7 @@
       ]
     };
 
-    function clearHotspots(root){
+    function clearHotspots(){
       const old = document.getElementById('hsRoot');
       if (old && old.parentNode) old.parentNode.removeChild(old);
     }
@@ -308,10 +306,8 @@
         wrapper.appendChild(dot); wrapper.appendChild(tip);
 
         wrapper.addEventListener('click', ()=>{
-          // Oculta otros tooltips abiertos
           root.querySelectorAll('[visible="true"]').forEach(el=> el.setAttribute('visible','false'));
           tip.setAttribute('visible','true');
-          // Auto-ocultar a los 5s
           setTimeout(()=>{ if(tip.getAttribute('visible')==='true') tip.setAttribute('visible','false'); }, 5000);
         });
 
@@ -451,12 +447,9 @@
       modelEl.object3D.position.set(0,0,0);
       scaleRange.value = init.scale;
 
-      // Auto-rot y hotspots
       modelEl.setAttribute('auto-rotator', `enabled:${btnAuto.classList.contains('active')}; speed:${parseFloat(speedRange.value)}`);
       clearHotspots();
-      setTimeout(()=> {
-        modelEl.setAttribute('gltf-model', url);
-      }, 30);
+      setTimeout(()=> { modelEl.setAttribute('gltf-model', url); }, 30);
     }
 
     // Botonera animal/vegetal
@@ -490,8 +483,7 @@
       console.error(e.detail);
     });
 
-    // Estado del marcador
-    const markerEl = document.getElementById('hiro');
+    // Estado del marcador (¡sin redeclarar!)
     markerEl.addEventListener('markerFound', ()=>{ statusEl.textContent='Marcador detectado ✅'; statusEl.classList.add('ok'); });
     markerEl.addEventListener('markerLost',  ()=>{ statusEl.textContent='Buscando marcador…'; statusEl.classList.remove('ok'); });
 
