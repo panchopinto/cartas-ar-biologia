@@ -36,7 +36,6 @@
     .loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-family:system-ui,Arial,sans-serif;
              color:#fff;background:rgba(0,0,0,.5);padding:.6rem .9rem;border-radius:10px;display:none;z-index:7}
 
-    /* Estado (más abajo para no acoplarse) */
     .status{
       position:fixed;left:8px;
       top: calc(60px + env(safe-area-inset-top));
@@ -64,8 +63,6 @@
     }
     .panel label{display:flex; align-items:center; gap:6px; font:600 12px system-ui; color:#fff; margin:4px 0}
     .panel input[type="range"]{width:130px}
-    
-    /* Ajuste extra en pantallas pequeñas */
     @media (max-width:480px){
       .panel{padding:6px 8px; min-width:170px}
       .panel input[type="range"]{width:110px}
@@ -101,23 +98,13 @@
       background: rgba(255,255,255,.15); border-radius:999px; overflow:hidden; display:none;
       border:1px solid rgba(57,255,20,.35);
     }
-    .progress .bar{
-      width:0%; height:100%;
-      background: linear-gradient(90deg, #39ff14, #bfff00);
-      box-shadow: 0 0 12px #39ff14, 0 0 24px #39ff14;
-      transition: width .15s ease;
-    }
-    .progress .pct{
-      position:absolute; right:0; top:-22px; font:700 12px system-ui; color:#bfff00;
-      text-shadow: 0 0 8px #39ff14;
-    }
+    .progress .bar{ width:0%; height:100%; background: linear-gradient(90deg, #39ff14, #bfff00); box-shadow: 0 0 12px #39ff14, 0 0 24px #39ff14; transition: width .15s ease; }
+    .progress .pct{ position:absolute; right:0; top:-22px; font:700 12px system-ui; color:#bfff00; text-shadow: 0 0 8px #39ff14; }
 
     /* Gate (permiso de cámara) */
-    .gate { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
-            background: #000c; z-index: 10; }
+    .gate { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: #000c; z-index: 10; }
     .gate.show { display: flex; }
-    .gate button { font: 600 16px system-ui, Arial; padding: 12px 18px; border-radius: 12px;
-                   border: 1px solid #fff6; color: #fff; background: #000a; cursor: pointer; }
+    .gate button { font: 600 16px system-ui, Arial; padding: 12px 18px; border-radius: 12px; border: 1px solid #fff6; color: #fff; background: #000a; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -184,6 +171,7 @@
         scale="0.40 0.40 0.40"
         gesture-handler="minScale:0.20; maxScale:3.0; rotFactor:0.5"
         pinch-scale="min:0.20; max:3.0; factor:1"
+        drag-pan="factor:0.003; limit:0.9"
         tap-reset="scale:0.40; rotYdeg:0"
         auto-rotator="enabled:false; speed:20">
       </a-entity>
@@ -200,36 +188,152 @@
       init: function(){
         this.oneFinger=false; this.lastX=0; const s=this.el.sceneEl;
         const add=()=>{ const t=s.canvas||s;
-          t.addEventListener('touchstart',e=>{ if(e.touches.length===1){ this.oneFinger=true; this.lastX=e.touches[0].clientX; } }, {passive:false});
-          t.addEventListener('touchmove',e=>{ if(this.oneFinger&&e.touches.length===1){
-            const dx=e.touches[0].clientX - this.lastX; this.lastX=e.touches[0].clientX;
-            this.el.object3D.rotation.y -= (dx*this.data.rotFactor)*Math.PI/180; e.preventDefault(); } }, {passive:false});
-          t.addEventListener('touchend',()=>{ this.oneFinger=false; },{passive:false});
-          t.addEventListener('touchcancel',()=>{ this.oneFinger=false; },{passive:false});
-        }; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
+
+          /* ——— Táctil: 1 dedo = rotar ——— */
+          t.addEventListener('touchstart',e=>{
+            if(e.touches.length===1){ this.oneFinger=true; this.lastX=e.touches[0].clientX; }
+          }, {passive:false});
+
+          t.addEventListener('touchmove',e=>{
+            if(this.oneFinger&&e.touches.length===1){
+              const dx=e.touches[0].clientX - this.lastX; this.lastX=e.touches[0].clientX;
+              this.el.object3D.rotation.y -= (dx*this.data.rotFactor)*Math.PI/180;
+              e.preventDefault();
+            }
+          }, {passive:false});
+
+          const endTouch=()=>{ this.oneFinger=false; };
+          t.addEventListener('touchend',endTouch,{passive:false});
+          t.addEventListener('touchcancel',endTouch,{passive:false});
+
+          /* ——— Mouse: izq = rotar ——— */
+          this.rotating=false;
+          t.addEventListener('mousedown', e=>{
+            if(e.button===0 && !e.shiftKey && !e.ctrlKey && !e.metaKey){
+              this.rotating=true; this.lastX=e.clientX; e.preventDefault();
+            }
+          });
+          window.addEventListener('mouseup', ()=>{ this.rotating=false; });
+          window.addEventListener('mousemove', e=>{
+            if(!this.rotating) return;
+            const dx=e.clientX - this.lastX; this.lastX=e.clientX;
+            this.el.object3D.rotation.y -= (dx*this.data.rotFactor)*Math.PI/180;
+            e.preventDefault();
+          }, {passive:false});
+        };
+        s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
       }
     });
 
+    /* —— Pinch para zoom (también rueda del mouse) —— */
     AFRAME.registerComponent('pinch-scale',{schema:{min:{default:0.1},max:{default:4},factor:{default:1}},
-      init:function(){this.active=false;this.startDist=0;this.startScale=this.el.object3D.scale.clone();const s=this.el.sceneEl;const add=()=>{const c=s.canvas||s;
-        c.addEventListener('touchstart',e=>{if(e.touches.length===2){this.active=true;
-          const dx=e.touches[0].clientX-e.touches[1].clientX;const dy=e.touches[0].clientY-e.touches[1].clientY;
-          this.startDist=Math.hypot(dx,dy);this.startScale=this.el.object3D.scale.clone();e.preventDefault();}}, {passive:false});
-        c.addEventListener('touchmove',e=>{if(!this.active||e.touches.length!==2)return;
-          const dx=e.touches[0].clientX-e.touches[1].clientX;const dy=e.touches[0].clientY-e.touches[1].clientY;
-          const dist=Math.hypot(dx,dy);const k=(dist/this.startDist)*this.data.factor;
-          const sX=THREE.MathUtils.clamp(this.startScale.x*k,this.data.min,this.data.max);
-          this.el.object3D.scale.set(sX,sX,sX); e.preventDefault();},{passive:false});
-        const end=()=>{this.active=false;}; c.addEventListener('touchend',end,{passive:false}); c.addEventListener('touchcancel',end,{passive:false});
-        c.addEventListener('wheel',e=>{e.preventDefault();const dir=e.deltaY>0?0.9:1.1;
-          const s=this.el.object3D.scale.x*dir; const cl=THREE.MathUtils.clamp(s,this.data.min,this.data.max);
-          this.el.object3D.scale.set(cl,cl,cl);},{passive:false});}; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
+      init:function(){
+        this.active=false;this.startDist=0;this.startScale=this.el.object3D.scale.clone();
+        const s=this.el.sceneEl;const add=()=>{const c=s.canvas||s;
+          c.addEventListener('touchstart',e=>{
+            if(e.touches.length===2){this.active=true;
+              const dx=e.touches[0].clientX-e.touches[1].clientX;const dy=e.touches[0].clientY-e.touches[1].clientY;
+              this.startDist=Math.hypot(dx,dy);this.startScale=this.el.object3D.scale.clone();e.preventDefault();}
+          }, {passive:false});
+          c.addEventListener('touchmove',e=>{
+            if(!this.active||e.touches.length!==2) return;
+            const dx=e.touches[0].clientX-e.touches[1].clientX;const dy=e.touches[0].clientY-e.touches[1].clientY;
+            const dist=Math.hypot(dx,dy);const k=(dist/this.startDist)*this.data.factor;
+            const sX=THREE.MathUtils.clamp(this.startScale.x*k,this.data.min,this.data.max);
+            this.el.object3D.scale.set(sX,sX,sX); e.preventDefault();
+          },{passive:false});
+          const end=()=>{this.active=false;};
+          c.addEventListener('touchend',end,{passive:false});
+          c.addEventListener('touchcancel',end,{passive:false});
 
-    AFRAME.registerComponent('tap-reset',{schema:{scale:{default:1},rotYdeg:{default:0}},init:function(){this.lastTap=0;
-      const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;t.addEventListener('touchend',()=>{
-        const n=performance.now(); if(n-this.lastTap<300){ const sc=this.data.scale; this.el.object3D.scale.set(sc,sc,sc);
-          this.el.object3D.rotation.y=THREE.MathUtils.degToRad(this.data.rotYdeg); } this.lastTap=n;},{passive:true});};
-      s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
+          /* Rueda para zoom en PC */
+          c.addEventListener('wheel',e=>{
+            e.preventDefault();
+            const dir=e.deltaY>0?0.9:1.1;
+            const s=this.el.object3D.scale.x*dir;
+            const cl=THREE.MathUtils.clamp(s,this.data.min,this.data.max);
+            this.el.object3D.scale.set(cl,cl,cl);
+          },{passive:false});
+        };
+        s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
+      }});
+
+    /* —— Pan: 2 dedos arrastrando / click derecho o Shift+izq —— */
+    AFRAME.registerComponent('drag-pan',{
+      schema:{factor:{default:0.003}, limit:{default:0.9}},
+      init:function(){
+        const s=this.el.sceneEl; const add=()=>{const t=s.canvas||s;
+
+          const clamp2=(x,z,l)=>{
+            return {
+              x:THREE.MathUtils.clamp(x,-l,l),
+              z:THREE.MathUtils.clamp(z,-l,l)
+            };
+          };
+
+          /* táctil: dos dedos = pan */
+          this.two=false; this.lastCenter=null;
+          const center=(touches)=>({x:(touches[0].clientX+touches[1].clientX)/2, y:(touches[0].clientY+touches[1].clientY)/2});
+
+          t.addEventListener('touchstart',e=>{
+            if(e.touches.length===2){ this.two=true; this.lastCenter=center(e.touches); e.preventDefault(); }
+          },{passive:false});
+
+          t.addEventListener('touchmove',e=>{
+            if(!this.two || e.touches.length!==2) return;
+            const c=center(e.touches); const dx=c.x - this.lastCenter.x; const dy=c.y - this.lastCenter.y; this.lastCenter=c;
+            const o=this.el.object3D; const f=this.data.factor;
+            const p=clamp2(o.position.x + dx*f, o.position.z - dy*f, this.data.limit);
+            o.position.set(p.x, o.position.y, p.z);
+            e.preventDefault();
+          },{passive:false});
+
+          const endTouch=()=>{ this.two=false; this.lastCenter=null; };
+          t.addEventListener('touchend',endTouch,{passive:false});
+          t.addEventListener('touchcancel',endTouch,{passive:false});
+
+          /* mouse: click derecho o Shift+izquierdo = pan */
+          t.addEventListener('contextmenu', e=> e.preventDefault());
+          this.panning=false; this.lastMouse=null;
+
+          t.addEventListener('mousedown', e=>{
+            if(e.button===2 || (e.button===0 && (e.shiftKey||e.ctrlKey||e.metaKey))){
+              this.panning=true; this.lastMouse={x:e.clientX,y:e.clientY}; e.preventDefault();
+            }
+          });
+
+          window.addEventListener('mouseup', ()=>{ this.panning=false; this.lastMouse=null; });
+          window.addEventListener('mousemove', e=>{
+            if(!this.panning) return;
+            const dx=e.clientX - this.lastMouse.x; const dy=e.clientY - this.lastMouse.y; this.lastMouse={x:e.clientX,y:e.clientY};
+            const o=this.el.object3D; const f=this.data.factor;
+            const p=clamp2(o.position.x + dx*f, o.position.z - dy*f, this.data.limit);
+            o.position.set(p.x, o.position.y, p.z);
+            e.preventDefault();
+          },{passive:false});
+        };
+        s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
+      }
+    });
+
+    AFRAME.registerComponent('tap-reset',{
+      schema:{scale:{default:1},rotYdeg:{default:0}},
+      init:function(){
+        this.lastTap=0; const s=this.el.sceneEl; const reset=()=>{
+          const sc=this.data.scale; this.el.object3D.scale.set(sc,sc,sc);
+          this.el.object3D.rotation.y=THREE.MathUtils.degToRad(this.data.rotYdeg);
+          this.el.object3D.position.set(0,0,0);
+        };
+        const add=()=>{const t=s.canvas||s;
+          t.addEventListener('touchend',()=>{
+            const n=performance.now(); if(n-this.lastTap<300){ reset(); } this.lastTap=n;
+          },{passive:true});
+          t.addEventListener('dblclick', reset, {passive:true});
+          window.addEventListener('keydown', e=>{ if(e.key.toLowerCase()==='r') reset(); });
+        };
+        s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
+      }
+    });
 
     // Hace que un entity siempre mire a la cámara (para tooltips)
     AFRAME.registerComponent('billboard', {
@@ -240,7 +344,7 @@
       }
     });
 
-    // Genera hotspots desde un JSON (según tipo de célula)
+    // ——— Hotspots (igual que tu versión) ———
     const HS = {
       animal: [
         {name:'Núcleo', desc:'Controla la célula y guarda el ADN.', pos:[0,0.12,0]},
@@ -483,7 +587,7 @@
       console.error(e.detail);
     });
 
-    // Estado del marcador (¡sin redeclarar!)
+    // Estado del marcador
     markerEl.addEventListener('markerFound', ()=>{ statusEl.textContent='Marcador detectado ✅'; statusEl.classList.add('ok'); });
     markerEl.addEventListener('markerLost',  ()=>{ statusEl.textContent='Buscando marcador…'; statusEl.classList.remove('ok'); });
 
@@ -514,7 +618,7 @@
     rotR.addEventListener('click', ()=>{ modelEl.object3D.rotation.y -= THREE.MathUtils.degToRad(ROT_STEP_DEG); });
     zoomIn.addEventListener('click', ()=>{ setScaleUniform(modelEl.object3D.scale.x * ZOOM_STEP); });
     zoomOut.addEventListener('click', ()=>{ setScaleUniform(modelEl.object3D.scale.x / ZOOM_STEP); });
-    resetBtn.addEventListener('click', ()=>{ const init=INIT[kind]||INIT.animal; modelEl.object3D.scale.set(init.scale,init.scale,init.scale); modelEl.object3D.rotation.set(0,THREE.MathUtils.degToRad(init.rotYdeg),0); scaleRange.value=init.scale; });
+    resetBtn.addEventListener('click', ()=>{ const init=INIT[kind]||INIT.animal; modelEl.object3D.scale.set(init.scale,init.scale,init.scale); modelEl.object3D.rotation.set(0,THREE.MathUtils.degToRad(init.rotYdeg),0); modelEl.object3D.position.set(0,0,0); scaleRange.value=init.scale; });
     centerBtn.addEventListener('click', ()=>{ modelEl.object3D.position.set(0,0,0); });
 
     // Sliders
