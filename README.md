@@ -1,4 +1,4 @@
-# Realidad Aumentada y Realidad Virtual Biología — v2 (sin app, gratis)
+# Realidad Aumentada y Realidad Virtual Biología — v2 (sin app, gratis) 
 
 Incluye:
 - **AR.js DEMO lista** (sin configurar modelos externos): escenas didácticas *célula animal* y *célula vegetal* con órganos estilizados y etiquetas interactivas.
@@ -9,10 +9,11 @@ Incluye:
 - Plantillas MindAR: `webar-mindar/animal.html` y `webar-mindar/vegetal.html` (requieren `targets/*.mind`).
 
 ## Notas
-- Para MindAR necesito tus **imágenes finales** de las cartas para compilar los `.mind` (tracking).
-- Si quieres, me mandas los PNG/JPG y te devuelvo los `.mind` + un ZIP listo para subir a GitHub Pages.
+Este Proyecto es desarrollado con propositos educacionales
+motivando el desarrollo, culturizacion e innovacion tecnologica en las aulas.
 
-
+Proyecto
 Desarrollado por:
-Belen Acuña - belen.acpe@gmail.com
-Francisco Pinto - franciscoandresp@gmail.com
+
+Belen Acuña correo: belen.acpe@gmail.com
+Francisco Pinto correo:  franciscoandresp@gmail.com
