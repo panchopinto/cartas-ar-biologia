@@ -1,5 +1,8 @@
 # Realidad Aumentada y Realidad Virtual Biología — v2 (sin app, gratis) 
 
+Este proyecto ofrece un visor 3D interactivo para estudiar la célula animal y la célula vegetal directamente en el navegador (móvil y PC)
+El objetivo es apoyar el aprendizaje de biología con visualizaciones claras, responsivas y fáciles de manipular con una experiencia fluida en teléfonos y computadoras.
+
 Incluye:
 - **AR.js DEMO lista** (sin configurar modelos externos): escenas didácticas *célula animal* y *célula vegetal* con órganos estilizados y etiquetas interactivas.
 - **Plantillas MindAR**: si luego quieres *image tracking* con tus cartas, solo genera los `.mind` y (opcional) reemplaza por modelos GLB.
@@ -12,8 +15,7 @@ Incluye:
 Este Proyecto es desarrollado con propositos educacionales
 motivando el desarrollo, culturizacion e innovacion tecnologica en las aulas.
 
-Proyecto
 Desarrollado por:
 
-Belen Acuña correo: belen.acpe@gmail.com
-Francisco Pinto correo:  franciscoandresp@gmail.com
+Belen Acuña - belen.acpe@gmail.com
+Francisco Pinto - franciscoandresp@gmail.com
