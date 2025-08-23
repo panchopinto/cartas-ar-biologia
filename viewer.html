@@ -122,7 +122,7 @@
     <a-entity id="cellModel"
       position="0 0 0" rotation="0 0 0" scale="0.40 0.40 0.40"
       gesture-handler="minScale:0.20; maxScale:3.0; rotFactor:0.5"
-      pinch-scale="min:0.20; max:3.0; factor:1"
+      pinch-zoom-pe="min:0.20; max:3.0; factor:1"   <!-- <<< NUEVO (dos dedos) -->
       mouse-drag-rotate
       tap-reset="scale:0.40; rotYdeg:0"
       auto-rotator="enabled:false; speed:20"></a-entity>
@@ -143,8 +143,10 @@ AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},min
     t.addEventListener('touchend',()=>{this.oneFinger=false;},{passive:false});
     t.addEventListener('touchcancel',()=>{this.oneFinger=false;},{passive:false});
     t.addEventListener('wheel',e=>{e.preventDefault();const dir=e.deltaY>0?0.9:1.1;const s=this.el.object3D.scale.x*dir;
-      const cl=THREE.MathUtils.clamp(s,this.data.min,this.data.max);this.el.object3D.scale.set(cl,cl,cl);},{passive:false});
+      const cl=THREE.MathUtils.clamp(s,this.data.min,this.data.max);this.el.object3D.scale.set(cl,cl,cl);
+      if (typeof scaleRange!=='undefined') scaleRange.value=cl.toFixed(2);},{passive:false});
   }; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
+
 AFRAME.registerComponent('mouse-drag-rotate',{schema:{factor:{default:0.45}},
   init:function(){this.drag=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
     t.addEventListener('mousedown',e=>{this.drag=true;this.lastX=e.clientX;});
@@ -152,18 +154,43 @@ AFRAME.registerComponent('mouse-drag-rotate',{schema:{factor:{default:0.45}},
     window.addEventListener('mousemove',e=>{ if(!this.drag) return; const dx=e.clientX-this.lastX; this.lastX=e.clientX;
       this.el.object3D.rotation.y -= (dx*this.data.factor)*Math.PI/180; });
   }; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
-AFRAME.registerComponent('pinch-scale',{schema:{min:{default:0.1},max:{default:4},factor:{default:1}},
-  init:function(){this.active=false;this.startDist=0;this.startScale=this.el.object3D.scale.clone();const s=this.el.sceneEl;const add=()=>{const c=s.canvas||s;
-    c.addEventListener('touchstart',e=>{if(e.touches.length===2){this.active=true;const dx=e.touches[0].clientX-e.touches[1].clientX;const dy=e.touches[0].clientY-e.touches[1].clientY;
-      this.startDist=Math.hypot(dx,dy);this.startScale=this.el.object3D.scale.clone();e.preventDefault();}}, {passive:false});
-    c.addEventListener('touchmove',e=>{if(!this.active||e.touches.length!==2)return;const dx=e.touches[0].clientX-e.touches[1].clientX;const dy=e.touches[0].clientY-e.touches[1].clientY;
-      const dist=Math.hypot(dx,dy);const k=(dist/this.startDist)*this.data.factor;const sX=THREE.MathUtils.clamp(this.startScale.x*k,this.data.min,this.data.max);
-      this.el.object3D.scale.set(sX,sX,sX);e.preventDefault();},{passive:false});
-    const end=()=>{this.active=false;};c.addEventListener('touchend',end,{passive:false});c.addEventListener('touchcancel',end,{passive:false});};
-  s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
+
+/* ====== NUEVO: Pinch zoom con Pointer Events (dos dedos) ====== */
+AFRAME.registerComponent('pinch-zoom-pe',{schema:{min:{default:0.2},max:{default:3.0},factor:{default:1}},
+  init:function(){
+    this.pointers=new Map(); this.active=false; this.startDist=0; this.startScale=this.el.object3D.scale.x;
+    const s=this.el.sceneEl;
+    const dist=()=>{ const a=[...this.pointers.values()]; if(a.length<2) return 0;
+      const dx=a[0].x-a[1].x, dy=a[0].y-a[1].y; return Math.hypot(dx,dy); };
+    const onDown=(e)=>{ const c=s.canvas||s; c.setPointerCapture?.(e.pointerId);
+      this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(this.pointers.size===2){ this.active=true; this.startDist=dist(); this.startScale=this.el.object3D.scale.x; } };
+    const onMove=(e)=>{ if(!this.pointers.has(e.pointerId)) return;
+      this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(this.active && this.pointers.size===2){
+        e.preventDefault();
+        const k=(dist()/this.startDist)*this.data.factor;
+        let sc=THREE.MathUtils.clamp(this.startScale*k, this.data.min, this.data.max);
+        this.el.object3D.scale.set(sc,sc,sc);
+        if (typeof scaleRange!=='undefined') scaleRange.value=sc.toFixed(2);
+      } };
+    const onUp=(e)=>{ this.pointers.delete(e.pointerId); if(this.pointers.size<2) this.active=false; };
+
+    const add=()=>{ const c=s.canvas||s;
+      c.addEventListener('pointerdown',onDown,{passive:false});
+      c.addEventListener('pointermove',onMove,{passive:false});
+      c.addEventListener('pointerup',onUp,{passive:false});
+      c.addEventListener('pointercancel',onUp,{passive:false});
+      c.addEventListener('pointerout',onUp,{passive:false});
+      c.addEventListener('pointerleave',onUp,{passive:false});
+    };
+    s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
+  }
+});
+
 AFRAME.registerComponent('tap-reset',{schema:{scale:{default:1},rotYdeg:{default:0}},init:function(){this.lastTap=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
   t.addEventListener('touchend',()=>{const n=performance.now();if(n-this.lastTap<300){const sc=this.data.scale;this.el.object3D.scale.set(sc,sc,sc);
-    this.el.object3D.rotation.y=THREE.MathUtils.degToRad(this.data.rotYdeg);}this.lastTap=n;},{passive:true});};s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
+    this.el.object3D.rotation.y=THREE.MathUtils.degToRad(this.data.rotYdeg); if (typeof scaleRange!=='undefined') scaleRange.value=sc.toFixed(2);}this.lastTap=n;},{passive:true});};s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
 AFRAME.registerComponent('auto-rotator',{schema:{speed:{default:20},enabled:{default:false}},tick:function(t,dt){
   if(!this.data.enabled)return; this.el.object3D.rotation.y+=THREE.MathUtils.degToRad(this.data.speed)*(dt/1000);}});
 AFRAME.registerComponent('billboard',{tick:function(){const cam=this.el.sceneEl&&this.el.sceneEl.camera;if(!cam)return;this.el.object3D.quaternion.copy(cam.el.object3D.quaternion);}});
@@ -197,7 +224,6 @@ function saveCustom(kind,data){ localStorage.setItem(STORAGE_KEY(kind), JSON.str
 function getHotspots(kind){
   const custom = loadCustom(kind);
   if (!custom) return HS_DEFAULT[kind];
-  // Merge: respeta desc & diff del default
   const byName = new Map(HS_DEFAULT[kind].map(x=>[x.name,x]));
   return custom.map(c=>({ ...byName.get(c.name)||{}, ...c }));
 }
@@ -327,7 +353,6 @@ document.getElementById('resetHS').onclick=()=>{
     mouse.set( x*2 - 1, - (y*2 - 1) );
     raycaster.setFromCamera(mouse, scene.camera);
     const mesh = modelEl.getObject3D('mesh'); if(!mesh) return null;
-    // Intersecta contra TODOS los submeshes
     const intersects = raycaster.intersectObject(mesh, true);
     return intersects && intersects[0] ? intersects[0].point : null;
   }
@@ -396,3 +421,4 @@ setUI(); renderInfoAndSelect(); load();
 </script>
 </body>
 </html>
+
