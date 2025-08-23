@@ -31,7 +31,8 @@
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
   .chip{padding:6px 8px;border-radius:999px;font:700 12px system-ui;color:#132;background:rgba(57,255,20,.15);border:1px solid #39ff14;
         box-shadow:0 0 8px rgba(57,255,20,.5) inset,0 0 6px rgba(57,255,20,.25)}
-  .chip--animal{ color:#fff !important; border-color:#39ff14 !important; background:rgba(57,255,20,.15) !important; }
+  /* Resaltado de diferencias (animal y vegetal) */
+  .chip--diff{ color:#fff !important; border-color:#39ff14 !important; background:rgba(57,255,20,.15) !important; }
 
   .controls{position:fixed;right:10px;bottom:10px;z-index:8;display:grid;grid-template-columns:repeat(3,48px);grid-gap:8px}
   .ctrl{width:48px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.45);color:#fff;
@@ -119,6 +120,7 @@
       gesture-handler="minScale:0.20; maxScale:3.0; rotFactor:0.5"
       pinch-pan-pe="min:0.20; max:3.0; factor:1; panFactor:1.0"
       mouse-drag-rotate
+      mouse-pan="panFactor:1.0"
       tap-reset="scale:0.40; rotYdeg:0"
       auto-rotator="enabled:false; speed:20"></a-entity>
 
@@ -128,7 +130,7 @@
   </a-scene>
 
 <script>
-/* ====== Rotación 1 dedo + rueda ====== */
+/* ====== Rotación con 1 dedo + rueda ====== */
 AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},minScale:{default:0.05},maxScale:{default:3.0}},
   init:function(){this.oneFinger=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
     t.addEventListener('touchstart',e=>{if(e.touches.length===1){this.oneFinger=true;this.lastX=e.touches[0].clientX;}},{passive:false});
@@ -140,9 +142,11 @@ AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},min
       const cl=THREE.MathUtils.clamp(s,this.data.min,this.data.max);this.el.object3D.scale.set(cl,cl,cl);
       if (typeof DEFAULT_SCALE!=='undefined' && DEFAULT_SCALE>0) { USER_MULT = cl/DEFAULT_SCALE; }
       if (typeof scaleRange!=='undefined') scaleRange.value=cl.toFixed(2);},{passive:false});
+    // desactivar menú de clic derecho para permitir pan con botón derecho
+    t.addEventListener('contextmenu',(e)=>e.preventDefault());
   }; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
 
-/* ====== Pan + Pinch con Pointer Events (2 dedos) ====== */
+/* ====== Pan + Pinch con dos dedos ====== */
 AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:3.0},factor:{default:1},panFactor:{default:1}},
   init:function(){
     this.pointers=new Map(); this.active=false;
@@ -154,15 +158,12 @@ AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:
     const dist=()=>{ const a=[...this.pointers.values()]; const dx=a[0].x-a[1].x, dy=a[0].y-a[1].y; return Math.hypot(dx,dy); };
 
     const worldPerPixel = ()=>{
-      const cam = s.camera; if(!cam || !s.canvas) return {x:0,y:0,dist:1};
-      // distancia aprox cámara-modelo (en nuestro setup la cámara mira al origen)
-      const distCam = cam.position.distanceTo(this.el.object3D.getWorldPosition(new THREE.Vector3()));
+      const cam = s.camera; if(!cam || !s.canvas) return {x:0,y:0};
       const fov = (cam.fov||60)*Math.PI/180;
       const h = s.canvas.height || window.innerHeight;
-      const w = s.canvas.width  || window.innerWidth;
-      const worldPerPixY = 2 * distCam * Math.tan(fov/2) / h;
+      const worldPerPixY = 2 * cam.position.length() * Math.tan(fov/2) / h;
       const worldPerPixX = worldPerPixY * cam.aspect;
-      return {x:worldPerPixX, y:worldPerPixY, dist:distCam};
+      return {x:worldPerPixX, y:worldPerPixY};
     };
 
     const onDown=(e)=>{ const c=s.canvas||s; c.setPointerCapture?.(e.pointerId);
@@ -187,11 +188,11 @@ AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:
         if (DEFAULT_SCALE>0) { USER_MULT = sc/DEFAULT_SCALE; }
         if (typeof scaleRange!=='undefined') scaleRange.value=sc.toFixed(2);
 
-        // Pan (dos dedos arrastrando)
+        // Pan (dos dedos)
         const cen=centroid(); const dx=cen.x-this.startCentroid.x; const dy=cen.y-this.startCentroid.y;
         const wp=worldPerPixel();
         const tx = dx * wp.x * this.data.panFactor;
-        const ty = -dy * wp.y * this.data.panFactor; // y de pantalla va hacia abajo
+        const ty = -dy * wp.y * this.data.panFactor; // invertido en Y
         this.el.object3D.position.set(this.startPos.x + tx, this.startPos.y + ty, this.startPos.z);
       }
     };
@@ -210,6 +211,50 @@ AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:
   }
 });
 
+/* ====== Pan con mouse (PC): Shift+izquierdo, medio o derecho ====== */
+AFRAME.registerComponent('mouse-pan',{schema:{panFactor:{default:1}},
+  init:function(){
+    const s=this.el.sceneEl;
+    let down=false, btn=0, start={x:0,y:0}, startPos=this.el.object3D.position.clone(), shift=false;
+
+    const worldPerPixel = ()=>{
+      const cam = s.camera; if(!cam || !s.canvas) return {x:0,y:0};
+      const fov = (cam.fov||60)*Math.PI/180;
+      const h = s.canvas.height || window.innerHeight;
+      const worldPerPixY = 2 * cam.position.length() * Math.tan(fov/2) / h;
+      const worldPerPixX = worldPerPixY * cam.aspect;
+      return {x:worldPerPixX, y:worldPerPixY};
+    };
+
+    const onDown=(e)=>{
+      // botón: 0=izq,1=medio,2=dcho ; permitimos pan con medio/dcho o Shift+izq
+      shift = e.shiftKey;
+      if (e.button===1 || e.button===2 || (e.button===0 && shift)){
+        down=true; btn=e.button; start={x:e.clientX,y:e.clientY}; startPos=this.el.object3D.position.clone();
+        e.preventDefault();
+      }
+    };
+    const onMove=(e)=>{
+      if(!down) return;
+      e.preventDefault();
+      const dx=e.clientX-start.x, dy=e.clientY-start.y;
+      const wp=worldPerPixel();
+      const tx = dx * wp.x * this.data.panFactor;
+      const ty = -dy * wp.y * this.data.panFactor;
+      this.el.object3D.position.set(startPos.x + tx, startPos.y + ty, startPos.z);
+    };
+    const onUp=()=>{ down=false; };
+
+    const add=()=>{ const c=s.canvas||s;
+      c.addEventListener('mousedown',onDown,{passive:false});
+      window.addEventListener('mousemove',onMove,{passive:false});
+      window.addEventListener('mouseup',onUp,{passive:false});
+      c.addEventListener('contextmenu',(e)=>e.preventDefault());
+    };
+    s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
+  }
+});
+
 AFRAME.registerComponent('tap-reset',{schema:{scale:{default:1},rotYdeg:{default:0}},init:function(){this.lastTap=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
   t.addEventListener('touchend',()=>{const n=performance.now();if(n-this.lastTap<300){const sc=this.data.scale;this.el.object3D.scale.set(sc,sc,sc);
     this.el.object3D.rotation.y=THREE.MathUtils.degToRad(this.data.rotYdeg); if (typeof scaleRange!=='undefined') scaleRange.value=sc.toFixed(2);}this.lastTap=n;},{passive:true});};s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
@@ -217,20 +262,51 @@ AFRAME.registerComponent('auto-rotator',{schema:{speed:{default:20},enabled:{def
   if(!this.data.enabled)return; this.el.object3D.rotation.y+=THREE.MathUtils.degToRad(this.data.speed)*(dt/1000);}});
 AFRAME.registerComponent('billboard',{tick:function(){const cam=this.el.sceneEl&&this.el.sceneEl.camera;if(!cam)return;this.el.object3D.quaternion.copy(cam.el.object3D.quaternion);}});
 
-/* ====== Hotspots, datos y UI (igual que antes) ====== */
-const HS_DEFAULT={animal:[{name:'Núcleo',desc:'Controla la célula y guarda el ADN.',pos:[0,0.12,0]},{name:'Mitocondrias',desc:'Producen ATP (energía).',pos:[0.18,0.06,0.04]},{name:'Aparato de Golgi',desc:'Empaqueta y distribuye proteínas/lípidos.',pos:[0.12,0.00,-0.15]},{name:'Ribosomas',desc:'Sintetizan proteínas.',pos:[-0.18,0.08,0]},{name:'Lisosomas',desc:'Digestión celular de desechos.',pos:[-0.12,-0.02,0.14],diff:true},{name:'Centriolos',desc:'Organizan huso mitótico.',pos:[0.16,0.14,-0.02],diff:true},{name:'Membrana plasmática',desc:'Delimita e intercambio.',pos:[0,-0.08,0.2]},{name:'Citoplasma',desc:'Medio de reacciones químicas.',pos:[-0.06,0.02,-0.18]}],
-vegetal:[{name:'Núcleo',desc:'Controla la célula y guarda el ADN.',pos:[0,0.12,0]},{name:'Cloroplastos',desc:'Fotosíntesis: luz → energía química.',pos:[0.18,0.05,0],diff:true},{name:'Vacuola central',desc:'Almacenamiento y turgencia.',pos:[-0.12,0.02,-0.1],diff:true},{name:'Pared celular',desc:'Rigidez y protección (celulosa).',pos:[0,0,-0.22],diff:true},{name:'Plasmodesmos',desc:'Comunicación entre células vegetales.',pos:[-0.20,0.00,0.12],diff:true},{name:'Aparato de Golgi',desc:'Empaque y secreción.',pos:[0.12,0,-0.15]},{name:'Mitocondrias',desc:'Producción de ATP.',pos:[-0.18,0.06,0.02]},{name:'Ribosomas',desc:'Síntesis de proteínas.',pos:[0.0,0.16,0.16]}]};
+/* ====== Datos ====== */
+const HS_DEFAULT={
+  animal:[
+    {name:'Núcleo',desc:'Controla la célula y guarda el ADN.',pos:[0,0.12,0]},
+    {name:'Mitocondrias',desc:'Producen ATP (energía).',pos:[0.18,0.06,0.04]},
+    {name:'Aparato de Golgi',desc:'Empaqueta y distribuye proteínas/lípidos.',pos:[0.12,0.00,-0.15]},
+    {name:'Ribosomas',desc:'Sintetizan proteínas.',pos:[-0.18,0.08,0]},
+    {name:'Lisosomas',desc:'Digestión celular de desechos.',pos:[-0.12,-0.02,0.14],diff:true},
+    {name:'Centriolos',desc:'Organizan huso mitótico.',pos:[0.16,0.14,-0.02],diff:true},
+    {name:'Membrana plasmática',desc:'Delimita e intercambio.',pos:[0,-0.08,0.2]},
+    {name:'Citoplasma',desc:'Medio de reacciones químicas.',pos:[-0.06,0.02,-0.18]}
+  ],
+  vegetal:[
+    {name:'Núcleo',desc:'Controla la célula y guarda el ADN.',pos:[0,0.12,0]},
+    {name:'Cloroplastos',desc:'Fotosíntesis: luz → energía química.',pos:[0.18,0.05,0],diff:true},
+    {name:'Vacuola central',desc:'Almacenamiento y turgencia.',pos:[-0.12,0.02,-0.1],diff:true},
+    {name:'Pared celular',desc:'Rigidez y protección (celulosa).',pos:[0,0,-0.22],diff:true},
+    {name:'Plasmodesmos',desc:'Comunicación entre células vegetales.',pos:[-0.20,0.00,0.12],diff:true},
+    {name:'Aparato de Golgi',desc:'Empaque y secreción.',pos:[0.12,0,-0.15]},
+    {name:'Mitocondrias',desc:'Producción de ATP.',pos:[-0.18,0.06,0.02]},
+    {name:'Ribosomas',desc:'Síntesis de proteínas.',pos:[0.0,0.16,0.16]}
+  ]
+};
 const STORAGE_KEY = k => `hs_positions_v1_${k}`;
 function loadCustom(kind){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY(kind))||'null'); }catch{ return null; } }
 function saveCustom(kind,data){ localStorage.setItem(STORAGE_KEY(kind), JSON.stringify(data)); }
-function getHotspots(kind){ const custom = loadCustom(kind); if (!custom) return HS_DEFAULT[kind]; const byName = new Map(HS_DEFAULT[kind].map(x=>[x.name,x])); return custom.map(c=>({ ...byName.get(c.name)||{}, ...c })); }
+function getHotspots(kind){
+  const custom = loadCustom(kind);
+  if (!custom) return HS_DEFAULT[kind];
+  const byName = new Map(HS_DEFAULT[kind].map(x=>[x.name,x]));
+  return custom.map(c=>({ ...byName.get(c.name)||{}, ...c }));
+}
 
+/* ====== App ====== */
 const INIT={ animal:{scale:0.40,rotYdeg:0}, vegetal:{scale:0.36,rotYdeg:0} };
 const MIN_SCALE=0.20, MAX_SCALE=3.0, ROT_STEP_DEG=8, ZOOM_STEP=1.12;
-const MAP={ animal:{normal:"./assets/models/animal.glb",draco:"./assets/models/animal_draco.glb"}, vegetal:{normal:"./assets/models/vegetal.glb",draco:"./assets/models/vegetal_draco.glb"} };
+const MAP={ 
+  animal:{normal:"./assets/models/animal.glb",draco:"./assets/models/animal_draco.glb"},
+  vegetal:{normal:"./assets/models/vegetal.glb",draco:"./assets/models/vegetal_draco.glb"}
+};
 const CONTENT={ 
-  animal:{titulo:"Célula Animal", componentes:[["Núcleo","Controla la célula y guarda el ADN."],["Membrana plasmática","Delimita y regula el intercambio de sustancias."],["Citoplasma","Medio donde ocurren reacciones químicas."],["Ribosomas","Fabrican proteínas."],["R.E. rugoso","Sintetiza y procesa proteínas."],["R.E. liso","Sintetiza lípidos y detoxifica."],["Aparato de Golgi","Empaqueta y distribuye proteínas/lípidos."],["Mitocondrias","Producen ATP (energía)."],["Lisosomas","Digieren desechos y partículas."],["Peroxisomas","Metabolismo de peróxidos."],["Citoesqueleto","Forma, soporte y transporte interno."],["Centriolos","Organizan huso mitótico en división celular."]], diferencia:["Sin pared celular","Sin cloroplastos","Vacuolas pequeñas y múltiples","Centriolos presentes","Lisosomas abundantes"]},
-  vegetal:{titulo:"Célula Vegetal", componentes:[["Núcleo","Controla la célula y guarda el ADN."],["Membrana plasmática","Regula el intercambio con el exterior."],["Pared celular (celulosa)","Aporta rigidez y protección."],["Citoplasma","Medio de reacciones celulares."],["Ribosomas","Síntesis de proteínas."],["R.E. rugoso/liso","Proteínas y lípidos."],["Aparato de Golgi","Empaque y secreción."],["Mitocondrias","Producción de ATP."],["Vacuola central","Almacenamiento y turgencia (presión interna)."],["Cloroplastos","Fotosíntesis: luz → energía química."],["Plasmodesmos","Canales de comunicación entre células vegetales."],["Citoesqueleto","Estructura y transporte."]], diferencia:["Pared celular (celulosa)","Cloroplastos (fotosíntesis)","Vacuola central grande","Plasmodesmos","Sin centriolos típicos"]}
+  animal:{titulo:"Célula Animal", componentes:[["Núcleo","Controla la célula y guarda el ADN."],["Membrana plasmática","Delimita y regula el intercambio de sustancias."],["Citoplasma","Medio donde ocurren reacciones químicas."],["Ribosomas","Fabrican proteínas."],["R.E. rugoso","Sintetiza y procesa proteínas."],["R.E. liso","Sintetiza lípidos y detoxifica."],["Aparato de Golgi","Empaqueta y distribuye proteínas/lípidos."],["Mitocondrias","Producen ATP (energía)."],["Lisosomas","Digieren desechos y partículas."],["Peroxisomas","Metabolismo de peróxidos."],["Citoesqueleto","Forma, soporte y transporte interno."],["Centriolos","Organizan huso mitótico en división celular."]],
+           diferencia:["Sin pared celular","Sin cloroplastos","Vacuolas pequeñas y múltiples","Centriolos presentes","Lisosomas abundantes"]},
+  vegetal:{titulo:"Célula Vegetal", componentes:[["Núcleo","Controla la célula y guarda el ADN."],["Membrana plasmática","Regula el intercambio con el exterior."],["Pared celular (celulosa)","Aporta rigidez y protección."],["Citoplasma","Medio de reacciones celulares."],["Ribosomas","Síntesis de proteínas."],["R.E. rugoso/liso","Proteínas y lípidos."],["Aparato de Golgi","Empaque y secreción."],["Mitocondrias","Producción de ATP."],["Vacuola central","Almacenamiento y turgencia (presión interna)."],["Cloroplastos","Fotosíntesis: luz → energía química."],["Plasmodesmos","Canales de comunicación entre células vegetales."],["Citoesqueleto","Estructura y transporte."]],
+           diferencia:["Pared celular (celulosa)","Cloroplastos (fotosíntesis)","Vacuola central grande","Plasmodesmos","Sin centriolos típicos"]}
 };
 
 const params=new URLSearchParams(location.search);
@@ -251,11 +327,11 @@ const infoPanel=document.getElementById('infoPanel');
 const editor=document.getElementById('editor'); const hsSelect=document.getElementById('hsSelect');
 const stepInput=document.getElementById('step'); const dragToggle=document.getElementById('dragToggle');
 
-/* ====== Normalización de tamaño + encuadre ====== */
+/* ====== Normalización y encuadre (opcional con ?size=&pad=&zoom=) ====== */
 const QP = new URLSearchParams(location.search);
-const TARGET_SIZE = parseFloat(QP.get('size') || '0.30'); // lado mayor en m
-const TARGET_PAD  = parseFloat(QP.get('pad')  || '1.10'); // margen
-const ZOOM0       = parseFloat(QP.get('zoom') || '1.00'); // zoom inicial
+const TARGET_SIZE = parseFloat(QP.get('size') || '0.30');
+const TARGET_PAD  = parseFloat(QP.get('pad')  || '1.10');
+const ZOOM0       = parseFloat(QP.get('zoom') || '1.00');
 let DEFAULT_SCALE = 1.0;
 let USER_MULT     = 1.0;
 
@@ -275,44 +351,31 @@ function frameCameraOnly(){
   const distH = radius / Math.sin(hFov/2);
   const dist = Math.max(distV, distH);
 
-  if (scene.camera && scene.camera.el) {
-    scene.camera.el.setAttribute('position', `0 0 ${dist.toFixed(4)}`);
-  } else {
-    cam.position.set(0,0,dist);
-  }
-  cam.near = Math.max(0.01, dist*0.01);
-  cam.far  = dist*10;
-  cam.updateProjectionMatrix();
+  if (scene.camera && scene.camera.el) scene.camera.el.setAttribute('position', `0 0 ${dist.toFixed(4)}`); else cam.position.set(0,0,dist);
+  cam.near = Math.max(0.01, dist*0.01); cam.far  = dist*10; cam.updateProjectionMatrix();
 }
-
 function normalizeAndFrame(){
   const THREE = window.THREE;
-  const mesh = modelEl.getObject3D('mesh');
-  if(!mesh) return;
-
+  const mesh = modelEl.getObject3D('mesh'); if(!mesh) return;
   const box = new THREE.Box3().setFromObject(mesh);
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
   const maxDim = Math.max(size.x,size.y,size.z) || 1;
-
-  mesh.position.sub(center); // centrar
+  mesh.position.sub(center);
   const s  = TARGET_SIZE / maxDim;
   const s2 = s * ZOOM0;
   modelEl.object3D.scale.set(s2,s2,s2);
   DEFAULT_SCALE = s2;
-
   modelEl.object3D.scale.multiplyScalar(USER_MULT);
   if (typeof scaleRange!=='undefined') scaleRange.value = (DEFAULT_SCALE*USER_MULT).toFixed(2);
-
   const init = INIT[kind] || INIT.animal;
   modelEl.setAttribute('tap-reset', `scale:${DEFAULT_SCALE.toFixed(2)}; rotYdeg:${init.rotYdeg}`);
-
   frameCameraOnly();
 }
 window.addEventListener('resize', frameCameraOnly);
 window.addEventListener('orientationchange', frameCameraOnly);
 
-/* ====== Progreso y ficha ====== */
+/* ====== Progreso + Ficha (chips verdes en ambos) ====== */
 const progress=document.getElementById('progress'); const progressBar=document.getElementById('progressBar'); const progressPct=document.getElementById('progressPct');
 function showProgress(p){ progress.style.display='block'; setProgress(p); }
 function setProgress(p){ const v=Math.max(0,Math.min(1,p||0)); progressBar.style.width=(v*100).toFixed(0)+'%'; progressPct.textContent=(v*100).toFixed(0)+'%'; }
@@ -323,7 +386,7 @@ function renderInfo(k){
   const c=CONTENT[k]; let html=`<h3>${c.titulo}</h3><h4>Componentes y función</h4><ul>`;
   for(const [n,d] of c.componentes){ html+=`<li><b>${n}:</b> ${d}</li>`;}
   html+=`</ul><h4>Se diferencia por…</h4><div class="chips">`;
-  const diffClass = (k === 'animal') ? 'chip chip--animal' : 'chip';
+  const diffClass = 'chip chip--diff'; // ahora SIEMPRE verde + texto blanco
   for(const it of c.diferencia){ html+=`<span class="${diffClass}">${it}</span>`;}
   html+=`</div>`; infoPanel.innerHTML=html;
 }
@@ -331,16 +394,15 @@ function setUI(){ btnA.classList.toggle('active',kind==='animal'); btnV.classLis
   labelEl.textContent=(kind==='animal'?'Animal':'Vegetal'); renderInfo(kind);
   const u=new URL(location.href); u.searchParams.set('m',kind); history.replaceState(null,'',u.toString());}
 
-/* ====== Carga del modelo ====== */
-async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(),{method:'HEAD'}); return r.ok; }catch{return false;} }
-async function pick(){ const e=MAP[kind]; return (await exists(e.draco))?e.draco:e.normal; }
+/* ====== Hotspots y editor (igual) ====== */
 let hsData=[], hsRoot=null, hsRecords=[], selected=0, editMode=false, dragOn=true;
 function clearHotspots(){ const old=document.getElementById('hsRoot'); if(old&&old.parentNode) old.parentNode.removeChild(old); hsRecords=[]; }
 function getCurrentPositions(){ return hsRecords.map(r=>({name:r.name, pos:[r.wrap.object3D.position.x, r.wrap.object3D.position.y, r.wrap.object3D.position.z], diff:r.diff, desc:r.desc})); }
 function populateSelect(){ hsSelect.innerHTML=''; hsRecords.forEach((r,i)=>{ const opt=document.createElement('option'); opt.value=i; opt.textContent=r.name; hsSelect.appendChild(opt); }); hsSelect.value=selected; }
 function highlightSelected(){ hsRecords.forEach((r,i)=> r.halo.setAttribute('visible', i==selected)); }
 function makeHotspots(kind){
-  clearHotspots(); hsData = getHotspots(kind);
+  clearHotspots();
+  hsData = getHotspots(kind);
   hsRoot = document.createElement('a-entity'); hsRoot.setAttribute('id','hsRoot'); modelEl.appendChild(hsRoot);
   hsData.forEach(item=>{
     const wrap=document.createElement('a-entity'); wrap.setAttribute('position', item.pos.join(' '));
@@ -366,7 +428,6 @@ function makeHotspots(kind){
   });
   populateSelect(); highlightSelected();
 }
-
 btnEdit.onclick=()=>{ editMode=!editMode; btnEdit.classList.toggle('active',editMode); editor.classList.toggle('show',editMode); };
 hsSelect.addEventListener('change',()=>{ selected=parseInt(hsSelect.value||0,10)||0; highlightSelected(); });
 document.getElementById('centerSel').onclick=()=>{ const r=hsRecords[selected]; r.wrap.object3D.position.set(0,0,0); };
@@ -383,7 +444,10 @@ document.getElementById('saveLocal').onclick=()=>{ const data = getCurrentPositi
 document.getElementById('copyJSON').onclick=()=>{ const data = JSON.stringify(getCurrentPositions(), null, 2); navigator.clipboard?.writeText(data); alert('JSON copiado al portapapeles'); };
 document.getElementById('resetHS').onclick=()=>{ localStorage.removeItem(STORAGE_KEY(kind)); clearHotspots(); makeHotspots(kind); alert('Hotspots reiniciados (valores por defecto).'); };
 
-/* Carga */
+/* ====== Carga ====== */
+async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(),{method:'HEAD'}); return r.ok; }catch{return false;} }
+async function pick(){ const e=MAP[kind]; return (await exists(e.draco))?e.draco:e.normal; }
+
 async function load(){
   showProgress(0);
   const url=(await pick())+'#'+Date.now();
@@ -400,7 +464,7 @@ async function load(){
   setTimeout(()=>modelEl.setAttribute('gltf-model',url),30);
 }
 
-/* Botones y eventos */
+/* ====== UI ====== */
 function setUIAndURL(){ setUI(); const u=new URL(location.href); u.searchParams.set('m',kind); history.replaceState(null,'',u.toString()); }
 function renderInfoAndSelect(){ renderInfo(kind); }
 
@@ -413,6 +477,7 @@ btnInfo.onclick=()=>{ const v=infoPanel.style.display!=='none'; infoPanel.style.
 modelEl.addEventListener('model-loaded',()=>{ hideProgress(); normalizeAndFrame(); makeHotspots(kind); });
 modelEl.addEventListener('model-error',e=>{ hideProgress(); alert('No se pudo cargar el modelo.'); console.error(e.detail);});
 
+/* ====== Controles extra ====== */
 function clampScale(s){ return Math.min(Math.max(s,MIN_SCALE),MAX_SCALE); }
 function setScaleUniform(s){ s=clampScale(s); modelEl.object3D.scale.set(s,s,s); scaleRange.value=s.toFixed(2); if (DEFAULT_SCALE>0){ USER_MULT = s/DEFAULT_SCALE; } }
 rotL.addEventListener('click',()=>{ modelEl.object3D.rotation.y+=THREE.MathUtils.degToRad(ROT_STEP_DEG); });
@@ -425,6 +490,7 @@ centerBtn.addEventListener('click',()=> modelEl.object3D.position.set(0,0,0));
 scaleRange.addEventListener('input',()=> setScaleUniform(parseFloat(scaleRange.value)));
 speedRange.addEventListener('input',()=>{ const en=btnAuto.classList.contains('active'); modelEl.setAttribute('auto-rotator',`enabled:${en}; speed:${parseFloat(speedRange.value)}`); });
 
+/* ====== Inicio ====== */
 setUI(); renderInfoAndSelect(); load();
 </script>
 </body>
