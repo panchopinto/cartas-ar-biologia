@@ -7,7 +7,11 @@
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 <style>
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
-  canvas,.a-canvas{position:fixed;inset:0;width:100vw!important;height:100vh!important;background:#000!important}
+  /* 👇 añade touch-action:none también al canvas para que no robe gestos */
+  canvas,.a-canvas{
+    position:fixed;inset:0;width:100vw!important;height:100vh!important;background:#000!important;
+    touch-action:none;
+  }
 
   .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;font:600 14px system-ui;z-index:5;
        background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0))}
@@ -118,9 +122,9 @@
     <a-entity id="cellModel"
       position="0 0 0" rotation="0 0 0" scale="0.40 0.40 0.40"
       gesture-handler="minScale:0.20; maxScale:3.0; rotFactor:0.5"
-      pinch-pan-pe="min:0.20; max:3.0; factor:1; panFactor:1.0"
+      pinch-pan-pe="min:0.20; max:3.0; factor:1; panFactor:2.5"
       mouse-drag-rotate
-      mouse-pan="panFactor:1.0"
+      mouse-pan="panFactor:2.5"
       tap-reset="scale:0.40; rotYdeg:0"
       auto-rotator="enabled:false; speed:20"></a-entity>
 
@@ -130,7 +134,7 @@
   </a-scene>
 
 <script>
-/* ====== Rotación con 1 dedo + rueda ====== */
+/* ====== Gestos: rotación 1 dedo + rueda (zoom) ====== */
 AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},minScale:{default:0.05},maxScale:{default:3.0}},
   init:function(){this.oneFinger=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
     t.addEventListener('touchstart',e=>{if(e.touches.length===1){this.oneFinger=true;this.lastX=e.touches[0].clientX;}},{passive:false});
@@ -142,11 +146,10 @@ AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},min
       const cl=THREE.MathUtils.clamp(s,this.data.min,this.data.max);this.el.object3D.scale.set(cl,cl,cl);
       if (typeof DEFAULT_SCALE!=='undefined' && DEFAULT_SCALE>0) { USER_MULT = cl/DEFAULT_SCALE; }
       if (typeof scaleRange!=='undefined') scaleRange.value=cl.toFixed(2);},{passive:false});
-    // desactivar menú de clic derecho para permitir pan con botón derecho
     t.addEventListener('contextmenu',(e)=>e.preventDefault());
   }; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
 
-/* ====== Pan + Pinch con dos dedos ====== */
+/* ====== Pan + Pinch con dos dedos (móvil) ====== */
 AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:3.0},factor:{default:1},panFactor:{default:1}},
   init:function(){
     this.pointers=new Map(); this.active=false;
@@ -158,10 +161,15 @@ AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:
     const dist=()=>{ const a=[...this.pointers.values()]; const dx=a[0].x-a[1].x, dy=a[0].y-a[1].y; return Math.hypot(dx,dy); };
 
     const worldPerPixel = ()=>{
-      const cam = s.camera; if(!cam || !s.canvas) return {x:0,y:0};
+      const THREE = window.THREE;
+      const cam = s.camera; if(!cam) return {x:0,y:0};
+      const canvas = s.canvas || {width:window.innerWidth, height:window.innerHeight};
+      const objWorld = new THREE.Vector3();
+      this.el.object3D.getWorldPosition(objWorld);
+      const distCam = cam.position.distanceTo(objWorld);
       const fov = (cam.fov||60)*Math.PI/180;
-      const h = s.canvas.height || window.innerHeight;
-      const worldPerPixY = 2 * cam.position.length() * Math.tan(fov/2) / h;
+      const h = canvas.height || window.innerHeight;
+      const worldPerPixY = 2 * distCam * Math.tan(fov/2) / h;
       const worldPerPixX = worldPerPixY * cam.aspect;
       return {x:worldPerPixX, y:worldPerPixY};
     };
@@ -192,7 +200,7 @@ AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:
         const cen=centroid(); const dx=cen.x-this.startCentroid.x; const dy=cen.y-this.startCentroid.y;
         const wp=worldPerPixel();
         const tx = dx * wp.x * this.data.panFactor;
-        const ty = -dy * wp.y * this.data.panFactor; // invertido en Y
+        const ty = -dy * wp.y * this.data.panFactor;
         this.el.object3D.position.set(this.startPos.x + tx, this.startPos.y + ty, this.startPos.z);
       }
     };
@@ -211,26 +219,30 @@ AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:
   }
 });
 
-/* ====== Pan con mouse (PC): Shift+izquierdo, medio o derecho ====== */
+/* ====== Pan con mouse (PC): Shift+izq, medio o derecho ====== */
 AFRAME.registerComponent('mouse-pan',{schema:{panFactor:{default:1}},
   init:function(){
     const s=this.el.sceneEl;
-    let down=false, btn=0, start={x:0,y:0}, startPos=this.el.object3D.position.clone(), shift=false;
+    let down=false, start={x:0,y:0}, startPos=this.el.object3D.position.clone(), shift=false;
 
     const worldPerPixel = ()=>{
-      const cam = s.camera; if(!cam || !s.canvas) return {x:0,y:0};
+      const THREE = window.THREE;
+      const cam = s.camera; if(!cam) return {x:0,y:0};
+      const canvas = s.canvas || {width:window.innerWidth, height:window.innerHeight};
+      const objWorld = new THREE.Vector3();
+      this.el.object3D.getWorldPosition(objWorld);
+      const distCam = cam.position.distanceTo(objWorld);
       const fov = (cam.fov||60)*Math.PI/180;
-      const h = s.canvas.height || window.innerHeight;
-      const worldPerPixY = 2 * cam.position.length() * Math.tan(fov/2) / h;
+      const h = canvas.height || window.innerHeight;
+      const worldPerPixY = 2 * distCam * Math.tan(fov/2) / h;
       const worldPerPixX = worldPerPixY * cam.aspect;
       return {x:worldPerPixX, y:worldPerPixY};
     };
 
     const onDown=(e)=>{
-      // botón: 0=izq,1=medio,2=dcho ; permitimos pan con medio/dcho o Shift+izq
       shift = e.shiftKey;
       if (e.button===1 || e.button===2 || (e.button===0 && shift)){
-        down=true; btn=e.button; start={x:e.clientX,y:e.clientY}; startPos=this.el.object3D.position.clone();
+        down=true; start={x:e.clientX,y:e.clientY}; startPos=this.el.object3D.position.clone();
         e.preventDefault();
       }
     };
@@ -241,7 +253,7 @@ AFRAME.registerComponent('mouse-pan',{schema:{panFactor:{default:1}},
       const wp=worldPerPixel();
       const tx = dx * wp.x * this.data.panFactor;
       const ty = -dy * wp.y * this.data.panFactor;
-      this.el.object3D.position.set(startPos.x + tx, startPos.y + ty, startPos.z);
+      this.el.object3D.position.set(startPos.x + tx, startPos.y + ty, this.el.object3D.position.z);
     };
     const onUp=()=>{ down=false; };
 
@@ -262,7 +274,7 @@ AFRAME.registerComponent('auto-rotator',{schema:{speed:{default:20},enabled:{def
   if(!this.data.enabled)return; this.el.object3D.rotation.y+=THREE.MathUtils.degToRad(this.data.speed)*(dt/1000);}});
 AFRAME.registerComponent('billboard',{tick:function(){const cam=this.el.sceneEl&&this.el.sceneEl.camera;if(!cam)return;this.el.object3D.quaternion.copy(cam.el.object3D.quaternion);}});
 
-/* ====== Datos ====== */
+/* ====== Datos de hotspots ====== */
 const HS_DEFAULT={
   animal:[
     {name:'Núcleo',desc:'Controla la célula y guarda el ADN.',pos:[0,0.12,0]},
@@ -295,13 +307,14 @@ function getHotspots(kind){
   return custom.map(c=>({ ...byName.get(c.name)||{}, ...c }));
 }
 
-/* ====== App ====== */
+/* ====== App / Normalización ====== */
 const INIT={ animal:{scale:0.40,rotYdeg:0}, vegetal:{scale:0.36,rotYdeg:0} };
 const MIN_SCALE=0.20, MAX_SCALE=3.0, ROT_STEP_DEG=8, ZOOM_STEP=1.12;
 const MAP={ 
   animal:{normal:"./assets/models/animal.glb",draco:"./assets/models/animal_draco.glb"},
   vegetal:{normal:"./assets/models/vegetal.glb",draco:"./assets/models/vegetal_draco.glb"}
 };
+
 const CONTENT={ 
   animal:{titulo:"Célula Animal", componentes:[["Núcleo","Controla la célula y guarda el ADN."],["Membrana plasmática","Delimita y regula el intercambio de sustancias."],["Citoplasma","Medio donde ocurren reacciones químicas."],["Ribosomas","Fabrican proteínas."],["R.E. rugoso","Sintetiza y procesa proteínas."],["R.E. liso","Sintetiza lípidos y detoxifica."],["Aparato de Golgi","Empaqueta y distribuye proteínas/lípidos."],["Mitocondrias","Producen ATP (energía)."],["Lisosomas","Digieren desechos y partículas."],["Peroxisomas","Metabolismo de peróxidos."],["Citoesqueleto","Forma, soporte y transporte interno."],["Centriolos","Organizan huso mitótico en división celular."]],
            diferencia:["Sin pared celular","Sin cloroplastos","Vacuolas pequeñas y múltiples","Centriolos presentes","Lisosomas abundantes"]},
@@ -327,11 +340,12 @@ const infoPanel=document.getElementById('infoPanel');
 const editor=document.getElementById('editor'); const hsSelect=document.getElementById('hsSelect');
 const stepInput=document.getElementById('step'); const dragToggle=document.getElementById('dragToggle');
 
-/* ====== Normalización y encuadre (opcional con ?size=&pad=&zoom=) ====== */
+/* ====== Normalización y encuadre (parámetros ?size=&pad=&zoom= y sensibilidad ?pan=) ====== */
 const QP = new URLSearchParams(location.search);
 const TARGET_SIZE = parseFloat(QP.get('size') || '0.30');
 const TARGET_PAD  = parseFloat(QP.get('pad')  || '1.10');
 const ZOOM0       = parseFloat(QP.get('zoom') || '1.00');
+const PAN_FACTOR  = parseFloat(QP.get('pan')  || '2.5'); // 👈 sensibilidad pan por URL
 let DEFAULT_SCALE = 1.0;
 let USER_MULT     = 1.0;
 
@@ -372,10 +386,14 @@ function normalizeAndFrame(){
   modelEl.setAttribute('tap-reset', `scale:${DEFAULT_SCALE.toFixed(2)}; rotYdeg:${init.rotYdeg}`);
   frameCameraOnly();
 }
+function applyGestureAttrs(){
+  modelEl.setAttribute('pinch-pan-pe', `min:${MIN_SCALE}; max:${MAX_SCALE}; factor:1; panFactor:${PAN_FACTOR}`);
+  modelEl.setAttribute('mouse-pan', `panFactor:${PAN_FACTOR}`);
+}
 window.addEventListener('resize', frameCameraOnly);
 window.addEventListener('orientationchange', frameCameraOnly);
 
-/* ====== Progreso + Ficha (chips verdes en ambos) ====== */
+/* ====== Progreso + Ficha (chips verdes) ====== */
 const progress=document.getElementById('progress'); const progressBar=document.getElementById('progressBar'); const progressPct=document.getElementById('progressPct');
 function showProgress(p){ progress.style.display='block'; setProgress(p); }
 function setProgress(p){ const v=Math.max(0,Math.min(1,p||0)); progressBar.style.width=(v*100).toFixed(0)+'%'; progressPct.textContent=(v*100).toFixed(0)+'%'; }
@@ -386,7 +404,7 @@ function renderInfo(k){
   const c=CONTENT[k]; let html=`<h3>${c.titulo}</h3><h4>Componentes y función</h4><ul>`;
   for(const [n,d] of c.componentes){ html+=`<li><b>${n}:</b> ${d}</li>`;}
   html+=`</ul><h4>Se diferencia por…</h4><div class="chips">`;
-  const diffClass = 'chip chip--diff'; // ahora SIEMPRE verde + texto blanco
+  const diffClass = 'chip chip--diff';
   for(const it of c.diferencia){ html+=`<span class="${diffClass}">${it}</span>`;}
   html+=`</div>`; infoPanel.innerHTML=html;
 }
@@ -394,7 +412,7 @@ function setUI(){ btnA.classList.toggle('active',kind==='animal'); btnV.classLis
   labelEl.textContent=(kind==='animal'?'Animal':'Vegetal'); renderInfo(kind);
   const u=new URL(location.href); u.searchParams.set('m',kind); history.replaceState(null,'',u.toString());}
 
-/* ====== Hotspots y editor (igual) ====== */
+/* ====== Hotspots (editor) ====== */
 let hsData=[], hsRoot=null, hsRecords=[], selected=0, editMode=false, dragOn=true;
 function clearHotspots(){ const old=document.getElementById('hsRoot'); if(old&&old.parentNode) old.parentNode.removeChild(old); hsRecords=[]; }
 function getCurrentPositions(){ return hsRecords.map(r=>({name:r.name, pos:[r.wrap.object3D.position.x, r.wrap.object3D.position.y, r.wrap.object3D.position.z], diff:r.diff, desc:r.desc})); }
@@ -444,7 +462,7 @@ document.getElementById('saveLocal').onclick=()=>{ const data = getCurrentPositi
 document.getElementById('copyJSON').onclick=()=>{ const data = JSON.stringify(getCurrentPositions(), null, 2); navigator.clipboard?.writeText(data); alert('JSON copiado al portapapeles'); };
 document.getElementById('resetHS').onclick=()=>{ localStorage.removeItem(STORAGE_KEY(kind)); clearHotspots(); makeHotspots(kind); alert('Hotspots reiniciados (valores por defecto).'); };
 
-/* ====== Carga ====== */
+/* ====== Carga del modelo ====== */
 async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(),{method:'HEAD'}); return r.ok; }catch{return false;} }
 async function pick(){ const e=MAP[kind]; return (await exists(e.draco))?e.draco:e.normal; }
 
@@ -460,6 +478,7 @@ async function load(){
   scaleRange.value=init.scale;
 
   modelEl.setAttribute('auto-rotator',`enabled:${btnAuto.classList.contains('active')}; speed:${parseFloat(speedRange.value)}`);
+  applyGestureAttrs();              // 👈 aplica sensibilidad de pan según ?pan=
   clearHotspots();
   setTimeout(()=>modelEl.setAttribute('gltf-model',url),30);
 }
@@ -477,7 +496,7 @@ btnInfo.onclick=()=>{ const v=infoPanel.style.display!=='none'; infoPanel.style.
 modelEl.addEventListener('model-loaded',()=>{ hideProgress(); normalizeAndFrame(); makeHotspots(kind); });
 modelEl.addEventListener('model-error',e=>{ hideProgress(); alert('No se pudo cargar el modelo.'); console.error(e.detail);});
 
-/* ====== Controles extra ====== */
+/* ====== Controles botones ====== */
 function clampScale(s){ return Math.min(Math.max(s,MIN_SCALE),MAX_SCALE); }
 function setScaleUniform(s){ s=clampScale(s); modelEl.object3D.scale.set(s,s,s); scaleRange.value=s.toFixed(2); if (DEFAULT_SCALE>0){ USER_MULT = s/DEFAULT_SCALE; } }
 rotL.addEventListener('click',()=>{ modelEl.object3D.rotation.y+=THREE.MathUtils.degToRad(ROT_STEP_DEG); });
