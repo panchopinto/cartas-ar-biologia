@@ -3,13 +3,15 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>Trivia (Etiquetas 3D) — Célula Animal y Vegetal</title>
+<title>Trivia — Célula Animal y Vegetal (Etiquetas 3D + Alternativas)</title>
 <link rel="icon" href="./assets/img/favicon.png">
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<!-- EmailJS (opcional, para enviar resultados por correo) -->
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 <style>
   :root{
     --bg:#08090c; --panel:#0f1117; --line:#263040; --text:#f5f7fb; --muted:#c9d5ea;
-    --accent:#3cc9ff; --good:#39ff14; --bad:#ff4d6d; --target:#9ec6ff;
+    --accent:#3cc9ff; --good:#39ff14; --bad:#ff4d6d; --target:#9ec6ff; --warn:#ffd166;
     --radius:16px; --shadow:0 10px 30px rgba(0,0,0,.35);
   }
   *{box-sizing:border-box}
@@ -17,17 +19,17 @@
   body{
     margin:0; background:radial-gradient(1200px 600px at 70% -10%,#112033 0%,transparent 60%), var(--bg);
     color:var(--text); font:500 16px/1.45 system-ui,Segoe UI,Roboto,Arial,sans-serif;
-    overflow:hidden; -webkit-user-select:none; user-select:none;
+    overflow:hidden;
   }
   a{color:inherit;text-decoration:none}
-  .wrap{display:grid; grid-template-columns:340px 1fr; gap:14px; height:100vh; padding:12px; max-width:1400px; margin:0 auto}
+  .wrap{display:grid; grid-template-columns:360px 1fr; gap:14px; height:100vh; padding:12px; max-width:1600px; margin:0 auto}
   .side{display:grid; grid-template-rows:auto auto 1fr auto; gap:10px}
   .panel{border:1px solid var(--line); border-radius:var(--radius); background:linear-gradient(180deg,#0b0f16,#0a0d13); box-shadow:var(--shadow); padding:12px}
   .topbar{display:flex; align-items:center; justify-content:space-between; gap:8px}
   .back{display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:12px; border:1px solid #2a3a4e; background:linear-gradient(180deg,#132132,#0d1623); color:#e8f7ff; font-weight:800}
-  .modes{display:flex; gap:8px}
-  .btn{cursor:pointer; border:1px solid #39536d; background:linear-gradient(180deg,#122033,#0d1623); color:#e8f7ff; font-weight:800; padding:8px 12px; border-radius:12px}
-  .btn.active{background:rgba(60,201,255,.15); border-color:var(--accent)}
+  .tabs{display:flex; gap:8px; flex-wrap:wrap}
+  .tab{cursor:pointer; border:1px solid #39536d; background:linear-gradient(180deg,#122033,#0d1623); color:#e8f7ff; font-weight:800; padding:8px 12px; border-radius:12px}
+  .tab.active{background:rgba(60,201,255,.15); border-color:var(--accent)}
   .score{display:flex; align-items:center; justify-content:space-between; gap:8px; font-weight:800}
   .score .good{color:#b7ffb7} .score .bad{color:#ffb0be}
   .list{display:flex; flex-wrap:wrap; gap:8px}
@@ -41,12 +43,9 @@
   /* Área 3D */
   .stage{position:relative; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden}
   a-scene{position:absolute; inset:0}
-  /* MUY IMPORTANTE: permitir gestos en móviles y no robarlos */
-  canvas,.a-canvas{position:absolute; inset:0; width:100% !important; height:100% !important; background:#000 !important;
-                    touch-action:none; overscroll-behavior:contain}
-
-  .hud{position:absolute; left:10px; top:10px; display:flex; gap:8px; z-index:5}
+  .hud{ position:absolute; left:10px; top:10px; display:flex; gap:8px; z-index:5; }
   .hud .btn{padding:6px 10px}
+
   .toast{
     position:absolute; right:12px; top:12px; z-index:6; padding:8px 12px; border-radius:12px;
     border:1px solid #2a3a4e; background:linear-gradient(180deg,#122033,#0d1623); color:#e8f7ff; font-weight:800; display:none
@@ -54,16 +53,43 @@
   .toast.show{display:block; animation:pop .25s ease}
   @keyframes pop{from{transform:translateY(-6px);opacity:0}to{transform:translateY(0);opacity:1}}
 
+  .btn{
+    cursor:pointer; border:1px solid #39536d; background:linear-gradient(180deg,#122033,#0d1623);
+    color:#e8f7ff; font-weight:800; padding:8px 12px; border-radius:12px
+  }
+  .btn.primary{border-color:#2f93b7; background:linear-gradient(180deg,var(--accent),#6fe0ff); color:#0b1020}
+  .btn.warn{border-color:#7a5a1f; background:linear-gradient(180deg,#d4ad57,#ffd166); color:#231a00}
+
   /* Etiquetas 3D */
   .label3d{pointer-events:auto}
 
-  @media (max-width:960px){
-    .wrap{grid-template-columns:1fr; grid-template-rows:auto 1fr; padding:10px}
-    .stage{height:58vh}
+  /* MCQ (alternativas) */
+  .mcqWrap{display:none; height:100%}
+  .mcqWrap.show{display:block}
+  .mcq{border:1px solid var(--line); border-radius:var(--radius); background:linear-gradient(180deg,#0b0f16,#0a0d13); box-shadow:var(--shadow); height:100%; overflow:auto; padding:0}
+  .mcqHeader{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px; border-bottom:1px solid var(--line)}
+  .mcqBody{padding:14px}
+  .qCard{border:1px solid #283647; border-radius:12px; padding:12px; margin:10px 0; background:linear-gradient(180deg,#0d1521,#0a1019)}
+  .qTitle{margin:0 0 8px; font:800 16px system-ui}
+  .opts{display:grid; gap:8px}
+  .opt{
+    display:flex; gap:10px; align-items:center; border:1px solid #32465d; background:linear-gradient(180deg,#0e1b2c,#0a1220);
+    padding:8px 10px; border-radius:10px; cursor:pointer
   }
-  @media (min-width:961px){
-    .stage{height:calc(100vh - 24px)}
-  }
+  .opt input{margin:0}
+  .badge{display:inline-block; font:700 12px/1 system-ui; padding:6px 10px;border-radius:999px; background:rgba(60,201,255,.15); border:1px solid var(--accent); color:#bfeeff}
+  .formRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .formRow input{padding:10px;border-radius:10px;border:1px solid #39536d;background:#08131f;color:#e8f7ff;font:600 14px system-ui}
+  .resultBox{border-top:1px solid var(--line); margin-top:10px; padding-top:10px}
+  .kpi{display:flex; gap:10px; flex-wrap:wrap}
+  .pill{padding:6px 10px;border-radius:999px;border:1px solid #2d9c2d;color:#c5ffb8}
+  .pill.bad{border-color:#b23b4a;color:#ffbdc7}
+  .sumList{margin:10px 0 0; padding-left:18px; color:#cfe6ff}
+  .sumList li.correct{color:#b7ffb7}
+  .sumList li.wrong{color:#ffb0be}
+
+  @media (max-width:1100px){ .wrap{grid-template-columns:1fr; grid-template-rows:auto 1fr; padding:10px} .stage{height:58vh} .formRow{grid-template-columns:1fr} }
+  @media (min-width:1101px){ .stage{height:calc(100vh - 24px)} }
 </style>
 </head>
 <body>
@@ -72,24 +98,28 @@
   <aside class="side">
     <div class="panel topbar">
       <a class="back" href="./index.html">← Volver</a>
-      <div class="modes" role="tablist" aria-label="Modo de trivia">
-        <button id="modeAnimal" class="btn active" role="tab" aria-selected="true">Animal</button>
-        <button id="modeVegetal" class="btn" role="tab" aria-selected="false">Vegetal</button>
+      <div class="tabs" role="tablist" aria-label="Actividades">
+        <button id="tabDrag" class="tab active"  role="tab" aria-selected="true">Arrastrar etiquetas</button>
+        <button id="tabMCQ"  class="tab"         role="tab" aria-selected="false">Trivia alternativas</button>
+        <button id="tabForm" class="tab"         role="tab" aria-selected="false">Formulario (Google)</button>
       </div>
     </div>
 
-    <div class="panel score">
+    <!-- Panel puntaje (solo arrastrar) -->
+    <div id="scoreDrag" class="panel score">
       <div>Correctas: <span id="ok">0</span> · Incorrectas: <span id="ko">0</span></div>
       <div id="progressMini">0 / <span id="total">0</span></div>
     </div>
 
-    <div class="panel">
+    <!-- Panel etiquetas a ubicar (solo arrastrar) -->
+    <div id="chipsPanel" class="panel">
       <div style="font-weight:800;margin-bottom:6px">Etiquetas a ubicar</div>
       <div id="chips" class="list" aria-live="polite"></div>
       <div class="hint">Tip: rota con 1 dedo / mouse, pellizca para zoom, mueve con 2 dedos o Shift+arrastre. Toca una etiqueta para “tomarla” y ubícala sobre la célula.</div>
     </div>
 
-    <div class="panel bottom">
+    <!-- Panel inferior (solo arrastrar) -->
+    <div id="bottomDrag" class="panel bottom">
       <div class="legend">
         <span><i class="dot target"></i>Objetivo</span>
         <span><i class="dot ok"></i>Correcto</span>
@@ -100,14 +130,66 @@
         <button id="btnReset" class="btn">Reiniciar</button>
       </div>
     </div>
+
+    <!-- MCQ (alternativas) -->
+    <div id="mcqWrap" class="mcqWrap">
+      <div class="mcq">
+        <div class="mcqHeader">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="badge">Nuevo</span>
+            <strong>🔬 ¿Qué tanto sabes sobre la célula vegetal y animal?</strong>
+          </div>
+          <div>
+            <button id="btnSendEmail" class="btn warn" title="Envía resultados a los profes">Enviar por correo</button>
+          </div>
+        </div>
+        <div class="mcqBody">
+          <div class="formRow" style="margin-bottom:10px">
+            <input id="alNombre"  placeholder="Nombre(s)" />
+            <input id="alApellido" placeholder="Apellido(s)" />
+            <input id="alCurso"    placeholder="Curso (ej: 2°B)" />
+          </div>
+
+          <div id="mcqList"></div>
+
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button id="btnFinish" class="btn primary">Terminar y corregir</button>
+            <button id="btnMCQReset" class="btn">Reiniciar quiz</button>
+          </div>
+
+          <div id="mcqResult" class="resultBox" style="display:none">
+            <div class="kpi">
+              <span id="kpiCorrect" class="pill">✔ Correctas: 0</span>
+              <span id="kpiWrong"   class="pill bad">✘ Incorrectas: 0</span>
+              <span id="kpiScore"   class="pill">🏁 Puntaje: 0%</span>
+            </div>
+            <ol id="sumList" class="sumList"></ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario (Google Forms) -->
+    <div id="formWrap" class="panel" style="display:none">
+      <div style="font-weight:800;margin-bottom:6px">Guía de trabajo: Célula vegetal y animal</div>
+      <p class="hint" style="margin-top:0">Abre el formulario oficial para responder con calma (puedes subir tus dibujos).</p>
+      <div style="display:flex;gap:8px">
+        <a id="btnOpenForm" class="btn primary" href="#" target="_blank" rel="noopener">Abrir formulario</a>
+        <button id="btnSetForm" class="btn" title="Cambiar URL de formulario">Configurar URL…</button>
+      </div>
+    </div>
   </aside>
 
-  <!-- ESCENA 3D -->
-  <main class="stage">
+  <!-- CONTENEDOR DERECHO -->
+  <main id="stageWrap" class="stage">
     <div class="hud">
       <button id="btnAuto" class="btn" title="Auto-rotación">Auto</button>
       <button id="btnCenter" class="btn" title="Centrar">◎</button>
       <button id="btnResetView" class="btn" title="Reset vista">⟲</button>
+      <div style="display:flex;gap:6px;margin-left:10px">
+        <button id="modeAnimal" class="btn active">Animal</button>
+        <button id="modeVegetal" class="btn">Vegetal</button>
+      </div>
     </div>
     <div id="toast" class="toast">¡Bien!</div>
 
@@ -125,48 +207,97 @@
         auto-rotator="enabled:false; speed:18"></a-entity>
 
       <a-entity id="cameraRig">
-        <!-- 👇 cursor + raycaster dirigidos a las etiquetas -->
-        <a-entity camera position="0 0 1.6"
-                  cursor="rayOrigin: mouse"
-                  raycaster="objects: .label3d; far: 10"></a-entity>
+        <a-entity camera position="0 0 1.6" cursor="rayOrigin: mouse"></a-entity>
       </a-entity>
     </a-scene>
   </main>
 </div>
 
 <script>
-/* Flag global para pausar rotación/pan mientras arrastras una etiqueta */
-window.DRAG_LABEL = false;
+/* ==========================================================
+   CONFIGURACIÓN BÁSICA (edita aquí)
+   ========================================================== */
+const FORMS_URL = localStorage.getItem('FORMS_URL') || ''; // pega la URL de tu Google Forms
+// EmailJS (opcional). Crea cuenta gratis y completa estos 3 valores:
+const EMAILJS_PUBLIC_KEY = '';   // ej: "U2AbC_xxxxxxxx"
+const EMAILJS_SERVICE_ID = '';   // ej: "service_abc123"
+const EMAILJS_TEMPLATE_ID = '';  // ej: "template_xyz789"
+// Correos destino:
+const REPORT_TO = ["franciscopinto@liceosannicolas.cl","belenacuna@liceosannicolas.cl"];
 
-/* ====== Gestos (igual que viewer pero respetando DRAG_LABEL) ====== */
+/* ==========================================================
+   TABS: Arrastrar / MCQ / Formulario
+   ========================================================== */
+const tabDrag  = document.getElementById('tabDrag');
+const tabMCQ   = document.getElementById('tabMCQ');
+const tabForm  = document.getElementById('tabForm');
+const stageWrap= document.getElementById('stageWrap');
+const scoreDrag= document.getElementById('scoreDrag');
+const chipsPanel = document.getElementById('chipsPanel');
+const bottomDrag = document.getElementById('bottomDrag');
+const mcqWrap  = document.getElementById('mcqWrap');
+const formWrap = document.getElementById('formWrap');
+const btnOpenForm = document.getElementById('btnOpenForm');
+const btnSetForm  = document.getElementById('btnSetForm');
+
+function setTab(which){
+  const drag = (which==='drag');
+  const mcq  = (which==='mcq');
+  const form = (which==='form');
+
+  tabDrag.classList.toggle('active', drag);
+  tabMCQ.classList.toggle('active', mcq);
+  tabForm.classList.toggle('active', form);
+
+  // mostrar/ocultar secciones
+  stageWrap.style.display = drag ? 'block' : 'none';
+  scoreDrag.style.display = drag ? 'flex' : 'none';
+  chipsPanel.style.display= drag ? 'block' : 'none';
+  bottomDrag.style.display= drag ? 'flex' : 'none';
+
+  mcqWrap.classList.toggle('show', mcq);
+  formWrap.style.display = form ? 'block' : 'none';
+}
+tabDrag.onclick = ()=> setTab('drag');
+tabMCQ.onclick  = ()=> setTab('mcq');
+tabForm.onclick = ()=> setTab('form');
+
+// Forms URL
+if (FORMS_URL) btnOpenForm.href = FORMS_URL; else btnOpenForm.href = '#';
+btnSetForm.onclick = ()=>{
+  const u = prompt('Pega la URL pública de tu Google Forms:', FORMS_URL || '');
+  if (u!==null){
+    localStorage.setItem('FORMS_URL', u.trim());
+    location.reload();
+  }
+};
+
+/* ==========================================================
+   GESTOS / 3D: (igual a tu versión)
+   ========================================================== */
 AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},minScale:{default:0.05},maxScale:{default:3.0}},
   init:function(){this.oneFinger=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
     t.addEventListener('touchstart',e=>{if(e.touches.length===1){this.oneFinger=true;this.lastX=e.touches[0].clientX;}},{passive:false});
-    t.addEventListener('touchmove',e=>{if(window.DRAG_LABEL) return;
-      if(this.oneFinger&&e.touches.length===1){const dx=e.touches[0].clientX-this.lastX;this.lastX=e.touches[0].clientX;
-        this.el.object3D.rotation.y-=(dx*this.data.rotFactor)*Math.PI/180;e.preventDefault();}},{passive:false});
+    t.addEventListener('touchmove',e=>{if(this.oneFinger&&e.touches.length===1){const dx=e.touches[0].clientX-this.lastX;this.lastX=e.touches[0].clientX;
+      this.el.object3D.rotation.y-=(dx*this.data.rotFactor)*Math.PI/180;e.preventDefault();}},{passive:false});
     t.addEventListener('touchend',()=>{this.oneFinger=false;},{passive:false});
     t.addEventListener('touchcancel',()=>{this.oneFinger=false;},{passive:false});
-    t.addEventListener('wheel',e=>{if(window.DRAG_LABEL) return; e.preventDefault();
-      const dir=e.deltaY>0?0.9:1.1;const s=this.el.object3D.scale.x*dir;
+    t.addEventListener('wheel',e=>{e.preventDefault();const dir=e.deltaY>0?0.9:1.1;const s=this.el.object3D.scale.x*dir;
       const cl=THREE.MathUtils.clamp(s,this.data.min,this.data.max);this.el.object3D.scale.set(cl,cl,cl);},{passive:false});
     t.addEventListener('contextmenu',(e)=>e.preventDefault());
   }; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
 
 AFRAME.registerComponent('mouse-drag-rotate',{schema:{factor:{default:0.45}},
   init:function(){this.drag=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
-    t.addEventListener('mousedown',e=>{ if(window.DRAG_LABEL) return; if(e.button===0){ this.drag=true; this.lastX=e.clientX; }});
-    window.addEventListener('mouseup',()=>{this.drag=false;});
-    window.addEventListener('mousemove',e=>{ if(window.DRAG_LABEL) return; if(!this.drag) return;
-      const dx=e.clientX-this.lastX; this.lastX=e.clientX;
+    t.addEventListener('mousedown',e=>{if(e.button===0){this.drag=true;this.lastX=e.clientX;}}); window.addEventListener('mouseup',()=>{this.drag=false;});
+    window.addEventListener('mousemove',e=>{ if(!this.drag) return; const dx=e.clientX-this.lastX; this.lastX=e.clientX;
       this.el.object3D.rotation.y -= (dx*this.data.factor)*Math.PI/180; });
   }; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
 
 AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:3.0},factor:{default:1},panFactor:{default:1}},
   init:function(){
     this.pointers=new Map(); this.active=false; this.startDist=0; this.startScale=this.el.object3D.scale.x;
-    this.startCentroid={x:0,y:0}; this.startPos=this.el.object3D.position.clone();
-    const s=this.el.sceneEl;
+    this.startCentroid={x:0,y:0}; this.startPos=this.el.object3D.position.clone(); const s=this.el.sceneEl;
     const centroid=()=>{ const a=[...this.pointers.values()]; return {x:(a[0].x+a[1].x)/2, y:(a[0].y+a[1].y)/2}; };
     const dist=()=>{ const a=[...this.pointers.values()]; const dx=a[0].x-a[1].x, dy=a[0].y-a[1].y; return Math.hypot(dx,dy); };
     const worldPerPixel = ()=>{ const cam = s.camera; if(!cam || !s.canvas) return {x:0,y:0};
@@ -174,7 +305,7 @@ AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:
       const worldPerPixY = 2 * cam.position.length() * Math.tan(fov/2) / h; const worldPerPixX = worldPerPixY * cam.aspect; return {x:worldPerPixX, y:worldPerPixY}; };
     const onDown=(e)=>{ const c=s.canvas||s; c.setPointerCapture?.(e.pointerId); this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
       if(this.pointers.size===2){ this.active=true; this.startDist=dist(); this.startScale=this.el.object3D.scale.x; this.startCentroid=centroid(); this.startPos=this.el.object3D.position.clone(); } };
-    const onMove=(e)=>{ if(window.DRAG_LABEL) return; if(!this.pointers.has(e.pointerId)) return; this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    const onMove=(e)=>{ if(!this.pointers.has(e.pointerId)) return; this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
       if(this.active && this.pointers.size===2){ e.preventDefault(); const k=(dist()/this.startDist)*this.data.factor;
         let sc=THREE.MathUtils.clamp(this.startScale*k, this.data.min, this.data.max); this.el.object3D.scale.set(sc,sc,sc);
         const cen=centroid(); const dx=cen.x-this.startCentroid.x; const dy=cen.y-this.startCentroid.y; const wp=worldPerPixel();
@@ -187,14 +318,13 @@ AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:
     s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
   }
 });
-
 AFRAME.registerComponent('mouse-pan',{schema:{panFactor:{default:1}},
   init:function(){
     const s=this.el.sceneEl; let down=false, start={x:0,y:0}, startPos=this.el.object3D.position.clone(), shift=false;
     const worldPerPixel = ()=>{ const cam = s.camera; if(!cam || !s.canvas) return {x:0,y:0}; const fov = (cam.fov||60)*Math.PI/180;
       const h = s.canvas.height || window.innerHeight; const y = 2 * cam.position.length() * Math.tan(fov/2) / h; const x = y * cam.aspect; return {x, y}; };
-    const onDown=(e)=>{ if(window.DRAG_LABEL) return; shift=e.shiftKey; if (e.button===1 || e.button===2 || (e.button===0 && shift)){ down=true; start={x:e.clientX,y:e.clientY}; startPos=this.el.object3D.position.clone(); e.preventDefault(); } };
-    const onMove=(e)=>{ if(window.DRAG_LABEL) return; if(!down) return; e.preventDefault(); const dx=e.clientX-start.x, dy=e.clientY-start.y; const wp=worldPerPixel();
+    const onDown=(e)=>{ shift=e.shiftKey; if (e.button===1 || e.button===2 || (e.button===0 && shift)){ down=true; start={x:e.clientX,y:e.clientY}; startPos=this.el.object3D.position.clone(); e.preventDefault(); } };
+    const onMove=(e)=>{ if(!down) return; e.preventDefault(); const dx=e.clientX-start.x, dy=e.clientY-start.y; const wp=worldPerPixel();
       const tx = dx * wp.x * this.data.panFactor; const ty = -dy * wp.y * this.data.panFactor; this.el.object3D.position.set(startPos.x + tx, startPos.y + ty, startPos.z); };
     const onUp=()=>{ down=false; };
     const add=()=>{ const c=s.canvas||s; c.addEventListener('mousedown',onDown,{passive:false}); window.addEventListener('mousemove',onMove,{passive:false});
@@ -205,12 +335,13 @@ AFRAME.registerComponent('mouse-pan',{schema:{panFactor:{default:1}},
 AFRAME.registerComponent('tap-reset',{schema:{scale:{default:1},rotYdeg:{default:0}},init:function(){this.lastTap=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
   t.addEventListener('touchend',()=>{const n=performance.now();if(n-this.lastTap<300){const sc=this.data.scale;this.el.object3D.scale.set(sc,sc,sc);
     this.el.object3D.rotation.y=THREE.MathUtils.degToRad(this.data.rotYdeg);}this.lastTap=n;},{passive:true});};s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
-
 AFRAME.registerComponent('auto-rotator',{schema:{speed:{default:18},enabled:{default:false}},tick:function(t,dt){ if(!this.data.enabled)return; this.el.object3D.rotation.y+=THREE.MathUtils.degToRad(this.data.speed)*(dt/1000); }});
 AFRAME.registerComponent('billboard',{tick:function(){const cam=this.el.sceneEl&&this.el.sceneEl.camera;if(!cam)return;this.el.object3D.quaternion.copy(cam.el.object3D.quaternion);}});
 
-/* ====== Datos ====== */
-const MAP={
+/* ==========================================================
+   DATOS 3D
+   ========================================================== */
+const MAP={ 
   animal:{normal:"./assets/models/animal.glb",draco:"./assets/models/animal_draco.glb"},
   vegetal:{normal:"./assets/models/vegetal.glb",draco:"./assets/models/vegetal_draco.glb"}
 };
@@ -233,7 +364,6 @@ const TARGETS={
   ]
 };
 
-/* ====== Estado/UI ====== */
 const modeAnimalBtn = document.getElementById('modeAnimal');
 const modeVegetalBtn = document.getElementById('modeVegetal');
 const chipsBox = document.getElementById('chips');
@@ -247,15 +377,15 @@ const modelEl = document.getElementById('cellModel');
 const scene = document.querySelector('a-scene');
 let kind='animal', done=new Set(), wrong=0;
 let DEFAULT_SCALE=1.0;
-let targetDots=[], labels=[]; // etiquetas 3D
+let targetDots=[], labels=[];
 
-/* ====== Util ====== */
+/* Utils */
 function showToast(msg){ toast.textContent=msg; toast.classList.add('show'); clearTimeout(showToast._t); showToast._t=setTimeout(()=>toast.classList.remove('show'),1000); }
 function resetScore(){ done.clear(); wrong=0; updateScore(); }
 function updateScore(){ okEl.textContent = done.size; koEl.textContent = wrong; progressMini.innerHTML = `${done.size} / <span id="total">${TARGETS[kind].length}</span>`; }
 function distance(a,b){ const dx=a.x-b[0], dy=a.y-b[1], dz=a.z-b[2]; return Math.hypot(dx,dy,dz); }
 
-/* ====== Normalizar + encuadrar ====== */
+/* Normalizar + encuadrar */
 function frameCameraOnly(){
   const THREE = window.THREE; const cam = scene.camera; if(!cam) return;
   const box = new THREE.Box3().setFromObject(modelEl.object3D);
@@ -280,7 +410,7 @@ function normalizeAndFrame(){
   frameCameraOnly();
 }
 
-/* ====== Puntos objetivo (ayuda) ====== */
+/* Objetivos ayuda */
 function clearTargetDots(){ targetDots.forEach(e=>e.parentNode && e.parentNode.removeChild(e)); targetDots=[]; }
 function makeTargetDots(){
   clearTargetDots();
@@ -289,237 +419,120 @@ function makeTargetDots(){
     dot.setAttribute('geometry','primitive: sphere; radius: 0.018');
     dot.setAttribute('material',`color:${'#9ec6ff'}; emissive:${'#1a9fff'}; emissiveIntensity:0.7; opacity:0.95`);
     dot.setAttribute('position', t.pos.join(' '));
-    dot.setAttribute('visible','false'); // oculto por defecto; se enciende con “Ayuda”
+    dot.setAttribute('visible','false');
     modelEl.appendChild(dot);
     targetDots.push(dot);
   });
 }
 
-/* ====== Etiquetas 3D arrastrables ====== */
+/* Etiquetas 3D */
 function clearLabels(){ labels.forEach(L=>L.el.parentNode && L.el.parentNode.removeChild(L.el)); labels=[]; }
 function labelMaterial(baseColor='#0b1a2b'){ return `color:${baseColor}; opacity:0.92; side:double; metalness:0; roughness:1;`; }
-
 function createLabel(name, idx, total){
-  const wrap=document.createElement('a-entity'); wrap.setAttribute('billboard','');
-
-  // fondo (¡con clase para raycaster!)
-  const bg=document.createElement('a-entity');
-  bg.classList.add('label3d');
-  bg.setAttribute('geometry','primitive: plane; width: 0.32; height: 0.10');
-  bg.setAttribute('material', labelMaterial());
-
-  // texto
-  const txt=document.createElement('a-text');
-  txt.setAttribute('value',name); txt.setAttribute('color','#cfe6ff'); txt.setAttribute('align','center'); txt.setAttribute('width','1.2'); txt.setAttribute('baseline','center');
-
+  const wrap=document.createElement('a-entity'); wrap.classList.add('label3d'); wrap.setAttribute('billboard','');
+  const bg=document.createElement('a-entity'); bg.setAttribute('geometry','primitive: plane; width: 0.32; height: 0.10'); bg.setAttribute('material', labelMaterial());
+  const txt=document.createElement('a-text'); txt.setAttribute('value',name); txt.setAttribute('color','#cfe6ff'); txt.setAttribute('align','center'); txt.setAttribute('width','1.2'); txt.setAttribute('baseline','center');
   wrap.appendChild(bg); wrap.appendChild(txt);
-
-  // posición inicial en aro
   const r=0.42, ang = (idx/total)*Math.PI*1.4 - Math.PI*0.7;
   wrap.setAttribute('position', `${Math.cos(ang)*r} ${0.18 - (idx%3)*0.18} ${Math.sin(ang)*r}`);
-
-  // meta
   const target = TARGETS[kind].find(t=>t.name===name);
   const L={name, el:wrap, target:target.pos, locked:false, home:wrap.object3D.position.clone()};
   labels.push(L);
-
-  // Componente para arrastrar (lo montamos en el WRAP para mover todo el bloque)
   wrap.setAttribute('draggable-label', `name:${name}`);
   modelEl.appendChild(wrap);
 }
-
 AFRAME.registerComponent('draggable-label',{
   schema:{name:{default:''}},
   init:function(){
-    const s=this.el.sceneEl;
-    const canvas = ()=> s.canvas || s;
-    this.dragging=false; this.startPos=this.el.object3D.position.clone();
-    this.preview=null;
-
-    const ensurePreview=()=>{ if(this.preview) return;
-      this.preview=document.createElement('a-entity');
-      this.preview.setAttribute('geometry','primitive: ring; radiusInner:0.022; radiusOuter:0.032');
-      this.preview.setAttribute('material',`color:#ffffff; emissive:#ffffff; emissiveIntensity:0.9; opacity:0.85`);
-      this.preview.setAttribute('rotation','90 0 0');
-      this.preview.setAttribute('visible','false');
-      document.getElementById('cellModel').appendChild(this.preview);
-    };
-
+    this.dragging=false; this.pointerId=null; this.startPos=this.el.object3D.position.clone();
+    this.preview=null; const s=this.el.sceneEl; const canvas = ()=> s.canvas || s;
     const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
-    const worldPointFromClient=(x,y)=>{
-      const c = canvas(); const rect = c.getBoundingClientRect();
-      const nx = ((x-rect.left)/rect.width)*2 - 1; const ny = -((y-rect.top)/rect.height)*2 + 1;
-      mouse.set(nx,ny); raycaster.setFromCamera(mouse, s.camera);
+    const worldPointFromClient=(scene,x,y)=>{
+      const c=canvas(); const rect=c.getBoundingClientRect();
+      const nx=((x-rect.left)/rect.width)*2-1; const ny= -((y-rect.top)/rect.height)*2+1;
+      mouse.set(nx,ny); raycaster.setFromCamera(mouse, scene.camera);
       const mesh = document.getElementById('cellModel').getObject3D('mesh'); if(!mesh) return null;
       const ints = raycaster.intersectObject(mesh, true); return (ints && ints[0]) ? ints[0].point : null;
     };
     const toLocal=(pWorld)=>{ const m=document.getElementById('cellModel').object3D; const p=pWorld.clone(); m.worldToLocal(p); return p; };
-    const getXY=(e)=> e.touches && e.touches[0] ? {x:e.touches[0].clientX,y:e.touches[0].clientY} : {x:e.clientX,y:e.clientY};
+    const ensurePreview=()=>{ if(this.preview) return; this.preview=document.createElement('a-entity');
+      this.preview.setAttribute('geometry','primitive: ring; radiusInner:0.022; radiusOuter:0.032');
+      this.preview.setAttribute('material',`color:#ffffff; emissive:#ffffff; emissiveIntensity:0.9; opacity:0.85`);
+      this.preview.setAttribute('rotation','90 0 0'); this.preview.setAttribute('visible','false');
+      document.getElementById('cellModel').appendChild(this.preview); };
 
-    const onMove=(e)=>{
-      if(!this.dragging) return;
-      const {x,y}=getXY(e);
-      const p = worldPointFromClient(x,y);
-      if(!p){ this.preview && this.preview.setAttribute('visible','false'); return; }
-      ensurePreview();
-      this.preview.setAttribute('position', p);
-      this.preview.setAttribute('visible','true');
-      const local = toLocal(p);
-      this.el.object3D.position.copy(local);
-      e.preventDefault?.();
+    const onDown=(e)=>{ this.dragging=true; this.pointerId=e.pointerId; this.startPos=this.el.object3D.position.clone(); ensurePreview(); this.preview.setAttribute('visible','true'); canvas().setPointerCapture?.(e.pointerId); };
+    const onMove=(e)=>{ if(!this.dragging || e.pointerId!==this.pointerId) return;
+      const p = worldPointFromClient(s, e.clientX, e.clientY);
+      if(!p){ this.preview.setAttribute('visible','false'); return; }
+      this.preview.setAttribute('position', p); this.preview.setAttribute('visible','true');
+      const local = toLocal(p); this.el.object3D.position.copy(local);
     };
-
-    const finish=(ok, home, targetArr, me)=>{
-      window.DRAG_LABEL=false; this.dragging=false;
-      this.preview && this.preview.setAttribute('visible','false');
-
+    const onUp=(e)=>{ if(!this.dragging || e.pointerId!==this.pointerId) return;
+      this.dragging=false; this.pointerId=null; this.preview && this.preview.setAttribute('visible','false');
+      const me = labels.find(x=>x.el===this.el); if(!me) return;
+      const pos = this.el.object3D.position; const tol = 0.10;
+      const ok = distance(pos, me.target) <= tol;
       if(ok){
-        this.el.object3D.position.set(targetArr[0],targetArr[1],targetArr[2]);
-        this.el.setAttribute('colorize','state:ok');
-        me.locked=true; done.add(me.name); updateScore(); pingMark(targetArr); showToast('¡Correcto!');
+        this.el.object3D.position.set(me.target[0], me.target[1], me.target[2]);
+        me.locked=true; done.add(me.name); updateScore(); pingMark(me.target); showToast('¡Correcto!');
         if(done.size === TARGETS[kind].length) showToast('¡Perfecto!');
       }else{
-        shakeEntity(this.el);
-        setTimeout(()=> this.el.object3D.position.copy(home), 150);
+        shakeEntity(this.el); const home = me.home || this.startPos; setTimeout(()=> this.el.object3D.position.copy(home), 150);
         wrong++; updateScore(); showToast('Intenta de nuevo');
       }
     };
-
-    const onUp=(e)=>{
-      if(!this.dragging) return;
-      const me = labels.find(x=>x.el===this.el); if(!me) return;
-      const pos = this.el.object3D.position; const tol=0.10;
-      const ok = distance(pos, me.target) <= tol;
-      finish(ok, me.home || this.startPos, me.target, me);
-      window.removeEventListener('pointermove', onMove, {passive:false});
-      window.removeEventListener('mousemove', onMove, {passive:false});
-      window.removeEventListener('touchmove', onMove, {passive:false});
-      window.removeEventListener('pointerup', onUp, {passive:false});
-      window.removeEventListener('mouseup', onUp, {passive:false});
-      window.removeEventListener('touchend', onUp, {passive:false});
-      window.removeEventListener('touchcancel', onUp, {passive:false});
+    const add=()=>{ const c=canvas();
+      this.el.addEventListener('pointerdown', onDown, {passive:false});
+      c.addEventListener('pointermove', onMove, {passive:false});
+      c.addEventListener('pointerup', onUp, {passive:false});
+      c.addEventListener('pointercancel', onUp, {passive:false});
     };
-
-    const startDrag=(e)=>{
-      // evita conflicto con rotación / pan
-      window.DRAG_LABEL=true;
-      this.dragging=true; this.startPos=this.el.object3D.position.clone();
-      ensurePreview();
-      // escuchas globales mientras arrastro
-      window.addEventListener('pointermove', onMove, {passive:false});
-      window.addEventListener('mousemove', onMove, {passive:false});
-      window.addEventListener('touchmove', onMove, {passive:false});
-      window.addEventListener('pointerup', onUp, {passive:false});
-      window.addEventListener('mouseup', onUp, {passive:false});
-      window.addEventListener('touchend', onUp, {passive:false});
-      window.addEventListener('touchcancel', onUp, {passive:false});
-      e.preventDefault?.();
-      e.stopPropagation?.();
-    };
-
-    const add=()=>{
-      // OJO: los eventos “down” vienen del cursor/raycaster → usamos mousedown/touchstart
-      this.el.addEventListener('mousedown', startDrag);
-      this.el.addEventListener('touchstart', startDrag, {passive:false});
-    };
-    s.hasLoaded ? add() : s.addEventListener('loaded', add, {once:true});
+    s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
   }
 });
-
-/* Efecto color estado en etiqueta */
-AFRAME.registerComponent('colorize',{
-  schema:{state:{default:'idle'}},
-  update:function(){
-    const bg=this.el.children[0];
-    if(!bg) return;
-    if(this.data.state==='ok'){
-      bg.setAttribute('material','color:#0f2512; opacity:0.96; side:double');
-      const ring=document.createElement('a-entity');
-      ring.setAttribute('geometry','primitive: ring; radiusInner:0.05; radiusOuter:0.065');
-      ring.setAttribute('material',`color:${'#b0ffb0'}; emissive:${'#39ff14'}; emissiveIntensity:0.9; opacity:0.95`);
-      ring.setAttribute('rotation','90 0 0');
-      ring.setAttribute('position','0 -0.02 0');
-      this.el.appendChild(ring);
-      setTimeout(()=>{ ring.parentNode && ring.parentNode.removeChild(ring); }, 1200);
-    }else{
-      bg.setAttribute('material','color:#0b1a2b; opacity:0.92; side:double');
-    }
-  }
-});
-
-/* Util: “shake” suave */
 function shakeEntity(el){
-  const n=el.object3D; const a=[0,0.06,-0.06,0.04,-0.04,0]; let i=0;
-  const startY=n.position.y; const t=setInterval(()=>{ if(i>=a.length){ clearInterval(t); n.position.y=startY; return; }
-    n.position.y=startY + a[i]; i++; }, 30);
+  const n=el.object3D; const a=[0,0.06,-0.06,0.04,-0.04,0]; let i=0; const startY=n.position.y;
+  const t=setInterval(()=>{ if(i>=a.length){ clearInterval(t); n.position.y=startY; return; } n.position.y=startY + a[i]; i++; }, 30);
 }
-
-/* Puntos “ping” */
 function pingMark(pos){
   const e=document.createElement('a-entity');
   e.setAttribute('geometry','primitive: torus; radius: 0.05; radiusTubular: 0.006');
   e.setAttribute('material',`color:${'#b0ffb0'}; emissive:${'#39ff14'}; emissiveIntensity:0.9; opacity:0.9`);
   e.setAttribute('rotation','90 0 0'); e.setAttribute('position', pos.join(' '));
-  modelEl.appendChild(e);
-  setTimeout(()=>{ e.parentNode && e.parentNode.removeChild(e); }, 1200);
+  modelEl.appendChild(e); setTimeout(()=>{ e.parentNode && e.parentNode.removeChild(e); }, 1200);
 }
 
-/* ====== Chips de referencia (panel izquierdo) ====== */
+/* Chips */
 function renderChipList(){
   chipsBox.innerHTML='';
   const arr = TARGETS[kind].map(t=>t.name).sort((a,b)=>a.localeCompare(b));
-  arr.forEach(name=>{
-    const el=document.createElement('div');
-    el.className='chip';
-    el.textContent=name;
-    chipsBox.appendChild(el);
-  });
+  arr.forEach(name=>{ const el=document.createElement('div'); el.className='chip'; el.textContent=name; chipsBox.appendChild(el); });
   totalEl.textContent = TARGETS[kind].length;
 }
 
-/* ====== Modelo ====== */
+/* Modelo */
 async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(),{method:'HEAD'}); return r.ok; }catch{return false;} }
 async function pick(){ const e=MAP[kind]; return (await exists(e.draco))?e.draco:e.normal; }
 async function loadModel(){
   const url=(await pick())+'#'+Date.now();
   modelEl.removeAttribute('gltf-model');
-  modelEl.object3D.position.set(0,0,0);
-  modelEl.object3D.rotation.set(0,0,0);
-  modelEl.object3D.scale.set(0.4,0.4,0.4);
+  modelEl.object3D.position.set(0,0,0); modelEl.object3D.rotation.set(0,0,0); modelEl.object3D.scale.set(0.4,0.4,0.4);
   setTimeout(()=>modelEl.setAttribute('gltf-model',url),30);
 }
 
-/* ====== Crear etiquetas para el modo ====== */
-function spawnLabels(){
-  clearLabels();
-  const names = TARGETS[kind].map(t=>t.name);
-  names.forEach((n,i)=> createLabel(n, i, names.length));
-}
-
-/* ====== Botones HUD ====== */
-btnAuto.addEventListener('click', ()=>{
-  const on = btnAuto.classList.toggle('active');
-  modelEl.setAttribute('auto-rotator',`enabled:${on}; speed:18`);
-});
+/* Botones HUD */
+btnAuto.addEventListener('click', ()=>{ const on = btnAuto.classList.toggle('active'); modelEl.setAttribute('auto-rotator',`enabled:${on}; speed:18`); });
 btnCenter.addEventListener('click', ()=> modelEl.object3D.position.set(0,0,0));
-btnResetView.addEventListener('click', ()=>{
-  modelEl.object3D.position.set(0,0,0);
-  modelEl.object3D.rotation.set(0,0,0);
-  modelEl.object3D.scale.set(DEFAULT_SCALE,DEFAULT_SCALE,DEFAULT_SCALE);
-});
+btnResetView.addEventListener('click', ()=>{ modelEl.object3D.position.set(0,0,0); modelEl.object3D.rotation.set(0,0,0); modelEl.object3D.scale.set(DEFAULT_SCALE,DEFAULT_SCALE,DEFAULT_SCALE); });
 
-/* Ayuda: mostrar/ocultar metas */
+/* Ayuda */
 let ayudaOn=false;
-btnAyuda.addEventListener('click', ()=>{
-  ayudaOn=!ayudaOn;
-  targetDots.forEach(d=> d.setAttribute('visible', ayudaOn));
-  btnAyuda.classList.toggle('active', ayudaOn);
-});
+btnAyuda.addEventListener('click', ()=>{ ayudaOn=!ayudaOn; targetDots.forEach(d=> d.setAttribute('visible', ayudaOn)); btnAyuda.classList.toggle('active', ayudaOn); });
 
-/* Cambio de modo */
+/* Cambio modo animal/vegetal */
 function setMode(m){
-  if(kind===m) return;
-  kind=m;
+  if(kind===m) return; kind=m;
   modeAnimalBtn.classList.toggle('active', kind==='animal');
   modeVegetalBtn.classList.toggle('active', kind==='vegetal');
   resetScore(); renderChipList(); clearTargetDots(); makeTargetDots(); spawnLabels(); loadModel();
@@ -527,24 +540,141 @@ function setMode(m){
 modeAnimalBtn.onclick = ()=> setMode('animal');
 modeVegetalBtn.onclick = ()=> setMode('vegetal');
 
-/* Reiniciar */
-btnReset.onclick = ()=>{
-  resetScore(); renderChipList();
-  clearTargetDots(); makeTargetDots();
-  spawnLabels();
-};
+/* Reiniciar arrastre */
+btnReset.onclick = ()=>{ resetScore(); renderChipList(); clearTargetDots(); makeTargetDots(); spawnLabels(); };
 
-/* Inicial */
+/* Inicial (ARRASTRE) */
 modelEl.addEventListener('model-loaded', ()=>{ normalizeAndFrame(); });
 modelEl.addEventListener('model-error', e=>{ alert('No se pudo cargar el modelo'); console.error(e.detail); });
-
-(function init(){
-  const m = (new URLSearchParams(location.search).get('m')||'animal').toLowerCase();
-  kind = (m==='vegetal') ? 'vegetal' : 'animal';
-  modeAnimalBtn.classList.toggle('active', kind==='animal');
-  modeVegetalBtn.classList.toggle('active', kind==='vegetal');
+(function initDrag(){
   resetScore(); renderChipList(); makeTargetDots(); spawnLabels(); loadModel();
 })();
+
+/* ==========================================================
+   MCQ — TRIVIA DE ALTERNATIVAS
+   ========================================================== */
+const MCQ = [
+  {q:"¿Qué orgánulo permite a las plantas realizar la fotosíntesis?", opts:["Mitocondria","Cloroplasto","Lisosoma","Núcleo"], a:1},
+  {q:"La pared celular está presente en:", opts:["Célula animal","Célula vegetal","Ambas","Ninguna"], a:1},
+  {q:"¿Qué orgánulo produce energía en forma de ATP?", opts:["Aparato de Golgi","Vacuola","Mitocondria","Retículo endoplasmático"], a:2},
+  {q:"¿Cuál es más grande en la célula vegetal que en la animal?", opts:["Núcleo","Vacuola","Lisosoma","Ribosoma"], a:1},
+  {q:"¿Qué orgánulo elimina desechos en la célula animal?", opts:["Cloroplasto","Lisosoma","Vacuola","Mitocondria"], a:1},
+  {q:"Tanto la célula vegetal como la animal tienen:", opts:["Pared celular","Cloroplastos","Núcleo","Ninguno de los anteriores"], a:2},
+  {q:"La célula animal se diferencia porque no tiene:", opts:["Lisosomas","Cloroplastos","Mitocondrias","Núcleo"], a:1},
+  {q:"¿Qué orgánulo funciona como “centro de control” de la célula?", opts:["Retículo endoplasmático","Núcleo","Aparato de Golgi","Membrana plasmática"], a:1},
+  {q:"La membrana plasmática cumple la función de:", opts:["Dar energía","Controlar el ingreso y salida de sustancias","Producir proteínas","Almacenar agua"], a:1},
+  {q:"En la célula vegetal, los cloroplastos permiten producir energía a través de:", opts:["La respiración","La fotosíntesis","La digestión celular","El transporte activo"], a:1}
+];
+const mcqList   = document.getElementById('mcqList');
+const mcqResult = document.getElementById('mcqResult');
+const kpiCorrect= document.getElementById('kpiCorrect');
+const kpiWrong  = document.getElementById('kpiWrong');
+const kpiScore  = document.getElementById('kpiScore');
+const sumList   = document.getElementById('sumList');
+const btnFinish = document.getElementById('btnFinish');
+const btnMCQReset = document.getElementById('btnMCQReset');
+const alNombre  = document.getElementById('alNombre');
+const alApellido= document.getElementById('alApellido');
+const alCurso   = document.getElementById('alCurso');
+const btnSendEmail = document.getElementById('btnSendEmail');
+
+function renderMCQ(){
+  mcqList.innerHTML='';
+  MCQ.forEach((item, idx)=>{
+    const card = document.createElement('div'); card.className='qCard';
+    const h = document.createElement('h4'); h.className='qTitle'; h.textContent = `${idx+1}. ${item.q}`; card.appendChild(h);
+    const wrap = document.createElement('div'); wrap.className='opts';
+    item.opts.forEach((opt, i)=>{
+      const id = `q${idx}_o${i}`;
+      const row = document.createElement('label'); row.className='opt'; row.setAttribute('for', id);
+      const radio = document.createElement('input'); radio.type='radio'; radio.name=`q${idx}`; radio.id=id; radio.value=i;
+      const span = document.createElement('span'); span.textContent = opt;
+      row.appendChild(radio); row.appendChild(span);
+      wrap.appendChild(row);
+    });
+    card.appendChild(wrap);
+    mcqList.appendChild(card);
+  });
+  mcqResult.style.display='none';
+}
+renderMCQ();
+
+btnMCQReset.onclick = ()=>{ renderMCQ(); alNombre.value=''; alApellido.value=''; alCurso.value=''; };
+
+btnFinish.onclick = ()=>{
+  // datos estudiante
+  const nombre = alNombre.value.trim(); const apellido = alApellido.value.trim(); const curso = alCurso.value.trim();
+  if(!nombre || !apellido || !curso){ alert('Por favor completa Nombre, Apellido y Curso antes de terminar.'); return; }
+
+  let correct=0, wrong=0; const detail=[];
+  MCQ.forEach((item, idx)=>{
+    const sel = document.querySelector(`input[name=q${idx}]:checked`);
+    const choice = sel ? parseInt(sel.value,10) : -1;
+    const ok = (choice===item.a); if(ok) correct++; else wrong++;
+    detail.push({i:idx+1, q:item.q, choice, choiceText: choice>=0?item.opts[choice]:'(sin respuesta)', correct:item.opts[item.a], isOK:ok});
+  });
+  const scorePct = Math.round((correct/MCQ.length)*100);
+
+  // KPIs + resumen
+  kpiCorrect.textContent = `✔ Correctas: ${correct}`;
+  kpiWrong.textContent   = `✘ Incorrectas: ${wrong}`;
+  kpiScore.textContent   = `🏁 Puntaje: ${scorePct}%`;
+  sumList.innerHTML='';
+  detail.forEach(d=>{
+    const li=document.createElement('li'); li.className = d.isOK ? 'correct' : 'wrong';
+    li.innerHTML = `<strong>${d.i}.</strong> ${d.q}<br><small>Tu respuesta: ${d.choiceText} · Correcta: ${d.correct}</small>`;
+    sumList.appendChild(li);
+  });
+  mcqResult.style.display='block';
+
+  // guardar para enviar
+  window._lastReport = { nombre, apellido, curso, correct, wrong, scorePct, detail, when:new Date().toISOString() };
+};
+
+function ensureEmailJS(){
+  if(!EMAILJS_PUBLIC_KEY || !EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID){
+    alert('Para enviar por correo, configura EMAILJS_PUBLIC_KEY, SERVICE_ID y TEMPLATE_ID en el código (arriba).');
+    return false;
+  }
+  try{ emailjs.init(EMAILJS_PUBLIC_KEY); }catch(e){}
+  return true;
+}
+
+btnSendEmail.onclick = async ()=>{
+  if(!window._lastReport){ alert('Primero termina y corrige la trivia.'); return; }
+  if(!ensureEmailJS()) return;
+
+  const r = window._lastReport;
+  const bodyLines = [
+    `Estudiante: ${r.nombre} ${r.apellido}`,
+    `Curso: ${r.curso}`,
+    `Fecha: ${new Date().toLocaleString()}`,
+    `Puntaje: ${r.scorePct}% (✔ ${r.correct} · ✘ ${r.wrong})`,
+    ``,
+    `Detalle:`,
+    ...r.detail.map(d=>`${d.i}. ${d.q}\n - Tu respuesta: ${d.choiceText}\n - Correcta: ${d.correct}\n`)
+  ];
+  const body = bodyLines.join('\n');
+
+  try{
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to: REPORT_TO.join(','),
+      subject: `Resultados Trivia Células — ${r.nombre} ${r.apellido} (${r.curso})`,
+      message: body
+    });
+    alert('¡Enviado! Los resultados fueron enviados a los profesores.');
+  }catch(err){
+    console.error(err);
+    alert('No se pudo enviar por EmailJS. Revisa tus credenciales en el código.');
+  }
+};
+
+/* ==========================================================
+   Navegación inicial por querystring (?tab=mcq)
+   ========================================================== */
+const QP = new URLSearchParams(location.search);
+const tabQS = (QP.get('tab')||'').toLowerCase();
+if (tabQS==='mcq') setTab('mcq'); else if (tabQS==='form') setTab('form'); else setTab('drag');
 </script>
 </body>
 </html>
