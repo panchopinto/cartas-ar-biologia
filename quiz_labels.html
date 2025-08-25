@@ -17,7 +17,7 @@
   body{
     margin:0; background:radial-gradient(1200px 600px at 70% -10%,#112033 0%,transparent 60%), var(--bg);
     color:var(--text); font:500 16px/1.45 system-ui,Segoe UI,Roboto,Arial,sans-serif;
-    overflow:hidden;
+    overflow:hidden; -webkit-user-select:none; user-select:none;
   }
   a{color:inherit;text-decoration:none}
   .wrap{display:grid; grid-template-columns:340px 1fr; gap:14px; height:100vh; padding:12px; max-width:1400px; margin:0 auto}
@@ -41,9 +41,11 @@
   /* Área 3D */
   .stage{position:relative; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden}
   a-scene{position:absolute; inset:0}
-  .hud{
-    position:absolute; left:10px; top:10px; display:flex; gap:8px; z-index:5;
-  }
+  /* MUY IMPORTANTE: permitir gestos en móviles y no robarlos */
+  canvas,.a-canvas{position:absolute; inset:0; width:100% !important; height:100% !important; background:#000 !important;
+                    touch-action:none; overscroll-behavior:contain}
+
+  .hud{position:absolute; left:10px; top:10px; display:flex; gap:8px; z-index:5}
   .hud .btn{padding:6px 10px}
   .toast{
     position:absolute; right:12px; top:12px; z-index:6; padding:8px 12px; border-radius:12px;
@@ -123,31 +125,40 @@
         auto-rotator="enabled:false; speed:18"></a-entity>
 
       <a-entity id="cameraRig">
-        <a-entity camera position="0 0 1.6" cursor="rayOrigin: mouse"></a-entity>
+        <!-- 👇 cursor + raycaster dirigidos a las etiquetas -->
+        <a-entity camera position="0 0 1.6"
+                  cursor="rayOrigin: mouse"
+                  raycaster="objects: .label3d; far: 10"></a-entity>
       </a-entity>
     </a-scene>
   </main>
 </div>
 
 <script>
-/* ====== Gestos (igual que viewer) ====== */
+/* Flag global para pausar rotación/pan mientras arrastras una etiqueta */
+window.DRAG_LABEL = false;
+
+/* ====== Gestos (igual que viewer pero respetando DRAG_LABEL) ====== */
 AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},minScale:{default:0.05},maxScale:{default:3.0}},
   init:function(){this.oneFinger=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
     t.addEventListener('touchstart',e=>{if(e.touches.length===1){this.oneFinger=true;this.lastX=e.touches[0].clientX;}},{passive:false});
-    t.addEventListener('touchmove',e=>{if(this.oneFinger&&e.touches.length===1){const dx=e.touches[0].clientX-this.lastX;this.lastX=e.touches[0].clientX;
-      this.el.object3D.rotation.y-=(dx*this.data.rotFactor)*Math.PI/180;e.preventDefault();}},{passive:false});
+    t.addEventListener('touchmove',e=>{if(window.DRAG_LABEL) return;
+      if(this.oneFinger&&e.touches.length===1){const dx=e.touches[0].clientX-this.lastX;this.lastX=e.touches[0].clientX;
+        this.el.object3D.rotation.y-=(dx*this.data.rotFactor)*Math.PI/180;e.preventDefault();}},{passive:false});
     t.addEventListener('touchend',()=>{this.oneFinger=false;},{passive:false});
     t.addEventListener('touchcancel',()=>{this.oneFinger=false;},{passive:false});
-    t.addEventListener('wheel',e=>{e.preventDefault();const dir=e.deltaY>0?0.9:1.1;const s=this.el.object3D.scale.x*dir;
+    t.addEventListener('wheel',e=>{if(window.DRAG_LABEL) return; e.preventDefault();
+      const dir=e.deltaY>0?0.9:1.1;const s=this.el.object3D.scale.x*dir;
       const cl=THREE.MathUtils.clamp(s,this.data.min,this.data.max);this.el.object3D.scale.set(cl,cl,cl);},{passive:false});
     t.addEventListener('contextmenu',(e)=>e.preventDefault());
   }; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
 
 AFRAME.registerComponent('mouse-drag-rotate',{schema:{factor:{default:0.45}},
   init:function(){this.drag=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
-    t.addEventListener('mousedown',e=>{if(e.button===0){this.drag=true;this.lastX=e.clientX;}});
+    t.addEventListener('mousedown',e=>{ if(window.DRAG_LABEL) return; if(e.button===0){ this.drag=true; this.lastX=e.clientX; }});
     window.addEventListener('mouseup',()=>{this.drag=false;});
-    window.addEventListener('mousemove',e=>{ if(!this.drag) return; const dx=e.clientX-this.lastX; this.lastX=e.clientX;
+    window.addEventListener('mousemove',e=>{ if(window.DRAG_LABEL) return; if(!this.drag) return;
+      const dx=e.clientX-this.lastX; this.lastX=e.clientX;
       this.el.object3D.rotation.y -= (dx*this.data.factor)*Math.PI/180; });
   }; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
 
@@ -163,7 +174,7 @@ AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:
       const worldPerPixY = 2 * cam.position.length() * Math.tan(fov/2) / h; const worldPerPixX = worldPerPixY * cam.aspect; return {x:worldPerPixX, y:worldPerPixY}; };
     const onDown=(e)=>{ const c=s.canvas||s; c.setPointerCapture?.(e.pointerId); this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
       if(this.pointers.size===2){ this.active=true; this.startDist=dist(); this.startScale=this.el.object3D.scale.x; this.startCentroid=centroid(); this.startPos=this.el.object3D.position.clone(); } };
-    const onMove=(e)=>{ if(!this.pointers.has(e.pointerId)) return; this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    const onMove=(e)=>{ if(window.DRAG_LABEL) return; if(!this.pointers.has(e.pointerId)) return; this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
       if(this.active && this.pointers.size===2){ e.preventDefault(); const k=(dist()/this.startDist)*this.data.factor;
         let sc=THREE.MathUtils.clamp(this.startScale*k, this.data.min, this.data.max); this.el.object3D.scale.set(sc,sc,sc);
         const cen=centroid(); const dx=cen.x-this.startCentroid.x; const dy=cen.y-this.startCentroid.y; const wp=worldPerPixel();
@@ -182,8 +193,8 @@ AFRAME.registerComponent('mouse-pan',{schema:{panFactor:{default:1}},
     const s=this.el.sceneEl; let down=false, start={x:0,y:0}, startPos=this.el.object3D.position.clone(), shift=false;
     const worldPerPixel = ()=>{ const cam = s.camera; if(!cam || !s.canvas) return {x:0,y:0}; const fov = (cam.fov||60)*Math.PI/180;
       const h = s.canvas.height || window.innerHeight; const y = 2 * cam.position.length() * Math.tan(fov/2) / h; const x = y * cam.aspect; return {x, y}; };
-    const onDown=(e)=>{ shift=e.shiftKey; if (e.button===1 || e.button===2 || (e.button===0 && shift)){ down=true; start={x:e.clientX,y:e.clientY}; startPos=this.el.object3D.position.clone(); e.preventDefault(); } };
-    const onMove=(e)=>{ if(!down) return; e.preventDefault(); const dx=e.clientX-start.x, dy=e.clientY-start.y; const wp=worldPerPixel();
+    const onDown=(e)=>{ if(window.DRAG_LABEL) return; shift=e.shiftKey; if (e.button===1 || e.button===2 || (e.button===0 && shift)){ down=true; start={x:e.clientX,y:e.clientY}; startPos=this.el.object3D.position.clone(); e.preventDefault(); } };
+    const onMove=(e)=>{ if(window.DRAG_LABEL) return; if(!down) return; e.preventDefault(); const dx=e.clientX-start.x, dy=e.clientY-start.y; const wp=worldPerPixel();
       const tx = dx * wp.x * this.data.panFactor; const ty = -dy * wp.y * this.data.panFactor; this.el.object3D.position.set(startPos.x + tx, startPos.y + ty, startPos.z); };
     const onUp=()=>{ down=false; };
     const add=()=>{ const c=s.canvas||s; c.addEventListener('mousedown',onDown,{passive:false}); window.addEventListener('mousemove',onMove,{passive:false});
@@ -194,11 +205,12 @@ AFRAME.registerComponent('mouse-pan',{schema:{panFactor:{default:1}},
 AFRAME.registerComponent('tap-reset',{schema:{scale:{default:1},rotYdeg:{default:0}},init:function(){this.lastTap=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
   t.addEventListener('touchend',()=>{const n=performance.now();if(n-this.lastTap<300){const sc=this.data.scale;this.el.object3D.scale.set(sc,sc,sc);
     this.el.object3D.rotation.y=THREE.MathUtils.degToRad(this.data.rotYdeg);}this.lastTap=n;},{passive:true});};s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
+
 AFRAME.registerComponent('auto-rotator',{schema:{speed:{default:18},enabled:{default:false}},tick:function(t,dt){ if(!this.data.enabled)return; this.el.object3D.rotation.y+=THREE.MathUtils.degToRad(this.data.speed)*(dt/1000); }});
 AFRAME.registerComponent('billboard',{tick:function(){const cam=this.el.sceneEl&&this.el.sceneEl.camera;if(!cam)return;this.el.object3D.quaternion.copy(cam.el.object3D.quaternion);}});
 
 /* ====== Datos ====== */
-const MAP={ 
+const MAP={
   animal:{normal:"./assets/models/animal.glb",draco:"./assets/models/animal_draco.glb"},
   vegetal:{normal:"./assets/models/vegetal.glb",draco:"./assets/models/vegetal_draco.glb"}
 };
@@ -285,23 +297,24 @@ function makeTargetDots(){
 
 /* ====== Etiquetas 3D arrastrables ====== */
 function clearLabels(){ labels.forEach(L=>L.el.parentNode && L.el.parentNode.removeChild(L.el)); labels=[]; }
-function labelMaterial(baseColor='#0b1a2b', border='#3a4e66'){
-  return `color:${baseColor}; opacity:0.92; side:double; metalness:0; roughness:1; wireframe:false;`;
-}
-function createLabel(name, idx, total){
-  const wrap=document.createElement('a-entity'); wrap.classList.add('label3d'); wrap.setAttribute('billboard','');
+function labelMaterial(baseColor='#0b1a2b'){ return `color:${baseColor}; opacity:0.92; side:double; metalness:0; roughness:1;`; }
 
-  // fondo
+function createLabel(name, idx, total){
+  const wrap=document.createElement('a-entity'); wrap.setAttribute('billboard','');
+
+  // fondo (¡con clase para raycaster!)
   const bg=document.createElement('a-entity');
+  bg.classList.add('label3d');
   bg.setAttribute('geometry','primitive: plane; width: 0.32; height: 0.10');
   bg.setAttribute('material', labelMaterial());
+
   // texto
   const txt=document.createElement('a-text');
   txt.setAttribute('value',name); txt.setAttribute('color','#cfe6ff'); txt.setAttribute('align','center'); txt.setAttribute('width','1.2'); txt.setAttribute('baseline','center');
 
   wrap.appendChild(bg); wrap.appendChild(txt);
 
-  // posición inicial en un aro
+  // posición inicial en aro
   const r=0.42, ang = (idx/total)*Math.PI*1.4 - Math.PI*0.7;
   wrap.setAttribute('position', `${Math.cos(ang)*r} ${0.18 - (idx%3)*0.18} ${Math.sin(ang)*r}`);
 
@@ -310,17 +323,19 @@ function createLabel(name, idx, total){
   const L={name, el:wrap, target:target.pos, locked:false, home:wrap.object3D.position.clone()};
   labels.push(L);
 
-  // componente para arrastrar sobre la superficie
+  // Componente para arrastrar (lo montamos en el WRAP para mover todo el bloque)
   wrap.setAttribute('draggable-label', `name:${name}`);
   modelEl.appendChild(wrap);
 }
+
 AFRAME.registerComponent('draggable-label',{
   schema:{name:{default:''}},
   init:function(){
-    this.dragging=false; this.pointerId=null; this.startPos=this.el.object3D.position.clone();
-    this.mesh=null; this.preview=null;
-    const s=this.el.sceneEl; const canvas = ()=> s.canvas || s;
-    const ensureMesh=()=>{ this.mesh = document.getElementById('cellModel').getObject3D('mesh'); };
+    const s=this.el.sceneEl;
+    const canvas = ()=> s.canvas || s;
+    this.dragging=false; this.startPos=this.el.object3D.position.clone();
+    this.preview=null;
+
     const ensurePreview=()=>{ if(this.preview) return;
       this.preview=document.createElement('a-entity');
       this.preview.setAttribute('geometry','primitive: ring; radiusInner:0.022; radiusOuter:0.032');
@@ -329,66 +344,85 @@ AFRAME.registerComponent('draggable-label',{
       this.preview.setAttribute('visible','false');
       document.getElementById('cellModel').appendChild(this.preview);
     };
+
     const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
-    function worldPointFromClient(scene, x,y){
+    const worldPointFromClient=(x,y)=>{
       const c = canvas(); const rect = c.getBoundingClientRect();
       const nx = ((x-rect.left)/rect.width)*2 - 1; const ny = -((y-rect.top)/rect.height)*2 + 1;
-      mouse.set(nx,ny); raycaster.setFromCamera(mouse, scene.camera);
+      mouse.set(nx,ny); raycaster.setFromCamera(mouse, s.camera);
       const mesh = document.getElementById('cellModel').getObject3D('mesh'); if(!mesh) return null;
       const ints = raycaster.intersectObject(mesh, true); return (ints && ints[0]) ? ints[0].point : null;
-    }
-    const toLocal = (pWorld)=>{
-      const m = document.getElementById('cellModel').object3D; const p = pWorld.clone(); m.worldToLocal(p); return p;
     };
-    const onDown=(e)=>{
-      if(this.data.locked) return;
-      this.dragging=true; this.pointerId=e.pointerId; this.startPos=this.el.object3D.position.clone();
-      ensureMesh(); ensurePreview(); this.preview.setAttribute('visible','true');
-      canvas().setPointerCapture?.(e.pointerId);
-    };
+    const toLocal=(pWorld)=>{ const m=document.getElementById('cellModel').object3D; const p=pWorld.clone(); m.worldToLocal(p); return p; };
+    const getXY=(e)=> e.touches && e.touches[0] ? {x:e.touches[0].clientX,y:e.touches[0].clientY} : {x:e.clientX,y:e.clientY};
+
     const onMove=(e)=>{
-      if(!this.dragging || e.pointerId!==this.pointerId) return;
-      const p = worldPointFromClient(s, e.clientX, e.clientY);
-      if(!p){ this.preview.setAttribute('visible','false'); return; }
+      if(!this.dragging) return;
+      const {x,y}=getXY(e);
+      const p = worldPointFromClient(x,y);
+      if(!p){ this.preview && this.preview.setAttribute('visible','false'); return; }
+      ensurePreview();
       this.preview.setAttribute('position', p);
       this.preview.setAttribute('visible','true');
       const local = toLocal(p);
       this.el.object3D.position.copy(local);
+      e.preventDefault?.();
     };
-    const onUp=(e)=>{
-      if(!this.dragging || e.pointerId!==this.pointerId) return;
-      this.dragging=false; this.pointerId=null; this.preview && this.preview.setAttribute('visible','false');
-      // verificar acierto
-      const me = labels.find(x=>x.el===this.el); if(!me) return;
-      const pos = this.el.object3D.position; const tol = 0.10; // tolerancia
-      const ok = distance(pos, me.target) <= tol;
+
+    const finish=(ok, home, targetArr, me)=>{
+      window.DRAG_LABEL=false; this.dragging=false;
+      this.preview && this.preview.setAttribute('visible','false');
+
       if(ok){
-        // “snap” a la meta
-        this.el.object3D.position.set(me.target[0], me.target[1], me.target[2]);
+        this.el.object3D.position.set(targetArr[0],targetArr[1],targetArr[2]);
         this.el.setAttribute('colorize','state:ok');
-        me.locked=true; done.add(me.name); updateScore(); pingMark(me.target); showToast('¡Correcto!');
-        // bloquear más arrastres
-        canvas().removeEventListener('pointermove', onMove);
-        canvas().removeEventListener('pointerup', onUp);
-        this.el.removeEventListener('pointerdown', onDown);
+        me.locked=true; done.add(me.name); updateScore(); pingMark(targetArr); showToast('¡Correcto!');
         if(done.size === TARGETS[kind].length) showToast('¡Perfecto!');
       }else{
-        // feedback y vuelve a su “home”
         shakeEntity(this.el);
-        const home = me.home || this.startPos;
         setTimeout(()=> this.el.object3D.position.copy(home), 150);
         wrong++; updateScore(); showToast('Intenta de nuevo');
       }
     };
 
-    // escuchas
-    const add=()=>{ const c=canvas();
-      this.el.addEventListener('pointerdown', onDown, {passive:false});
-      c.addEventListener('pointermove', onMove, {passive:false});
-      c.addEventListener('pointerup', onUp, {passive:false});
-      c.addEventListener('pointercancel', onUp, {passive:false});
+    const onUp=(e)=>{
+      if(!this.dragging) return;
+      const me = labels.find(x=>x.el===this.el); if(!me) return;
+      const pos = this.el.object3D.position; const tol=0.10;
+      const ok = distance(pos, me.target) <= tol;
+      finish(ok, me.home || this.startPos, me.target, me);
+      window.removeEventListener('pointermove', onMove, {passive:false});
+      window.removeEventListener('mousemove', onMove, {passive:false});
+      window.removeEventListener('touchmove', onMove, {passive:false});
+      window.removeEventListener('pointerup', onUp, {passive:false});
+      window.removeEventListener('mouseup', onUp, {passive:false});
+      window.removeEventListener('touchend', onUp, {passive:false});
+      window.removeEventListener('touchcancel', onUp, {passive:false});
     };
-    s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
+
+    const startDrag=(e)=>{
+      // evita conflicto con rotación / pan
+      window.DRAG_LABEL=true;
+      this.dragging=true; this.startPos=this.el.object3D.position.clone();
+      ensurePreview();
+      // escuchas globales mientras arrastro
+      window.addEventListener('pointermove', onMove, {passive:false});
+      window.addEventListener('mousemove', onMove, {passive:false});
+      window.addEventListener('touchmove', onMove, {passive:false});
+      window.addEventListener('pointerup', onUp, {passive:false});
+      window.addEventListener('mouseup', onUp, {passive:false});
+      window.addEventListener('touchend', onUp, {passive:false});
+      window.addEventListener('touchcancel', onUp, {passive:false});
+      e.preventDefault?.();
+      e.stopPropagation?.();
+    };
+
+    const add=()=>{
+      // OJO: los eventos “down” vienen del cursor/raycaster → usamos mousedown/touchstart
+      this.el.addEventListener('mousedown', startDrag);
+      this.el.addEventListener('touchstart', startDrag, {passive:false});
+    };
+    s.hasLoaded ? add() : s.addEventListener('loaded', add, {once:true});
   }
 });
 
@@ -396,7 +430,7 @@ AFRAME.registerComponent('draggable-label',{
 AFRAME.registerComponent('colorize',{
   schema:{state:{default:'idle'}},
   update:function(){
-    const bg=this.el.children[0]; // plane
+    const bg=this.el.children[0];
     if(!bg) return;
     if(this.data.state==='ok'){
       bg.setAttribute('material','color:#0f2512; opacity:0.96; side:double');
@@ -404,10 +438,10 @@ AFRAME.registerComponent('colorize',{
       ring.setAttribute('geometry','primitive: ring; radiusInner:0.05; radiusOuter:0.065');
       ring.setAttribute('material',`color:${'#b0ffb0'}; emissive:${'#39ff14'}; emissiveIntensity:0.9; opacity:0.95`);
       ring.setAttribute('rotation','90 0 0');
-      ring.setAttribute('position','0 -0.02 0'); // pequeño halo
+      ring.setAttribute('position','0 -0.02 0');
       this.el.appendChild(ring);
       setTimeout(()=>{ ring.parentNode && ring.parentNode.removeChild(ring); }, 1200);
-    }else if(this.data.state==='idle'){
+    }else{
       bg.setAttribute('material','color:#0b1a2b; opacity:0.92; side:double');
     }
   }
@@ -505,6 +539,10 @@ modelEl.addEventListener('model-loaded', ()=>{ normalizeAndFrame(); });
 modelEl.addEventListener('model-error', e=>{ alert('No se pudo cargar el modelo'); console.error(e.detail); });
 
 (function init(){
+  const m = (new URLSearchParams(location.search).get('m')||'animal').toLowerCase();
+  kind = (m==='vegetal') ? 'vegetal' : 'animal';
+  modeAnimalBtn.classList.toggle('active', kind==='animal');
+  modeVegetalBtn.classList.toggle('active', kind==='vegetal');
   resetScore(); renderChipList(); makeTargetDots(); spawnLabels(); loadModel();
 })();
 </script>
