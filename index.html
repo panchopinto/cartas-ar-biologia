@@ -36,7 +36,6 @@
   /* Lado derecho: fila (Ayuda | ES | EN) arriba + botón TRIVIA debajo con mismo ancho */
   .right{display:flex; flex-direction:column; align-items:flex-end; gap:8px}
   .actionsRow{display:flex; gap:8px; flex-wrap:nowrap}
-  /* en pantallas chicas, que la fila pueda saltar de línea y el botón siga igualando el ancho total */
   @media (max-width:520px){ .actionsRow{flex-wrap:wrap; max-width:100%} }
 
   /* Botones */
@@ -52,8 +51,11 @@
   .btn.ghost{background:transparent;border-color:#39536d}
   .btn.active{background:rgba(60,201,255,.15); color:#e7f7ff; border-color:var(--accent)}
 
+  /* Forzar mayúsculas SOLO al botón TRIVIA */
+  #btnTrivia { text-transform: uppercase; letter-spacing: .5px; }
+
   /* Dropdown Trivia (igual look, solo que ocupa el mismo ancho del botón) */
-  .dropdown{position:relative; width:100%} /* hereda el ancho del botón */
+  .dropdown{position:relative; width:100%}
   .dropdown .menu{
     position:absolute; left:0; top:110%;
     width:100%;
@@ -134,7 +136,7 @@
         <!-- Botón Trivia con menú, ancho sincronizado por JS -->
         <div class="dropdown" id="triviaDropdown">
           <button class="btn ghost" id="btnTrivia" aria-haspopup="true" aria-expanded="false" style="width:100%">
-            <span id="t_trivia">TRIVIA</span>
+            <span id="t_trivia">Trivia</span>
           </button>
           <div class="menu" role="menu" aria-label="Menú Trivia">
             <a role="menuitem" href="./quiz_labels.html?m=animal" id="t_trivia_animal">Trivia Célula Animal</a>
@@ -399,11 +401,9 @@ if (btnEtiq) btnEtiq.href = links.tags_animal;
     const btn = document.getElementById('btnTrivia');
     if(!row || !btn) return;
     const w = Math.ceil(row.getBoundingClientRect().width);
-    // Limita para móviles a 100% del contenedor
     const max = row.parentElement.getBoundingClientRect().width;
     btn.style.width = Math.min(w, max) + 'px';
   }
-  // aplicar al cargar y al redimensionar
   window.addEventListener('load', ()=>{ requestAnimationFrame(apply); setTimeout(apply, 150); });
   window.addEventListener('resize', apply);
 })();
