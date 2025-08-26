@@ -17,28 +17,37 @@
   body{
     margin:0; background:radial-gradient(1200px 600px at 70% -10%,#112033 0%,transparent 60%), var(--bg);
     color:var(--text); font:500 16px/1.45 system-ui,Segoe UI,Roboto,Arial,sans-serif;
-    overflow:hidden;
+    /* ✅ permitir scroll en móvil */
+    overflow:auto;
   }
   a{color:inherit;text-decoration:none}
-  .wrap{display:grid; grid-template-columns:340px 1fr; gap:14px; height:100vh; padding:12px; max-width:1400px; margin:0 auto}
-  .side{display:grid; grid-template-rows:auto auto 1fr auto; gap:10px}
+
+  /* Layout */
+  .wrap{
+    display:grid; grid-template-columns:340px 1fr; gap:14px;
+    min-height:100vh; padding:12px; max-width:1400px; margin:0 auto;
+  }
+  .side{display:grid; grid-template-rows:auto auto auto auto; gap:10px}
   .panel{border:1px solid var(--line); border-radius:var(--radius); background:linear-gradient(180deg,#0b0f16,#0a0d13); box-shadow:var(--shadow); padding:12px}
   .topbar{display:flex; align-items:center; justify-content:space-between; gap:8px}
   .back{display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:12px; border:1px solid #2a3a4e; background:linear-gradient(180deg,#132132,#0d1623); color:#e8f7ff; font-weight:800}
-  .modes{display:flex; gap:8px}
+  .modes{display:flex; gap:8px; flex-wrap:wrap}
   .btn{cursor:pointer; border:1px solid #39536d; background:linear-gradient(180deg,#122033,#0d1623); color:#e8f7ff; font-weight:800; padding:8px 12px; border-radius:12px}
   .btn.active{background:rgba(60,201,255,.15); border-color:var(--accent)}
   .score{display:flex; align-items:center; justify-content:space-between; gap:8px; font-weight:800}
   .score .good{color:#b7ffb7} .score .bad{color:#ffb0be}
-  .list{display:flex; flex-wrap:wrap; gap:8px}
+
+  .list{display:flex; flex-wrap:wrap; gap:8px; max-height:260px; overflow:auto}
   .chip{
     padding:8px 10px; border-radius:999px; border:1px solid #3a4e66; color:#cfe6ff;
     font:700 13px system-ui; background:linear-gradient(180deg,#0f1b2a,#0a1320); user-select:none;
   }
   .chip.taking{outline:2px dashed #6fe0ff}
   .chip.done{border-color:#2d9c2d; color:#c9ffd0; background:linear-gradient(180deg,#0f1b2a,#0d1f17)}
+  .chip.calSel{outline:2px solid #ffd166}
+
   .hint{color:var(--muted); font-size:13px; margin:4px 0 0}
-  .bottom{display:flex; align-items:center; justify-content:space-between; gap:8px}
+  .bottom{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap}
   .legend{display:flex; gap:8px; flex-wrap:wrap; font-size:13px; color:var(--muted)}
   .dot{width:10px;height:10px;border-radius:999px;display:inline-block;vertical-align:middle;margin-right:6px}
   .ok{background:var(--good)} .ko{background:var(--bad)} .target{background:var(--target)}
@@ -46,8 +55,9 @@
   /* Área 3D */
   .stage{position:relative; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden}
   a-scene{position:absolute; inset:0}
+
   .hud{
-    position:absolute; left:10px; top:10px; display:flex; gap:8px; z-index:5;
+    position:absolute; left:10px; top:10px; display:flex; gap:8px; z-index:5; flex-wrap:wrap;
   }
   .hud .btn{padding:6px 10px}
   .toast{
@@ -60,9 +70,11 @@
   /* Etiquetas 3D */
   .label3d{pointer-events:auto}
 
+  /* Responsivo */
   @media (max-width:960px){
-    .wrap{grid-template-columns:1fr; grid-template-rows:auto 1fr; padding:10px}
-    .stage{height:58vh}
+    .wrap{grid-template-columns:1fr; grid-template-rows:auto auto auto auto 1fr; padding:10px}
+    .stage{height:65vh; margin-bottom:14px} /* ✅ deja espacio y permite scroll general */
+    .list{max-height:200px}
   }
   @media (min-width:961px){
     .stage{height:calc(100vh - 24px)}
@@ -89,7 +101,7 @@
     <div class="panel">
       <div style="font-weight:800;margin-bottom:6px">Etiquetas a ubicar</div>
       <div id="chips" class="list" aria-live="polite"></div>
-      <div class="hint">Tip: rota con clic-izquierdo, zoom con rueda, mueve con botón derecho o Shift+arrastre. Presiona un chip para “tomarlo” y suéltalo sobre la célula.</div>
+      <div class="hint">Tip (móvil): pellizca para zoom, arrastra con 1 dedo para rotar y con 2 dedos para mover. Presiona un chip para “tomarlo” y suéltalo sobre la célula.</div>
     </div>
 
     <div class="panel bottom">
@@ -98,9 +110,12 @@
         <span><i class="dot ok"></i>Correcto</span>
         <span><i class="dot ko"></i>Incorrecto</span>
       </div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button id="btnAyuda" class="btn">Ayuda</button>
         <button id="btnReset" class="btn">Reiniciar</button>
+        <!-- ✅ Controles de calibración -->
+        <button id="btnCalib" class="btn" title="Ajustar posiciones de destino">Calibrar</button>
+        <button id="btnCalibClear" class="btn" title="Borrar calibraciones guardadas">Borrar calibs.</button>
       </div>
     </div>
   </aside>
@@ -111,6 +126,9 @@
       <button id="btnAuto" class="btn" title="Auto-rotación">Auto</button>
       <button id="btnCenter" class="btn" title="Centrar">◎</button>
       <button id="btnResetView" class="btn" title="Reset vista">⟲</button>
+      <!-- ✅ Zoom explícito -->
+      <button id="btnZoomIn" class="btn" title="Aumentar tamaño">＋</button>
+      <button id="btnZoomOut" class="btn" title="Reducir tamaño">－</button>
     </div>
     <div id="toast" class="toast">¡Bien!</div>
 
@@ -135,7 +153,7 @@
 </div>
 
 <script>
-/* ================== Componentes de gestos (como en viewer) ================== */
+/* ================== Componentes de gestos ================== */
 let LOCK_INPUT = false; // bloquea rotación/pan mientras “cargo” una etiqueta
 
 AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},minScale:{default:0.05},maxScale:{default:3.0}},
@@ -207,24 +225,51 @@ const MAP={
   animal:"./assets/models/animal.glb",
   vegetal:"./assets/models/vegetal.glb"
 };
-const TARGETS={
+/* Posiciones por defecto (puedes retocarlas) */
+const TARGETS_DEFAULT={
   animal:[
-    {name:'Núcleo',pos:[0,0.12,0]},
-    {name:'Mitocondrias',pos:[0.18,0.06,0.04]},
-    {name:'Aparato de Golgi',pos:[0.12,0.00,-0.15]},
-    {name:'Ribosomas',pos:[-0.18,0.08,0]},
-    {name:'Lisosomas',pos:[-0.12,-0.02,0.14]},
-    {name:'Centriolos',pos:[0.16,0.14,-0.02]}
+    {name:'Núcleo',pos:[0,0.10,0]},
+    {name:'Mitocondrias',pos:[0.16,0.05,0.05]},
+    {name:'Aparato de Golgi',pos:[0.10,0.00,-0.12]},
+    {name:'Ribosomas',pos:[-0.16,0.07,0.02]},
+    {name:'Lisosomas',pos:[-0.10,-0.02,0.12]},
+    {name:'Centriolos',pos:[0.14,0.12,-0.02]}
   ],
   vegetal:[
-    {name:'Núcleo',pos:[0,0.12,0]},
-    {name:'Cloroplastos',pos:[0.18,0.05,0]},
-    {name:'Vacuola central',pos:[-0.12,0.02,-0.1]},
-    {name:'Pared celular',pos:[0,0,-0.22]},
-    {name:'Plasmodesmos',pos:[-0.20,0.00,0.12]},
-    {name:'Aparato de Golgi',pos:[0.12,0,-0.15]}
+    {name:'Núcleo',pos:[0,0.10,0]},
+    {name:'Cloroplastos',pos:[0.16,0.04,0.02]},
+    {name:'Vacuola central',pos:[-0.10,0.02,-0.08]},
+    {name:'Pared celular',pos:[0,0,-0.18]},
+    {name:'Plasmodesmos',pos:[-0.16,0.00,0.10]},
+    {name:'Aparato de Golgi',pos:[0.10,0,-0.12]}
   ]
 };
+
+/* Sobrescrituras guardadas (calibración) */
+function loadOverrides(kind){
+  const raw = localStorage.getItem('QUIZ_TARGETS_'+kind);
+  if(!raw) return null;
+  try{ return JSON.parse(raw); }catch{return null;}
+}
+function saveOverrides(kind, arr){
+  localStorage.setItem('QUIZ_TARGETS_'+kind, JSON.stringify(arr));
+}
+function clearOverrides(kind){
+  localStorage.removeItem('QUIZ_TARGETS_'+kind);
+}
+function getTargets(kind){
+  const o = loadOverrides(kind);
+  const base = TARGETS_DEFAULT[kind].map(t=>({name:t.name, pos:[...t.pos]}));
+  if(!o) return base;
+  // merge por nombre
+  o.forEach(ov=>{
+    const i = base.findIndex(x=>x.name===ov.name);
+    if(i>=0) base[i].pos = [...ov.pos];
+  });
+  return base;
+}
+
+let TARGETS = { animal:getTargets('animal'), vegetal:getTargets('vegetal') };
 
 /* ================== Estado/UI ================== */
 const modeAnimalBtn = document.getElementById('modeAnimal');
@@ -234,7 +279,9 @@ const okEl = document.getElementById('ok'); const koEl = document.getElementById
 const progressMini = document.getElementById('progressMini'); const totalEl = document.getElementById('total');
 const toast = document.getElementById('toast');
 const btnAuto = document.getElementById('btnAuto'); const btnCenter = document.getElementById('btnCenter'); const btnResetView = document.getElementById('btnResetView');
+const btnZoomIn = document.getElementById('btnZoomIn'); const btnZoomOut = document.getElementById('btnZoomOut');
 const btnReset = document.getElementById('btnReset'); const btnAyuda = document.getElementById('btnAyuda');
+const btnCalib = document.getElementById('btnCalib'); const btnCalibClear = document.getElementById('btnCalibClear');
 
 const modelEl = document.getElementById('cellModel');
 const scene = document.querySelector('a-scene');
@@ -244,6 +291,7 @@ let done=new Set(), wrong=0;
 let DEFAULT_SCALE=1.0;
 let targetDots=[], placedLabels=[]; // {name, el}
 let activeCarry = null; // {name, el, preview, pointerId}
+let CALIB_MODE=false, CALIB_SEL=null; // calibración
 
 /* ================== Util ================== */
 function showToast(msg){ toast.textContent=msg; toast.classList.add('show'); clearTimeout(showToast._t); showToast._t=setTimeout(()=>toast.classList.remove('show'),1000); }
@@ -345,10 +393,20 @@ function renderChipList(){
     el.textContent=name;
     el.tabIndex=0;
     el.dataset.name=name;
+
     // tomar etiqueta (pointer o teclado enter)
-    const start = (ev)=>{ ev.preventDefault(); if(done.has(name)) return; startCarry(el, name, ev); };
+    const start = (ev)=>{ ev.preventDefault(); if(done.has(name) || CALIB_MODE) { // en modo calibración no se arrastra
+        if(CALIB_MODE){ selectCalibChip(el); }
+        return;
+      }
+      startCarry(el, name, ev);
+    };
     el.addEventListener('pointerdown', start, {passive:false});
     el.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' '){ start(e);} });
+
+    // selección de chip para calibrar
+    el.addEventListener('click', ()=>{ if(CALIB_MODE) selectCalibChip(el); });
+
     chipsBox.appendChild(el);
   });
   totalEl.textContent = TARGETS[kind].length;
@@ -389,7 +447,6 @@ function startCarry(chipEl, name, ev){
     chipEl.classList.remove('taking');
 
     if(!me.lastLocal){ // nunca entró sobre el modelo
-      // feedback y limpiar
       shakeEntity(me.el); setTimeout(()=>{ me.el.remove(); me.preview.remove(); }, 150);
       wrong++; updateScore(); showToast('Intenta sobre la célula');
       return;
@@ -401,22 +458,18 @@ function startCarry(chipEl, name, ev){
     if(ok){
       me.el.object3D.position.set(target.pos[0], target.pos[1], target.pos[2]);
       done.add(name); updateScore(); pingMark(target.pos); showToast('¡Correcto!');
-      placedLabels.push({name, el:me.el}); // conservar etiqueta en escena
+      placedLabels.push({name, el:me.el}); // conservar etiqueta
       me.preview.remove();
       chipEl.classList.add('done');
-      chipEl.replaceWith(chipEl); // quita listeners rápidos
-      chipEl.onclick = null;
-      // Si completó todo
       if(done.size === TARGETS[kind].length) showToast('¡Perfecto!');
     }else{
-      // equivocado
       shakeEntity(me.el);
       setTimeout(()=>{ me.el.remove(); me.preview.remove(); }, 150);
       wrong++; updateScore(); showToast('Intenta de nuevo');
     }
   };
 
-  // apuntar de inmediato al lugar actual del puntero (útil en desktop)
+  // apuntar al lugar actual del puntero
   if(ev.clientX!=null) {
     const pW0 = worldPointFromClient(ev.clientX, ev.clientY);
     if(pW0){ preview.setAttribute('position', pW0); preview.setAttribute('visible','true'); label.object3D.position.copy(toLocal(pW0)); }
@@ -425,6 +478,55 @@ function startCarry(chipEl, name, ev){
   window.addEventListener('pointermove', move, {passive:false});
   window.addEventListener('pointerup', up, {passive:false});
 }
+
+/* ================== Modo Calibración ================== */
+function selectCalibChip(el){
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('calSel'));
+  el.classList.add('calSel');
+  CALIB_SEL = el.dataset.name;
+  showToast('Toca la célula para fijar destino de: ' + CALIB_SEL);
+}
+btnCalib.addEventListener('click', ()=>{
+  CALIB_MODE = !CALIB_MODE;
+  btnCalib.classList.toggle('active', CALIB_MODE);
+  CALIB_SEL = null;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('calSel','taking'));
+  showToast(CALIB_MODE ? 'Calibración ACTIVADA' : 'Calibración DESACTIVADA');
+});
+btnCalibClear.addEventListener('click', ()=>{
+  clearOverrides(kind);
+  TARGETS[kind] = getTargets(kind);
+  clearTargetDots(); makeTargetDots();
+  showToast('Calibraciones borradas');
+});
+/* Registrar tap sobre la malla para guardar coordenada del chip seleccionado */
+(function attachCalibTap(){
+  const s = scene;
+  const onTap = (e)=>{
+    if(!CALIB_MODE || !CALIB_SEL) return;
+    const touch = e.touches && e.touches[0];
+    const x = (touch ? touch.clientX : e.clientX);
+    const y = (touch ? touch.clientY : e.clientY);
+    const pW = worldPointFromClient(x,y);
+    if(!pW) return;
+    const pL = toLocal(pW);
+    // guardar override
+    const arr = getTargets(kind);
+    const idx = arr.findIndex(t=>t.name===CALIB_SEL);
+    if(idx>=0){
+      arr[idx].pos = [Number(pL.x.toFixed(3)), Number(pL.y.toFixed(3)), Number(pL.z.toFixed(3))];
+      saveOverrides(kind, arr);
+      TARGETS[kind] = getTargets(kind);
+      clearTargetDots(); makeTargetDots();
+      showToast('Guardado: ' + CALIB_SEL);
+      // marcar chip
+      document.querySelectorAll('.chip').forEach(c=>{ if(c.dataset.name===CALIB_SEL){ c.classList.add('done'); c.classList.remove('calSel'); }});
+      CALIB_SEL=null;
+    }
+  };
+  s.addEventListener('click', onTap);
+  s.addEventListener('touchend', onTap, {passive:true});
+})();
 
 /* ================== Modelo ================== */
 async function loadModel(){
@@ -446,6 +548,14 @@ btnResetView.addEventListener('click', ()=>{
   modelEl.object3D.position.set(0,0,0);
   modelEl.object3D.rotation.set(0,0,0);
   modelEl.object3D.scale.set(DEFAULT_SCALE,DEFAULT_SCALE,DEFAULT_SCALE);
+});
+btnZoomIn.addEventListener('click', ()=>{
+  const s = modelEl.object3D.scale.x * 1.1;
+  modelEl.object3D.scale.set(s,s,s);
+});
+btnZoomOut.addEventListener('click', ()=>{
+  const s = modelEl.object3D.scale.x / 1.1;
+  modelEl.object3D.scale.set(s,s,s);
 });
 
 /* Ayuda: mostrar/ocultar metas */
@@ -477,21 +587,19 @@ function clearPlaced(){
 
 /* ================== Inicialización y reset ================== */
 function resetAll(){
-  // estado
+  // refrescar TARGETS (por si calibraste)
+  TARGETS = { animal:getTargets('animal'), vegetal:getTargets('vegetal') };
+
   resetScore(); updateScore();
-  // UI
   renderChipList();
-  // 3D ayudas / etiquetas previas
   clearTargetDots(); makeTargetDots();
   clearPlaced();
-  // modelo
   loadModel();
 }
 modelEl.addEventListener('model-loaded', ()=>{ normalizeAndFrame(); });
 modelEl.addEventListener('model-error', e=>{ alert('No se pudo cargar el modelo. Revisa la ruta del GLB.'); console.error(e.detail); });
 
 (function init(){
-  // Pre-selección por query ?m=vegetal
   modeAnimalBtn.classList.toggle('active', kind==='animal');
   modeVegetalBtn.classList.toggle('active', kind==='vegetal');
   resetAll();
@@ -499,3 +607,4 @@ modelEl.addEventListener('model-error', e=>{ alert('No se pudo cargar el modelo.
 </script>
 </body>
 </html>
+
