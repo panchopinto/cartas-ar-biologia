@@ -13,12 +13,12 @@
     --radius:16px; --shadow:0 10px 30px rgba(0,0,0,.35);
   }
   *{box-sizing:border-box}
-  html,body{height:100%}
+  html,body{min-height:100%}
   body{
     margin:0; background:radial-gradient(1200px 600px at 70% -10%,#112033 0%,transparent 60%), var(--bg);
     color:var(--text); font:500 16px/1.45 system-ui,Segoe UI,Roboto,Arial,sans-serif;
-    /* ✅ permitir scroll en móvil */
-    overflow:auto;
+    /* ✅ permitir scroll suave en móvil */
+    overflow:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y;
   }
   a{color:inherit;text-decoration:none}
 
@@ -37,7 +37,11 @@
   .score{display:flex; align-items:center; justify-content:space-between; gap:8px; font-weight:800}
   .score .good{color:#b7ffb7} .score .bad{color:#ffb0be}
 
-  .list{display:flex; flex-wrap:wrap; gap:8px; max-height:260px; overflow:auto}
+  .list{
+    display:flex; flex-wrap:wrap; gap:8px; max-height:260px; overflow:auto;
+    /* ✅ la lista puede desplazar en vertical aunque toques encima */
+    touch-action:pan-y; -webkit-overflow-scrolling:touch;
+  }
   .chip{
     padding:8px 10px; border-radius:999px; border:1px solid #3a4e66; color:#cfe6ff;
     font:700 13px system-ui; background:linear-gradient(180deg,#0f1b2a,#0a1320); user-select:none;
@@ -48,13 +52,15 @@
 
   .hint{color:var(--muted); font-size:13px; margin:4px 0 0}
   .bottom{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap}
-  .legend{display:flex; gap:8px; flex-wrap:wrap; font-size:13px; color:var(--muted)}
+  .legend{display:flex; gap:8px; flex-wrap:wrap; font-size:13px; color:#c9d5ea}
   .dot{width:10px;height:10px;border-radius:999px;display:inline-block;vertical-align:middle;margin-right:6px}
   .ok{background:var(--good)} .ko{background:var(--bad)} .target{background:var(--target)}
 
   /* Área 3D */
   .stage{position:relative; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden}
   a-scene{position:absolute; inset:0}
+  /* ✅ dentro del canvas gestionamos gestos; fuera, la página scrollea */
+  .stage a-scene, .stage canvas{ touch-action:none; }
 
   .hud{
     position:absolute; left:10px; top:10px; display:flex; gap:8px; z-index:5; flex-wrap:wrap;
@@ -73,7 +79,7 @@
   /* Responsivo */
   @media (max-width:960px){
     .wrap{grid-template-columns:1fr; grid-template-rows:auto auto auto auto 1fr; padding:10px}
-    .stage{height:65vh; margin-bottom:14px} /* ✅ deja espacio y permite scroll general */
+    .stage{height:65vh; margin-bottom:14px} /* deja espacio y permite scroll general */
     .list{max-height:200px}
   }
   @media (min-width:961px){
@@ -88,7 +94,7 @@
     <div class="panel topbar">
       <a class="back" href="./index.html">← Volver</a>
       <div class="modes" role="tablist" aria-label="Modo de trivia">
-        <button id="modeAnimal" class="btn active" role="tab" aria-selected="true">Animal</button>
+        <button id="modeAnimal" class="btn" role="tab" aria-selected="false">Animal</button>
         <button id="modeVegetal" class="btn" role="tab" aria-selected="false">Vegetal</button>
       </div>
     </div>
@@ -101,7 +107,7 @@
     <div class="panel">
       <div style="font-weight:800;margin-bottom:6px">Etiquetas a ubicar</div>
       <div id="chips" class="list" aria-live="polite"></div>
-      <div class="hint">Tip (móvil): pellizca para zoom, arrastra con 1 dedo para rotar y con 2 dedos para mover. Presiona un chip para “tomarlo” y suéltalo sobre la célula.</div>
+      <div class="hint">Tip (móvil): pellizca para zoom, arrastra con 1 dedo para rotar y con 2 dedos para mover. Toca un chip (click) para “tomarlo”, luego ubícalo sobre la célula.</div>
     </div>
 
     <div class="panel bottom">
@@ -113,7 +119,7 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button id="btnAyuda" class="btn">Ayuda</button>
         <button id="btnReset" class="btn">Reiniciar</button>
-        <!-- ✅ Controles de calibración -->
+        <!-- Calibración -->
         <button id="btnCalib" class="btn" title="Ajustar posiciones de destino">Calibrar</button>
         <button id="btnCalibClear" class="btn" title="Borrar calibraciones guardadas">Borrar calibs.</button>
       </div>
@@ -126,7 +132,6 @@
       <button id="btnAuto" class="btn" title="Auto-rotación">Auto</button>
       <button id="btnCenter" class="btn" title="Centrar">◎</button>
       <button id="btnResetView" class="btn" title="Reset vista">⟲</button>
-      <!-- ✅ Zoom explícito -->
       <button id="btnZoomIn" class="btn" title="Aumentar tamaño">＋</button>
       <button id="btnZoomOut" class="btn" title="Reducir tamaño">－</button>
     </div>
@@ -187,12 +192,12 @@ AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:
       const worldPerPixY = 2 * cam.position.length() * Math.tan(fov/2) / h; const worldPerPixX = worldPerPixY * cam.aspect; return {x:worldPerPixX, y:worldPerPixY}; };
     const onDown=(e)=>{ const c=s.canvas||s; c.setPointerCapture?.(e.pointerId); this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
       if(this.pointers.size===2){ this.active=true; this.startDist=dist(); this.startScale=this.el.object3D.scale.x; this.startCentroid=centroid(); this.startPos=this.el.object3D.position.clone(); } };
-    const onMove=(e)=>{ if(LOCK_INPUT) return; if(!this.pointers.has(e.pointerId)) return; this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    const onMove=(e)=>{ if(LOCK_INPUT) return; if(!this.pointers.has(e.pointerId)) return; this.pointers.set(e.pointerId,{x:e.clientX,y=e.clientY});
       if(this.active && this.pointers.size===2){ e.preventDefault(); const k=(dist()/this.startDist)*this.data.factor;
         let sc=THREE.MathUtils.clamp(this.startScale*k, this.data.min, this.data.max); this.el.object3D.scale.set(sc,sc,sc);
         const cen=centroid(); const dx=cen.x-this.startCentroid.x; const dy=cen.y-this.startCentroid.y; const wp=worldPerPixel();
         const tx = dx * wp.x * this.data.panFactor; const ty = -dy * wp.y * this.data.panFactor;
-        this.el.object3D.position.set(this.startPos.x + tx, this.startPos.y + ty, this.startPos.z); } };
+        this.el.object3D.position.set(this.startPos.x + tx, this.startPos.y + ty, this.el.object3D.position.z); } };
     const onUp=(e)=>{ this.pointers.delete(e.pointerId); if(this.pointers.size<2) this.active=false; };
     const add=()=>{ const c=s.canvas||s; c.addEventListener('pointerdown',onDown,{passive:false});
       c.addEventListener('pointermove',onMove,{passive:false}); c.addEventListener('pointerup',onUp,{passive:false});
@@ -207,7 +212,7 @@ AFRAME.registerComponent('mouse-pan',{schema:{panFactor:{default:1}},
       const h = s.canvas.height || window.innerHeight; const y = 2 * cam.position.length() * Math.tan(fov/2) / h; const x = y * cam.aspect; return {x, y}; };
     const onDown=(e)=>{ if(LOCK_INPUT) return; shift=e.shiftKey; if (e.button===1 || e.button===2 || (e.button===0 && shift)){ down=true; start={x:e.clientX,y:e.clientY}; startPos=this.el.object3D.position.clone(); e.preventDefault(); } };
     const onMove=(e)=>{ if(LOCK_INPUT) return; if(!down) return; e.preventDefault(); const dx=e.clientX-start.x, dy=e.clientY-start.y; const wp=worldPerPixel();
-      const tx = dx * wp.x * this.data.panFactor; const ty = -dy * wp.y * this.data.panFactor; this.el.object3D.position.set(startPos.x + tx, startPos.y + ty, startPos.z); };
+      const tx = dx * wp.x * this.data.panFactor; const ty = -dy * wp.y * this.data.panFactor; this.el.object3D.position.set(startPos.x + tx, startPos.y + ty, this.el.object3D.position.z); };
     const onUp=()=>{ down=false; };
     const add=()=>{ const c=s.canvas||s; c.addEventListener('mousedown',onDown,{passive:false}); window.addEventListener('mousemove',onMove,{passive:false});
       window.addEventListener('mouseup',onUp,{passive:false}); c.addEventListener('contextmenu',(e)=>e.preventDefault()); };
@@ -245,30 +250,24 @@ const TARGETS_DEFAULT={
   ]
 };
 
-/* Sobrescrituras guardadas (calibración) */
+/* Calibración guardada */
 function loadOverrides(kind){
   const raw = localStorage.getItem('QUIZ_TARGETS_'+kind);
   if(!raw) return null;
   try{ return JSON.parse(raw); }catch{return null;}
 }
-function saveOverrides(kind, arr){
-  localStorage.setItem('QUIZ_TARGETS_'+kind, JSON.stringify(arr));
-}
-function clearOverrides(kind){
-  localStorage.removeItem('QUIZ_TARGETS_'+kind);
-}
+function saveOverrides(kind, arr){ localStorage.setItem('QUIZ_TARGETS_'+kind, JSON.stringify(arr)); }
+function clearOverrides(kind){ localStorage.removeItem('QUIZ_TARGETS_'+kind); }
 function getTargets(kind){
   const o = loadOverrides(kind);
   const base = TARGETS_DEFAULT[kind].map(t=>({name:t.name, pos:[...t.pos]}));
   if(!o) return base;
-  // merge por nombre
   o.forEach(ov=>{
     const i = base.findIndex(x=>x.name===ov.name);
     if(i>=0) base[i].pos = [...ov.pos];
   });
   return base;
 }
-
 let TARGETS = { animal:getTargets('animal'), vegetal:getTargets('vegetal') };
 
 /* ================== Estado/UI ================== */
@@ -290,8 +289,8 @@ let kind = (QP.get('m')==='vegetal') ? 'vegetal' : 'animal';
 let done=new Set(), wrong=0;
 let DEFAULT_SCALE=1.0;
 let targetDots=[], placedLabels=[]; // {name, el}
-let activeCarry = null; // {name, el, preview, pointerId}
-let CALIB_MODE=false, CALIB_SEL=null; // calibración
+let activeCarry = null; // {name, el, preview, pointerId, lastLocal, chipEl}
+let CALIB_MODE=false, CALIB_SEL=null;
 
 /* ================== Util ================== */
 function showToast(msg){ toast.textContent=msg; toast.classList.add('show'); clearTimeout(showToast._t); showToast._t=setTimeout(()=>toast.classList.remove('show'),1000); }
@@ -394,14 +393,14 @@ function renderChipList(){
     el.tabIndex=0;
     el.dataset.name=name;
 
-    // tomar etiqueta (pointer o teclado enter)
-    const start = (ev)=>{ ev.preventDefault(); if(done.has(name) || CALIB_MODE) { // en modo calibración no se arrastra
-        if(CALIB_MODE){ selectCalibChip(el); }
+    // ✅ Iniciar “tomar” con click / Enter (no bloquea scroll)
+    const start = (ev)=>{ ev.preventDefault?.(); if(done.has(name) || CALIB_MODE){
+        if(CALIB_MODE) selectCalibChip(el);
         return;
       }
       startCarry(el, name, ev);
     };
-    el.addEventListener('pointerdown', start, {passive:false});
+    el.addEventListener('click', start);
     el.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' '){ start(e);} });
 
     // selección de chip para calibrar
@@ -412,7 +411,7 @@ function renderChipList(){
   totalEl.textContent = TARGETS[kind].length;
 }
 
-/* ================== Flujo de “llevar” etiqueta desde chip ================== */
+/* ================== Llevar etiqueta desde chip hasta el modelo ================== */
 function startCarry(chipEl, name, ev){
   if(activeCarry) return;
   const target = TARGETS[kind].find(t=>t.name===name);
@@ -426,11 +425,16 @@ function startCarry(chipEl, name, ev){
   const preview = makePreview();
   modelEl.appendChild(preview);
 
-  const pointerId = ev.pointerId ?? 1;
-  activeCarry = { name, el:label, preview, pointerId, lastLocal:null, chipEl };
+  // ✅ soportar inicio vía click (sin pointerId)
+  let pid = (ev && 'pointerId' in ev) ? ev.pointerId : null;
+  activeCarry = { name, el:label, preview, pointerId:pid, lastLocal:null, chipEl };
 
   const move = (e)=>{
-    if(activeCarry && e.pointerId!==activeCarry.pointerId) return;
+    // Si no venía pointerId (click), tomar el primero que se mueva
+    if(activeCarry.pointerId==null && 'pointerId' in e) activeCarry.pointerId = e.pointerId;
+    if(activeCarry.pointerId!=null && 'pointerId' in e && e.pointerId!==activeCarry.pointerId) return;
+
+    if(e.clientX==null) return;
     const pW = worldPointFromClient(e.clientX, e.clientY);
     if(!pW){ preview.setAttribute('visible','false'); return; }
     preview.setAttribute('position', pW); preview.setAttribute('visible','true');
@@ -439,26 +443,26 @@ function startCarry(chipEl, name, ev){
     label.object3D.position.copy(pL);
   };
   const up = (e)=>{
-    if(activeCarry && e.pointerId!==activeCarry.pointerId) return;
+    if(activeCarry && activeCarry.pointerId!=null && 'pointerId' in e && e.pointerId!==activeCarry.pointerId) return;
     window.removeEventListener('pointermove', move, {passive:false});
     window.removeEventListener('pointerup', up, {passive:false});
 
     const me = activeCarry; activeCarry=null; LOCK_INPUT=false;
     chipEl.classList.remove('taking');
 
-    if(!me.lastLocal){ // nunca entró sobre el modelo
+    if(!me.lastLocal){
       shakeEntity(me.el); setTimeout(()=>{ me.el.remove(); me.preview.remove(); }, 150);
       wrong++; updateScore(); showToast('Intenta sobre la célula');
       return;
     }
 
-    const tol = 0.10;
+    const tol = 0.12; // un poco más amplia para móvil
     const ok = distance(me.lastLocal, target.pos) <= tol;
 
     if(ok){
       me.el.object3D.position.set(target.pos[0], target.pos[1], target.pos[2]);
       done.add(name); updateScore(); pingMark(target.pos); showToast('¡Correcto!');
-      placedLabels.push({name, el:me.el}); // conservar etiqueta
+      placedLabels.push({name, el:me.el});
       me.preview.remove();
       chipEl.classList.add('done');
       if(done.size === TARGETS[kind].length) showToast('¡Perfecto!');
@@ -468,12 +472,6 @@ function startCarry(chipEl, name, ev){
       wrong++; updateScore(); showToast('Intenta de nuevo');
     }
   };
-
-  // apuntar al lugar actual del puntero
-  if(ev.clientX!=null) {
-    const pW0 = worldPointFromClient(ev.clientX, ev.clientY);
-    if(pW0){ preview.setAttribute('position', pW0); preview.setAttribute('visible','true'); label.object3D.position.copy(toLocal(pW0)); }
-  }
 
   window.addEventListener('pointermove', move, {passive:false});
   window.addEventListener('pointerup', up, {passive:false});
@@ -499,7 +497,6 @@ btnCalibClear.addEventListener('click', ()=>{
   clearTargetDots(); makeTargetDots();
   showToast('Calibraciones borradas');
 });
-/* Registrar tap sobre la malla para guardar coordenada del chip seleccionado */
 (function attachCalibTap(){
   const s = scene;
   const onTap = (e)=>{
@@ -510,7 +507,6 @@ btnCalibClear.addEventListener('click', ()=>{
     const pW = worldPointFromClient(x,y);
     if(!pW) return;
     const pL = toLocal(pW);
-    // guardar override
     const arr = getTargets(kind);
     const idx = arr.findIndex(t=>t.name===CALIB_SEL);
     if(idx>=0){
@@ -519,7 +515,6 @@ btnCalibClear.addEventListener('click', ()=>{
       TARGETS[kind] = getTargets(kind);
       clearTargetDots(); makeTargetDots();
       showToast('Guardado: ' + CALIB_SEL);
-      // marcar chip
       document.querySelectorAll('.chip').forEach(c=>{ if(c.dataset.name===CALIB_SEL){ c.classList.add('done'); c.classList.remove('calSel'); }});
       CALIB_SEL=null;
     }
@@ -530,7 +525,7 @@ btnCalibClear.addEventListener('click', ()=>{
 
 /* ================== Modelo ================== */
 async function loadModel(){
-  const url = MAP[kind] + '#' + Date.now(); // anti-cache
+  const url = MAP[kind] + '#' + Date.now();
   modelEl.removeAttribute('gltf-model');
   modelEl.object3D.position.set(0,0,0);
   modelEl.object3D.rotation.set(0,0,0);
@@ -579,7 +574,6 @@ modeVegetalBtn.onclick = ()=> setMode('vegetal');
 
 /* Reiniciar */
 btnReset.onclick = ()=> resetAll();
-
 function clearPlaced(){
   placedLabels.forEach(L=> L.el.parentNode && L.el.parentNode.removeChild(L.el));
   placedLabels = [];
@@ -587,9 +581,7 @@ function clearPlaced(){
 
 /* ================== Inicialización y reset ================== */
 function resetAll(){
-  // refrescar TARGETS (por si calibraste)
   TARGETS = { animal:getTargets('animal'), vegetal:getTargets('vegetal') };
-
   resetScore(); updateScore();
   renderChipList();
   clearTargetDots(); makeTargetDots();
@@ -600,6 +592,8 @@ modelEl.addEventListener('model-loaded', ()=>{ normalizeAndFrame(); });
 modelEl.addEventListener('model-error', e=>{ alert('No se pudo cargar el modelo. Revisa la ruta del GLB.'); console.error(e.detail); });
 
 (function init(){
+  const initKind = (new URLSearchParams(location.search).get('m')==='vegetal') ? 'vegetal' : 'animal';
+  kind = initKind;
   modeAnimalBtn.classList.toggle('active', kind==='animal');
   modeVegetalBtn.classList.toggle('active', kind==='vegetal');
   resetAll();
@@ -607,4 +601,3 @@ modelEl.addEventListener('model-error', e=>{ alert('No se pudo cargar el modelo.
 </script>
 </body>
 </html>
-
