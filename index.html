@@ -32,7 +32,7 @@
   .topbar{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0 8px}
   .brand{display:flex; align-items:center; gap:10px}
   .brand .logo{width:36px;height:36px;border-radius:10px; background: radial-gradient(16px 16px at 30% 30%, #39ff14 0%, transparent 60%), #0d1420; border:1px solid #25415a}
-  .right{display:flex; gap:8px; align-items:center}
+  .right{display:flex; gap:8px; align-items:center; position:relative}
 
   /* Botones */
   .btn{
@@ -46,6 +46,23 @@
   .btn.accent:hover{filter:saturate(1.1) brightness(1.02)}
   .btn.ghost{background:transparent;border-color:#39536d}
   .btn.active{background:rgba(60,201,255,.15); color:#e7f7ff; border-color:var(--accent)}
+
+  /* Dropdown Trivia */
+  .dropdown{position:relative}
+  .dropdown .menu{
+    position:absolute; right:0; top:110%;
+    min-width:240px; padding:8px;
+    border:1px solid var(--line); border-radius:12px;
+    background:linear-gradient(180deg,#0b0f16,#0a0d13);
+    box-shadow:var(--shadow);
+    display:none; z-index:20;
+  }
+  .dropdown.open .menu{display:block}
+  .dropdown .menu a{
+    display:block; padding:8px 10px; border-radius:10px; border:1px solid #2a3a4e; margin:6px 0;
+    color:#e8f7ff; background:linear-gradient(180deg,#132132,#0d1623); font-weight:700;
+  }
+  .dropdown .menu a:hover{background:linear-gradient(180deg,#18314a,#0f1a29)}
 
   /* Hero */
   .hero{display:grid; grid-template-columns:1.2fr .8fr; gap:20px; align-items:center; padding:18px 0 8px}
@@ -101,16 +118,25 @@
           <div id="t_site_sub" style="font-size:13px;color:var(--muted)">Célula Animal y Vegetal en 3D y RA</div>
         </div>
       </div>
+
       <div class="right" aria-label="Acciones">
        
-      
-         <!-- Botones idioma -->
-          <a class="btn ghost" href="./quiz.html" id="btnTrivia"><span id="t_trivia">Trivia</span></a>
-        <!-- Botón Ayuda -->
-          <a class="btn ghost" href="./help.html"><span id="t_help">Ayuda</span></a>
+        <!-- Botón Trivia con menú -->
+        <div class="dropdown" id="triviaDropdown">
+          <button class="btn ghost" id="btnTrivia" aria-haspopup="true" aria-expanded="false">
+            <span id="t_trivia">Trivia</span> ▾
+          </button>
+          <div class="menu" role="menu" aria-label="Menú Trivia">
+            <a role="menuitem" href="./quiz_labels.html?m=animal" id="t_trivia_animal">Trivia Célula Animal</a>
+            <a role="menuitem" href="./quiz_labels.html?m=vegetal" id="t_trivia_veg">Trivia Célula Vegetal</a>
+          </div>
+        </div>
+        <a class="btn" href="./quiz_mcq.html">Trivia de alternativas</a>
+         <!-- Botón Ayuda -->
+        <a class="btn ghost" href="./help.html" id="btnHelp"><span id="t_help">Ayuda</span></a>
         <!-- Botones idioma -->
-          <button class="btn" id="langES">ES</button>
-          <button class="btn" id="langEN">EN</button>
+        <button class="btn" id="langES">ES</button>
+        <button class="btn" id="langEN">EN</button>
       </div>
     </div>
 
@@ -133,7 +159,7 @@
             <li id="t_point1">Hotspots con nombre y función</li>
             <li id="t_point2">Resaltado de diferencias</li>
             <li id="t_point3">Auto-rotación, centrar y zoom</li>
-            <li id="t_point4">Modo Realidad Aumentada con marcador HIRO</li>
+            <li id="t_point4">Modo Realidad Aunmentada con marcador HIRO</li>
           </ul>
           <div class="chips">
             <span class="chip">3D</span>
@@ -179,7 +205,7 @@
         <div class="content">
           <h3 class="title" id="t_veg_title">Célula Vegetal</h3>
           <p class="desc" id="t_veg_desc">Diferenciales: pared celular, cloroplastos y gran vacuola central.</p>
-        <div class="chips">
+          <div class="chips">
             <span class="chip diff">Pared celular</span>
             <span class="chip diff">Cloroplastos</span>
             <span class="chip">Aparato de Golgi</span>
@@ -227,14 +253,16 @@ const links = {
   tags_animal: './viewer_hotspots.html?m=animal',
   tags_veg: './viewer_hotspots.html?m=vegetal',
   ra_animal: './arjs-demo/animal_glb.html?v=2&m=animal',
-  ra_veg: './arjs-demo/vegetal_glb.html?v=2&m=vegetal'
+  ra_veg: './arjs-demo/vegetal_glb.html?v=2&m=vegetal',
+  trivia_animal: './quiz_labels.html?m=animal',
+  trivia_veg: './quiz_labels.html?m=vegetal'
 };
 
 /* ========= QR generator ========= */
 function makeQR(canvasId, text){
   const el = document.getElementById(canvasId);
   if (!el) return;
-  const qr = new QRious({
+  new QRious({
     element: el,
     value: location.origin + location.pathname.replace(/index\.html?$/,'') + text.replace(/^\.\//,'/'),
     size: 512, background: 'white', foreground: '#0b1a2b', level: 'H'
@@ -249,6 +277,9 @@ const i18n = {
     t_site: "Realidad Virtual y Realidad Aumentada - Biología.",
     t_site_sub: "Célula Animal y Vegetal en 3D y RA",
     t_help: "Ayuda",
+    t_trivia: "Trivia",
+    t_trivia_animal: "Trivia Célula Animal",
+    t_trivia_veg: "Trivia Célula Vegetal",
     t_hero_title: "Explora la célula en 3D y Realidad Aumentada",
     t_hero_sub: "Elige Célula Animal o Vegetal, mira sus componentes, aprende sus funciones y compárala con diferencias clave.",
     t_badge: "Educativo",
@@ -277,6 +308,9 @@ const i18n = {
     t_site: "Virtual Reality and Augmented Reality — Biology.",
     t_site_sub: "Animal and Plant Cell in 3D & AR",
     t_help: "Help",
+    t_trivia: "Trivia",
+    t_trivia_animal: "Animal Cell Trivia",
+    t_trivia_veg: "Plant Cell Trivia",
     t_hero_title: "Explore the Cell in 3D and Augmented Reality",
     t_hero_sub: "Choose Animal or Plant Cell, see their components, learn their functions, and compare key differences.",
     t_badge: "Educational",
@@ -325,6 +359,42 @@ document.getElementById('ctaAnimal').href = links.simple_animal;
 document.getElementById('ctaVegetal').href = links.simple_veg;
 const btnEtiq = document.getElementById('ctaEtiquetas');
 if (btnEtiq) btnEtiq.href = links.tags_animal;
+
+/* ========= Dropdown Trivia ========= */
+(function(){
+  const dd = document.getElementById('triviaDropdown');
+  const btn = document.getElementById('btnTrivia');
+  if(!dd || !btn) return;
+  const menu = dd.querySelector('.menu');
+
+  function close(){
+    dd.classList.remove('open');
+    btn.setAttribute('aria-expanded','false');
+  }
+  function open(){
+    dd.classList.add('open');
+    btn.setAttribute('aria-expanded','true');
+  }
+
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    dd.classList.contains('open') ? close() : open();
+  });
+
+  // cierre por click afuera
+  document.addEventListener('click', (e)=>{
+    if(!dd.contains(e.target)) close();
+  });
+
+  // teclado: ESC cierra
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape') close();
+  });
+
+  // set links (por si cambias rutas)
+  menu.querySelector('a[href*="animal"]').href = links.trivia_animal;
+  menu.querySelector('a[href*="vegetal"]').href = links.trivia_veg;
+})();
 </script>
 </body>
 </html>
