@@ -5,8 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
 <title>Trivia de Alternativas — Célula Animal y Vegetal</title>
 <link rel="icon" href="./assets/img/favicon.png">
-<!-- EmailJS (opcional, para enviar resultados) -->
+
+<!-- EmailJS (para enviar resultados) -->
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<!-- html2pdf (para generar PDF adjunto) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+  integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
 <style>
   :root{
     --bg:#08090c; --panel:#0f1117; --line:#263040; --text:#f5f7fb; --muted:#c9d5ea;
@@ -42,13 +48,13 @@
   .btn.good{border-color:#1e6f29; background:linear-gradient(180deg,#6adf7a,#39ff14); color:#041007}
   .btn.warn{border-color:#7a5a1f; background:linear-gradient(180deg,#d4ad57,#ffd166); color:#231a00}
 
-  .result{display:none; border:1px solid var(--line); border-radius:12px; padding:12px; margin-top:10px}
+  .result{display:none; border:1px solid var(--line); border-radius:12px; padding:12px; margin-top:10px; background:#fff; color:#000}
   .kpi{display:flex; gap:10px; flex-wrap:wrap}
-  .pill{padding:6px 10px;border-radius:999px;border:1px solid #2d9c2d;color:#c5ffb8}
-  .pill.bad{border-color:#b23b4a;color:#ffbdc7}
-  .sumList{margin:10px 0 0; padding-left:18px; color:#cfe6ff}
-  .sumList li.correct{color:#b7ffb7}
-  .sumList li.wrong{color:#ffb0be}
+  .pill{padding:6px 10px;border-radius:999px;border:1px solid #2d9c2d;color:#1a5a14;background:#eaffea}
+  .pill.bad{border-color:#b23b4a;color:#6b111b;background:#ffe9ec}
+  .sumList{margin:10px 0 0; padding-left:18px; color:#0b0f16}
+  .sumList li.correct{color:#0d6520}
+  .sumList li.wrong{color:#7a1020}
 
   @media (max-width:900px){ .formRow{grid-template-columns:1fr} }
   @media print{
@@ -98,15 +104,23 @@
 
 <script>
 /* ===========================
-   CONFIGURA AQUÍ (opcional)
+   CONFIGURA AQUÍ
    =========================== */
-// URL pública de tu Google Forms (guarda en localStorage para no editar el archivo)
+// URL pública de tu Google Forms (opcional, se guarda en localStorage)
 const FORMS_URL = localStorage.getItem('FORMS_URL') || '';
-// EmailJS (opcional). Crea cuenta en emailjs.com y pega tus credenciales:
+
+// EmailJS (OBLIGATORIO para enviar):
+// 1) Crea cuenta en emailjs.com
+// 2) Obtén PUBLIC_KEY (Account), SERVICE_ID (Email Services) y TEMPLATE_ID (Email Templates)
+// 3) En tu plantilla, crea un "Variable Attachment" con:
+//    - Parameter name: pdf_content
+//    - Filename: Resultados_{{alumno}}.pdf (o como prefieras)
+//    - Content type: application/pdf
 const EMAILJS_PUBLIC_KEY = '';   // ej: "U2AbC_xxxxxxxx"
 const EMAILJS_SERVICE_ID = '';   // ej: "service_abc123"
 const EMAILJS_TEMPLATE_ID = '';  // ej: "template_xyz789"
-// Correos destino:
+
+// Correos destino (puedes poner una lista):
 const REPORT_TO = ["franciscopinto@liceosannicolas.cl","belenacuna@liceosannicolas.cl"];
 
 /* ===========================
@@ -151,9 +165,7 @@ if (FORMS_URL) btnOpenForm.href = FORMS_URL; else btnOpenForm.href = '#';
   alApellido.value = localStorage.getItem('alApellido') || '';
   alCurso.value    = localStorage.getItem('alCurso')    || '';
 })();
-[alNombre,alApellido,alCurso].forEach(i=> i.addEventListener('change',()=>{
-  localStorage.setItem(i.id, i.value.trim());
-}));
+[alNombre,alApellido,alCurso].forEach(i=> i.addEventListener('change',()=> localStorage.setItem(i.id, i.value.trim())));
 
 function renderMCQ(){
   mcqList.innerHTML='';
@@ -210,47 +222,99 @@ btnReset.onclick = ()=>{ renderMCQ(); window._lastReport=null; window.scrollTo({
 btnPrint.onclick = ()=> window.print();
 
 /* ===========================
-   EMAILJS (opcional)
+   EMAIL + PDF
    =========================== */
 function ensureEmailJS(){
   if(!EMAILJS_PUBLIC_KEY || !EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID){
-    alert('Para enviar por correo, configura EMAILJS_PUBLIC_KEY, SERVICE_ID y TEMPLATE_ID en el código.');
+    alert('Configura EMAILJS_PUBLIC_KEY, SERVICE_ID y TEMPLATE_ID antes de enviar.');
     return false;
   }
-  try{ emailjs.init(EMAILJS_PUBLIC_KEY); }catch(e){}
+  try { emailjs.init(EMAILJS_PUBLIC_KEY); } catch(e) {}
   return true;
 }
+
+// Genera un PDF (data URI base64) a partir del resumen visible
+async function generarPDFasDataURI() {
+  const box = document.getElementById('resultBox');
+  if (!box || box.style.display === 'none') {
+    throw new Error('Primero presiona “Terminar y corregir” para generar el resumen.');
+  }
+
+  // Clon "limpio" del resumen para el PDF
+  const clone = box.cloneNode(true);
+  const header = document.createElement('h2');
+  header.textContent = 'Resultados Trivia — Célula Animal y Vegetal';
+  header.style.margin = '0 0 8px 0';
+  header.style.fontFamily = 'system-ui, Segoe UI, Roboto, Arial, sans-serif';
+  header.style.fontWeight = '800';
+
+  const meta = document.createElement('p');
+  meta.style.margin = '4px 0 12px 0';
+  meta.style.fontSize = '13px';
+  meta.textContent = window._lastReport
+    ? `Estudiante: ${_lastReport.nombre} ${_lastReport.apellido} — Curso: ${_lastReport.curso} — Fecha: ${new Date().toLocaleString()}`
+    : '';
+
+  const wrap = document.createElement('div');
+  wrap.style.padding = '12px';
+  wrap.style.color = '#000';
+  wrap.style.background = '#fff';
+  wrap.appendChild(header);
+  wrap.appendChild(meta);
+  wrap.appendChild(clone);
+
+  const opt = {
+    margin:       10,
+    filename:     'Resultados.pdf',
+    image:        { type: 'jpeg', quality: 0.96 },
+    html2canvas:  { scale: 2, useCORS: true },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  const dataUri = await html2pdf().set(opt).from(wrap).toPdf().output('datauristring');
+  return dataUri; // "data:application/pdf;base64,JVBERi0xLjcK..."
+}
+
 btnSend.onclick = async ()=>{
-  if(!window._lastReport){ alert('Primero termina y corrige la trivia.'); return; }
-  if(!ensureEmailJS()) return;
+  if (!window._lastReport) { alert('Primero termina y corrige la trivia.'); return; }
+  if (!ensureEmailJS()) return;
 
-  const r = window._lastReport;
-  const bodyLines = [
-    `Estudiante: ${r.nombre} ${r.apellido}`,
-    `Curso: ${r.curso}`,
-    `Fecha: ${new Date().toLocaleString()}`,
-    `Puntaje: ${r.scorePct}% (✔ ${r.correct} · ✘ ${r.wrong})`,
-    ``,
-    `Detalle:`,
-    ...r.detail.map(d=>`${d.i}. ${d.q}\n - Tu respuesta: ${d.choiceText}\n - Correcta: ${d.correct}\n`)
-  ];
-  const body = bodyLines.join('\n');
+  try {
+    const pdfDataUri = await generarPDFasDataURI();
 
-  try{
+    const r = window._lastReport;
+    const alumno = `${r.nombre} ${r.apellido}`.trim();
+    const curso  = r.curso;
+    const asunto = `Resultados Trivia Células — ${alumno} (${curso})`;
+    const textoPlano = [
+      `Estudiante: ${alumno}`,
+      `Curso: ${curso}`,
+      `Fecha: ${new Date().toLocaleString()}`,
+      `Puntaje: ${r.scorePct}% (✔ ${r.correct} · ✘ ${r.wrong})`,
+      ``,
+      `Detalle en PDF adjunto.`
+    ].join('\n');
+
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-      to: REPORT_TO.join(','),
-      subject: `Resultados Trivia Células — ${r.nombre} ${r.apellido} (${r.curso})`,
-      message: body
+      to: (Array.isArray(REPORT_TO) ? REPORT_TO.join(',') : REPORT_TO),
+      subject: asunto,
+      message: textoPlano,
+      alumno: alumno,
+      curso: curso,
+      puntaje: r.scorePct,
+      // Debe coincidir con el "Parameter name" del Variable Attachment en tu plantilla
+      pdf_content: pdfDataUri
     });
-    alert('¡Enviado! Los resultados fueron enviados a los profesores.');
-  }catch(err){
+
+    alert('¡Enviado! Los resultados fueron enviados por correo con el PDF adjunto.');
+  } catch (err) {
     console.error(err);
-    alert('No se pudo enviar por EmailJS. Revisa tus credenciales.');
+    alert('No se pudo enviar el correo. Revisa claves de EmailJS o conexión.');
   }
 };
 
 /* ===========================
-   BONUS: setear URL de Forms vía prompt
+   BONUS: setear URL de Forms vía click derecho
    =========================== */
 document.getElementById('btnOpenForm').addEventListener('contextmenu',(e)=>{
   e.preventDefault();
