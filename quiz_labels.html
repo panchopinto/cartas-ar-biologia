@@ -6,7 +6,6 @@
 <title>Trivia — Célula Animal y Vegetal (Etiquetas 3D + Alternativas)</title>
 <link rel="icon" href="./assets/img/favicon.png">
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-<!-- EmailJS (opcional, para enviar resultados por correo) -->
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 <style>
   :root{
@@ -33,19 +32,23 @@
   .score{display:flex; align-items:center; justify-content:space-between; gap:8px; font-weight:800}
   .score .good{color:#b7ffb7} .score .bad{color:#ffb0be}
   .list{display:flex; flex-wrap:wrap; gap:8px}
-  .chip{padding:8px 10px; border-radius:999px; border:1px solid #3a4e66; color:#cfe6ff; font:700 13px system-ui; background:linear-gradient(180deg,#0f1b2a,#0a1320)}
+  .chip{padding:8px 10px; border-radius:999px; border:1px solid #3a4e66; color:#cfe6ff; font:700 13px system-ui; background:linear-gradient(180deg,#0f1b2a,#0a1320); cursor:pointer}
+  .chip.taken{opacity:.6; border-style:dashed}
+  .chip.done{opacity:.35; text-decoration:line-through}
   .hint{color:var(--muted); font-size:13px; margin:4px 0 0}
   .bottom{display:flex; align-items:center; justify-content:space-between; gap:8px}
   .legend{display:flex; gap:8px; flex-wrap:wrap; font-size:13px; color:var(--muted)}
   .dot{width:10px;height:10px;border-radius:999px;display:inline-block;vertical-align:middle;margin-right:6px}
   .ok{background:var(--good)} .ko{background:var(--bad)} .target{background:var(--target)}
+  .btn{cursor:pointer; border:1px solid #39536d; background:linear-gradient(180deg,#122033,#0d1623); color:#e8f7ff; font-weight:800; padding:8px 12px; border-radius:12px}
+  .btn.primary{border-color:#2f93b7; background:linear-gradient(180deg,var(--accent),#6fe0ff); color:#0b1020}
+  .btn.warn{border-color:#7a5a1f; background:linear-gradient(180deg,#d4ad57,#ffd166); color:#231a00}
 
   /* Área 3D */
   .stage{position:relative; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden}
   a-scene{position:absolute; inset:0}
   .hud{ position:absolute; left:10px; top:10px; display:flex; gap:8px; z-index:5; }
   .hud .btn{padding:6px 10px}
-
   .toast{
     position:absolute; right:12px; top:12px; z-index:6; padding:8px 12px; border-radius:12px;
     border:1px solid #2a3a4e; background:linear-gradient(180deg,#122033,#0d1623); color:#e8f7ff; font-weight:800; display:none
@@ -53,18 +56,8 @@
   .toast.show{display:block; animation:pop .25s ease}
   @keyframes pop{from{transform:translateY(-6px);opacity:0}to{transform:translateY(0);opacity:1}}
 
-  .btn{
-    cursor:pointer; border:1px solid #39536d; background:linear-gradient(180deg,#122033,#0d1623);
-    color:#e8f7ff; font-weight:800; padding:8px 12px; border-radius:12px
-  }
-  .btn.primary{border-color:#2f93b7; background:linear-gradient(180deg,var(--accent),#6fe0ff); color:#0b1020}
-  .btn.warn{border-color:#7a5a1f; background:linear-gradient(180deg,#d4ad57,#ffd166); color:#231a00}
-
   /* Etiquetas 3D */
   .label3d{pointer-events:auto}
-
-  /* ¡Clave para gestos táctiles! */
-  a-scene, canvas, .a-canvas{ touch-action:none; }
 
   /* MCQ (alternativas) */
   .mcqWrap{display:none; height:100%}
@@ -118,7 +111,7 @@
     <div id="chipsPanel" class="panel">
       <div style="font-weight:800;margin-bottom:6px">Etiquetas a ubicar</div>
       <div id="chips" class="list" aria-live="polite"></div>
-      <div class="hint">Tip: rota con 1 dedo / mouse, pellizca para zoom, mueve con 2 dedos o Shift+arrastre. Toca una etiqueta para “tomarla” y ubícala sobre la célula.</div>
+      <div class="hint">Tip: rota con mouse (arrastre), zoom con rueda, pan con Shift+arrastre. Toca un chip para “tomarlo” y colócalo sobre la célula.</div>
     </div>
 
     <!-- Panel inferior (solo arrastrar) -->
@@ -152,14 +145,11 @@
             <input id="alApellido" placeholder="Apellido(s)" />
             <input id="alCurso"    placeholder="Curso (ej: 2°B)" />
           </div>
-
           <div id="mcqList"></div>
-
           <div style="display:flex;gap:8px;margin-top:10px">
             <button id="btnFinish" class="btn primary">Terminar y corregir</button>
             <button id="btnMCQReset" class="btn">Reiniciar quiz</button>
           </div>
-
           <div id="mcqResult" class="resultBox" style="display:none">
             <div class="kpi">
               <span id="kpiCorrect" class="pill">✔ Correctas: 0</span>
@@ -217,20 +207,17 @@
 </div>
 
 <script>
-/* ==========================================================
-   CONFIGURACIÓN BÁSICA (edita aquí)
-   ========================================================== */
-const FORMS_URL = localStorage.getItem('FORMS_URL') || ''; // pega la URL de tu Google Forms
-// EmailJS (opcional). Crea cuenta gratis y completa estos 3 valores:
-const EMAILJS_PUBLIC_KEY = '';   // ej: "U2AbC_xxxxxxxx"
-const EMAILJS_SERVICE_ID = '';   // ej: "service_abc123"
-const EMAILJS_TEMPLATE_ID = '';  // ej: "template_xyz789"
-// Correos destino:
+/* ========= FLAGS GLOBALES ========= */
+let IS_DRAGGING_LABEL = false;  // pausa los controles mientras se “toma” una etiqueta
+
+/* ========= CONFIG ========= */
+const FORMS_URL = localStorage.getItem('FORMS_URL') || '';
+const EMAILJS_PUBLIC_KEY = '';
+const EMAILJS_SERVICE_ID = '';
+const EMAILJS_TEMPLATE_ID = '';
 const REPORT_TO = ["franciscopinto@liceosannicolas.cl","belenacuna@liceosannicolas.cl"];
 
-/* ==========================================================
-   TABS: Arrastrar / MCQ / Formulario
-   ========================================================== */
+/* ========= UI (tabs) ========= */
 const tabDrag  = document.getElementById('tabDrag');
 const tabMCQ   = document.getElementById('tabMCQ');
 const tabForm  = document.getElementById('tabForm');
@@ -252,50 +239,53 @@ function setTab(which){
   tabMCQ.classList.toggle('active', mcq);
   tabForm.classList.toggle('active', form);
 
-  // mostrar/ocultar secciones
-  stageWrap.style.display = drag ? 'block' : 'none';
-  scoreDrag.style.display = drag ? 'flex' : 'none';
-  chipsPanel.style.display= drag ? 'block' : 'none';
-  bottomDrag.style.display= drag ? 'flex' : 'none';
-
+  stageWrap.style.display   = drag ? 'block' : 'none';
+  scoreDrag.style.display   = drag ? 'flex'  : 'none';
+  chipsPanel.style.display  = drag ? 'block' : 'none';
+  bottomDrag.style.display  = drag ? 'flex'  : 'none';
   mcqWrap.classList.toggle('show', mcq);
-  formWrap.style.display = form ? 'block' : 'none';
+  formWrap.style.display    = form ? 'block' : 'none';
 }
 tabDrag.onclick = ()=> setTab('drag');
 tabMCQ.onclick  = ()=> setTab('mcq');
 tabForm.onclick = ()=> setTab('form');
 
-// Forms URL
 if (FORMS_URL) btnOpenForm.href = FORMS_URL; else btnOpenForm.href = '#';
 btnSetForm.onclick = ()=>{
   const u = prompt('Pega la URL pública de tu Google Forms:', FORMS_URL || '');
-  if (u!==null){
-    localStorage.setItem('FORMS_URL', u.trim());
-    location.reload();
-  }
+  if (u!==null){ localStorage.setItem('FORMS_URL', u.trim()); location.reload(); }
 };
 
-/* ==========================================================
-   GESTOS / 3D
-   ========================================================== */
+/* ========= GESTOS / CONTROLES ========= */
 AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},minScale:{default:0.05},maxScale:{default:3.0}},
-  init:function(){this.oneFinger=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
-    t.addEventListener('touchstart',e=>{if(e.touches.length===1){this.oneFinger=true;this.lastX=e.touches[0].clientX;}},{passive:false});
-    t.addEventListener('touchmove',e=>{if(this.oneFinger&&e.touches.length===1){const dx=e.touches[0].clientX-this.lastX;this.lastX=e.touches[0].clientX;
-      this.el.object3D.rotation.y-=(dx*this.data.rotFactor)*Math.PI/180;e.preventDefault();}},{passive:false});
-    t.addEventListener('touchend',()=>{this.oneFinger=false;},{passive:false});
-    t.addEventListener('touchcancel',()=>{this.oneFinger=false;},{passive:false});
-    t.addEventListener('wheel',e=>{e.preventDefault();const dir=e.deltaY>0?0.9:1.1;const s=this.el.object3D.scale.x*dir;
-      const cl=THREE.MathUtils.clamp(s,this.data.min,this.data.max);this.el.object3D.scale.set(cl,cl,cl);},{passive:false});
-    t.addEventListener('contextmenu',(e)=>e.preventDefault());
-  }; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
+  init:function(){
+    this.oneFinger=false; this.lastX=0;
+    const s=this.el.sceneEl; const add=()=>{const t=s.canvas||s;
+      t.addEventListener('touchstart',e=>{ if(e.touches.length===1){ this.oneFinger=true; this.lastX=e.touches[0].clientX; } },{passive:false});
+      t.addEventListener('touchmove',e=>{ if(this.oneFinger&&e.touches.length===1){ const dx=e.touches[0].clientX-this.lastX; this.lastX=e.touches[0].clientX;
+        this.el.object3D.rotation.y-= (dx*this.data.rotFactor)*Math.PI/180; e.preventDefault(); } },{passive:false});
+      t.addEventListener('touchend',()=>{ this.oneFinger=false; },{passive:false});
+      t.addEventListener('touchcancel',()=>{ this.oneFinger=false; },{passive:false});
+      t.addEventListener('wheel',e=>{ e.preventDefault(); const dir=e.deltaY>0?0.9:1.1; const s=this.el.object3D.scale.x*dir;
+        const cl=THREE.MathUtils.clamp(s,this.data.min,this.data.max); this.el.object3D.scale.set(cl,cl,cl); },{passive:false});
+      t.addEventListener('contextmenu',(e)=>e.preventDefault());
+    }; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
+}});
 
 AFRAME.registerComponent('mouse-drag-rotate',{schema:{factor:{default:0.45}},
-  init:function(){this.drag=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
-    t.addEventListener('mousedown',e=>{if(e.button===0){this.drag=true;this.lastX=e.clientX;}}); window.addEventListener('mouseup',()=>{this.drag=false;});
-    window.addEventListener('mousemove',e=>{ if(!this.drag) return; const dx=e.clientX-this.lastX; this.lastX=e.clientX;
-      this.el.object3D.rotation.y -= (dx*this.data.factor)*Math.PI/180; });
-  }; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
+  init:function(){
+    this.drag=false; this.lastX=0; const s=this.el.sceneEl;
+    const add=()=>{ const t=s.canvas||s;
+      t.addEventListener('mousedown',e=>{ if(IS_DRAGGING_LABEL) return;
+        if(e.button===0){ this.drag=true; this.lastX=e.clientX; }
+      });
+      window.addEventListener('mouseup',()=>{ this.drag=false; });
+      window.addEventListener('mousemove',e=>{ if(IS_DRAGGING_LABEL) return;
+        if(!this.drag) return; const dx=e.clientX-this.lastX; this.lastX=e.clientX;
+        this.el.object3D.rotation.y -= (dx*this.data.factor)*Math.PI/180;
+      });
+    }; s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
+}});
 
 AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:3.0},factor:{default:1},panFactor:{default:1}},
   init:function(){
@@ -305,7 +295,7 @@ AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:
     const dist=()=>{ const a=[...this.pointers.values()]; const dx=a[0].x-a[1].x, dy=a[0].y-a[1].y; return Math.hypot(dx,dy); };
     const worldPerPixel = ()=>{ const cam = s.camera; if(!cam || !s.canvas) return {x:0,y:0};
       const fov = (cam.fov||60)*Math.PI/180; const h = s.canvas.height || window.innerHeight;
-      const worldPerPixY = 2 * cam.position.length() * Math.tan(fov/2) / h; const worldPerPixX = worldPerPixY * cam.aspect; return {x:worldPerPixX, y:worldPerPixY}; };
+      const y = 2 * cam.position.length() * Math.tan(fov/2) / h; const x = y * cam.aspect; return {x,y}; };
     const onDown=(e)=>{ const c=s.canvas||s; c.setPointerCapture?.(e.pointerId); this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
       if(this.pointers.size===2){ this.active=true; this.startDist=dist(); this.startScale=this.el.object3D.scale.x; this.startCentroid=centroid(); this.startPos=this.el.object3D.position.clone(); } };
     const onMove=(e)=>{ if(!this.pointers.has(e.pointerId)) return; this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -319,32 +309,45 @@ AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:
       c.addEventListener('pointermove',onMove,{passive:false}); c.addEventListener('pointerup',onUp,{passive:false});
       c.addEventListener('pointercancel',onUp,{passive:false}); c.addEventListener('pointerout',onUp,{passive:false}); c.addEventListener('pointerleave',onUp,{passive:false}); };
     s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
-  }
-});
+}});
+
 AFRAME.registerComponent('mouse-pan',{schema:{panFactor:{default:1}},
   init:function(){
     const s=this.el.sceneEl; let down=false, start={x:0,y:0}, startPos=this.el.object3D.position.clone(), shift=false;
-    const worldPerPixel = ()=>{ const cam = s.camera; if(!cam || !s.canvas) return {x:0,y:0}; const fov = (cam.fov||60)*Math.PI/180;
-      const h = s.canvas.height || window.innerHeight; const y = 2 * cam.position.length() * Math.tan(fov/2) / h; const x = y * cam.aspect; return {x, y}; };
-    const onDown=(e)=>{ shift=e.shiftKey; if (e.button===1 || e.button===2 || (e.button===0 && shift)){ down=true; start={x:e.clientX,y:e.clientY}; startPos=this.el.object3D.position.clone(); e.preventDefault(); } };
-    const onMove=(e)=>{ if(!down) return; e.preventDefault(); const dx=e.clientX-start.x, dy=e.clientY-start.y; const wp=worldPerPixel();
-      const tx = dx * wp.x * this.data.panFactor; const ty = -dy * wp.y * this.data.panFactor; this.el.object3D.position.set(startPos.x + tx, startPos.y + ty, startPos.z); };
+    const worldPerPixel = ()=>{ const cam = s.camera; if(!cam || !s.canvas) return {x:0,y:0}; const fov=(cam.fov||60)*Math.PI/180;
+      const h=s.canvas.height||window.innerHeight; const y=2*cam.position.length()*Math.tan(fov/2)/h; const x=y*cam.aspect; return {x,y}; };
+    const onDown=(e)=>{ if(IS_DRAGGING_LABEL) return;
+      shift=e.shiftKey; if (e.button===1 || e.button===2 || (e.button===0 && shift)){
+        down=true; start={x:e.clientX,y:e.clientY}; startPos=this.el.object3D.position.clone(); e.preventDefault();
+      }
+    };
+    const onMove=(e)=>{ if(IS_DRAGGING_LABEL) return;
+      if(!down) return; e.preventDefault(); const dx=e.clientX-start.x, dy=e.clientY-start.y; const wp=worldPerPixel();
+      const tx = dx*wp.x*this.data.panFactor; const ty = -dy*wp.y*this.data.panFactor;
+      this.el.object3D.position.set(startPos.x+tx, startPos.y+ty, startPos.z);
+    };
     const onUp=()=>{ down=false; };
     const add=()=>{ const c=s.canvas||s; c.addEventListener('mousedown',onDown,{passive:false}); window.addEventListener('mousemove',onMove,{passive:false});
       window.addEventListener('mouseup',onUp,{passive:false}); c.addEventListener('contextmenu',(e)=>e.preventDefault()); };
     s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
-  }
-});
-AFRAME.registerComponent('tap-reset',{schema:{scale:{default:1},rotYdeg:{default:0}},init:function(){this.lastTap=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
-  t.addEventListener('touchend',()=>{const n=performance.now();if(n-this.lastTap<300){const sc=this.data.scale;this.el.object3D.scale.set(sc,sc,sc);
-    this.el.object3D.rotation.y=THREE.MathUtils.degToRad(this.data.rotYdeg);}this.lastTap=n;},{passive:true});};s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});}});
-AFRAME.registerComponent('auto-rotator',{schema:{speed:{default:18},enabled:{default:false}},tick:function(t,dt){ if(!this.data.enabled)return; this.el.object3D.rotation.y+=THREE.MathUtils.degToRad(this.data.speed)*(dt/1000); }});
-AFRAME.registerComponent('billboard',{tick:function(){const cam=this.el.sceneEl&&this.el.sceneEl.camera;if(!cam)return;this.el.object3D.quaternion.copy(cam.el.object3D.quaternion);}});
+}});
 
-/* ==========================================================
-   DATOS 3D
-   ========================================================== */
-const MAP={
+AFRAME.registerComponent('tap-reset',{schema:{scale:{default:1},rotYdeg:{default:0}},
+  init:function(){ this.lastTap=0; const s=this.el.sceneEl; const add=()=>{ const t=s.canvas||s;
+    t.addEventListener('touchend',()=>{ const n=performance.now(); if(n-this.lastTap<300){
+      const sc=this.data.scale; this.el.object3D.scale.set(sc,sc,sc);
+      this.el.object3D.rotation.y=THREE.MathUtils.degToRad(this.data.rotYdeg);
+    } this.lastTap=n; },{passive:true}); };
+    s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
+}});
+
+AFRAME.registerComponent('auto-rotator',{schema:{speed:{default:18},enabled:{default:false}},
+  tick:function(t,dt){ if(!this.data.enabled)return; this.el.object3D.rotation.y+=THREE.MathUtils.degToRad(this.data.speed)*(dt/1000); }
+});
+AFRAME.registerComponent('billboard',{tick:function(){ const cam=this.el.sceneEl&&this.el.sceneEl.camera; if(!cam)return; this.el.object3D.quaternion.copy(cam.el.object3D.quaternion); }});
+
+/* ========= DATOS ========= */
+const MAP={ 
   animal:{normal:"./assets/models/animal.glb",draco:"./assets/models/animal_draco.glb"},
   vegetal:{normal:"./assets/models/vegetal.glb",draco:"./assets/models/vegetal_draco.glb"}
 };
@@ -367,6 +370,7 @@ const TARGETS={
   ]
 };
 
+/* ========= ESTADO / UI ========= */
 const modeAnimalBtn = document.getElementById('modeAnimal');
 const modeVegetalBtn = document.getElementById('modeVegetal');
 const chipsBox = document.getElementById('chips');
@@ -375,20 +379,23 @@ const progressMini = document.getElementById('progressMini'); const totalEl = do
 const toast = document.getElementById('toast');
 const btnAuto = document.getElementById('btnAuto'); const btnCenter = document.getElementById('btnCenter'); const btnResetView = document.getElementById('btnResetView');
 const btnReset = document.getElementById('btnReset'); const btnAyuda = document.getElementById('btnAyuda');
+const modelEl = document.getElementById('cellModel'); const scene = document.querySelector('a-scene');
 
-const modelEl = document.getElementById('cellModel');
-const scene = document.querySelector('a-scene');
-let kind='animal', done=new Set(), wrong=0;
+const QP = new URLSearchParams(location.search);
+let kind = (QP.get('m')||'animal').toLowerCase()==='vegetal' ? 'vegetal' : 'animal';
+
+let done=new Set(), wrong=0;
 let DEFAULT_SCALE=1.0;
-let targetDots=[], labels=[];
+let targetDots=[];
+let activeLabel=null; // {name, el, target, chipEl}
 
-/* Utils */
+/* ========= UTILS ========= */
 function showToast(msg){ toast.textContent=msg; toast.classList.add('show'); clearTimeout(showToast._t); showToast._t=setTimeout(()=>toast.classList.remove('show'),1000); }
 function resetScore(){ done.clear(); wrong=0; updateScore(); }
 function updateScore(){ okEl.textContent = done.size; koEl.textContent = wrong; progressMini.innerHTML = `${done.size} / <span id="total">${TARGETS[kind].length}</span>`; }
 function distance(a,b){ const dx=a.x-b[0], dy=a.y-b[1], dz=a.z-b[2]; return Math.hypot(dx,dy,dz); }
 
-/* Normalizar + encuadrar */
+/* ========= CÁMARA / ENCUADRE ========= */
 function frameCameraOnly(){
   const THREE = window.THREE; const cam = scene.camera; if(!cam) return;
   const box = new THREE.Box3().setFromObject(modelEl.object3D);
@@ -413,7 +420,7 @@ function normalizeAndFrame(){
   frameCameraOnly();
 }
 
-/* Objetivos ayuda */
+/* ========= AYUDA (puntos objetivo) ========= */
 function clearTargetDots(){ targetDots.forEach(e=>e.parentNode && e.parentNode.removeChild(e)); targetDots=[]; }
 function makeTargetDots(){
   clearTargetDots();
@@ -427,111 +434,118 @@ function makeTargetDots(){
     targetDots.push(dot);
   });
 }
+let ayudaOn=false;
+btnAyuda.addEventListener('click', ()=>{ ayudaOn=!ayudaOn; targetDots.forEach(d=> d.setAttribute('visible', ayudaOn)); btnAyuda.classList.toggle('active', ayudaOn); });
 
-/* Etiquetas 3D */
-function clearLabels(){ labels.forEach(L=>L.el.parentNode && L.el.parentNode.removeChild(L.el)); labels=[]; }
-function labelMaterial(baseColor='#0b1a2b'){ return `color:${baseColor}; opacity:0.92; side:double; metalness:0; roughness:1;`; }
-function createLabel(name, idx, total){
+/* ========= CHIPS (panel izquierdo) ========= */
+function renderChipList(){
+  chipsBox.innerHTML='';
+  const names = TARGETS[kind].map(t=>t.name).sort((a,b)=>a.localeCompare(b));
+  names.forEach(name=>{
+    const el=document.createElement('div'); el.className='chip'; el.textContent=name;
+    el.addEventListener('click',()=>pickupLabel(name, el));
+    chipsBox.appendChild(el);
+  });
+  totalEl.textContent = TARGETS[kind].length;
+}
+
+/* ========= LABEL 3D desde chip ========= */
+function labelMaterial(){ return `color:#0b1a2b; opacity:0.92; side:double; metalness:0; roughness:1;`; }
+function createLabelEntity(name){
   const wrap=document.createElement('a-entity'); wrap.classList.add('label3d'); wrap.setAttribute('billboard','');
   const bg=document.createElement('a-entity'); bg.setAttribute('geometry','primitive: plane; width: 0.32; height: 0.10'); bg.setAttribute('material', labelMaterial());
   const txt=document.createElement('a-text'); txt.setAttribute('value',name); txt.setAttribute('color','#cfe6ff'); txt.setAttribute('align','center'); txt.setAttribute('width','1.2'); txt.setAttribute('baseline','center');
   wrap.appendChild(bg); wrap.appendChild(txt);
-  const r=0.42, ang = (idx/total)*Math.PI*1.4 - Math.PI*0.7;
-  wrap.setAttribute('position', `${Math.cos(ang)*r} ${0.18 - (idx%3)*0.18} ${Math.sin(ang)*r}`);
-  const target = TARGETS[kind].find(t=>t.name===name);
-  const L={name, el:wrap, target:target.pos, locked:false, home:wrap.object3D.position.clone()};
-  labels.push(L);
-  wrap.setAttribute('draggable-label', `name:${name}`);
-  modelEl.appendChild(wrap);
+  wrap.object3D.position.set(0,0.22,0); // arranque “en el aire”
+  return wrap;
 }
 
-/* <- ESTA FUNCIÓN FALTABA EN TU ARCHIVO Y ROMPÍA TODO */
-function spawnLabels(){
-  clearLabels();
-  const names = TARGETS[kind].map(t=>t.name);
-  names.forEach((n,i)=> createLabel(n, i, names.length));
+function worldPointFromClient(x,y){
+  const raycaster = worldPointFromClient._rc || (worldPointFromClient._rc={ray:new THREE.Raycaster(), v:new THREE.Vector2()});
+  const r = raycaster.ray, v = raycaster.v; const rc = worldPointFromClient._rc;
+  const c=scene.canvas||scene; const rect=c.getBoundingClientRect();
+  const nx=((x-rect.left)/rect.width)*2-1; const ny= -((y-rect.top)/rect.height)*2+1;
+  rc.v.set(nx,ny); rc.ray.setFromCamera(rc.v, scene.camera);
+  const mesh = modelEl.getObject3D('mesh'); if(!mesh) return null;
+  const ints = rc.ray.intersectObject ? rc.ray.intersectObject(mesh, true) : new THREE.Raycaster().intersectObject(mesh,true);
+  const rcast = new THREE.Raycaster(); rcast.setFromCamera(rc.v, scene.camera);
+  const hit = rcast.intersectObject(mesh, true);
+  return (hit && hit[0]) ? hit[0].point : null;
+}
+function toLocal(pWorld){ const m=modelEl.object3D; const p=pWorld.clone(); m.worldToLocal(p); return p; }
+
+function pickupLabel(name, chipEl){
+  if(done.has(name)) return; // ya correcta
+  // si ya hay una en mano, cancélala primero
+  if(activeLabel){ cancelPickup(); }
+  const tinfo = TARGETS[kind].find(t=>t.name===name);
+  const ent = createLabelEntity(name);
+  modelEl.appendChild(ent);
+  activeLabel = { name, el: ent, target: tinfo.pos, chipEl };
+  chipEl.classList.add('taken');
+  IS_DRAGGING_LABEL = true;
+
+  // seguir el puntero
+  const move = (x,y)=>{
+    const p = worldPointFromClient(x,y);
+    if(!p) return;
+    const local = toLocal(p);
+    ent.object3D.position.copy(local);
+  };
+  const onMouseMove = (e)=> move(e.clientX, e.clientY);
+  const onTouchMove = (e)=>{ if(e.touches&&e.touches[0]) move(e.touches[0].clientX, e.touches[0].clientY); };
+
+  // soltar
+  const drop = ()=>{
+    window.removeEventListener('mousemove', onMouseMove, {passive:false});
+    window.removeEventListener('touchmove', onTouchMove, {passive:false});
+    window.removeEventListener('mouseup', onMouseUp, {passive:false});
+    window.removeEventListener('touchend', onMouseUp, {passive:false});
+
+    const pos = ent.object3D.position; const tol = 0.10;
+    const ok = distance(pos, tinfo.pos) <= tol;
+    if(ok){
+      ent.object3D.position.set(tinfo.pos[0], tinfo.pos[1], tinfo.pos[2]);
+      colorizeOK(ent);
+      done.add(name); updateScore(); pingMark(tinfo.pos); showToast('¡Correcto!');
+      chipEl.classList.remove('taken'); chipEl.classList.add('done');
+      activeLabel = null; IS_DRAGGING_LABEL=false;
+      if(done.size === TARGETS[kind].length) showToast('¡Perfecto!');
+    }else{
+      shakeEntity(ent);
+      setTimeout(()=>{ ent.parentNode && ent.parentNode.removeChild(ent); },130);
+      wrong++; updateScore(); showToast('Intenta de nuevo');
+      chipEl.classList.remove('taken');
+      activeLabel = null; IS_DRAGGING_LABEL=false;
+    }
+  };
+  const onMouseUp = ()=> drop();
+
+  window.addEventListener('mousemove', onMouseMove, {passive:false});
+  window.addEventListener('touchmove', onTouchMove, {passive:false});
+  window.addEventListener('mouseup', onMouseUp, {passive:false});
+  window.addEventListener('touchend', onMouseUp, {passive:false});
 }
 
-AFRAME.registerComponent('draggable-label',{
-  schema:{name:{default:''}},
-  init:function(){
-    this.dragging=false; this.pointerId=null; this.startPos=this.el.object3D.position.clone();
-    this.preview=null; const s=this.el.sceneEl; const canvas = ()=> s.canvas || s;
-    const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
-    const worldPointFromClient=(scene,x,y)=>{
-      const c=canvas(); const rect=c.getBoundingClientRect();
-      const nx=((x-rect.left)/rect.width)*2-1; const ny= -((y-rect.top)/rect.height)*2+1;
-      mouse.set(nx,ny); raycaster.setFromCamera(mouse, scene.camera);
-      const mesh = document.getElementById('cellModel').getObject3D('mesh'); if(!mesh) return null;
-      const ints = raycaster.intersectObject(mesh, true); return (ints && ints[0]) ? ints[0].point : null;
-    };
-    const toLocal=(pWorld)=>{ const m=document.getElementById('cellModel').object3D; const p=pWorld.clone(); m.worldToLocal(p); return p; };
-    const ensurePreview=()=>{ if(this.preview) return; this.preview=document.createElement('a-entity');
-      this.preview.setAttribute('geometry','primitive: ring; radiusInner:0.022; radiusOuter:0.032');
-      this.preview.setAttribute('material',`color:#ffffff; emissive:#ffffff; emissiveIntensity:0.9; opacity:0.85`);
-      this.preview.setAttribute('rotation','90 0 0'); this.preview.setAttribute('visible','false');
-      document.getElementById('cellModel').appendChild(this.preview); };
+function cancelPickup(){
+  if(!activeLabel) return;
+  const {el, chipEl} = activeLabel;
+  el.parentNode && el.parentNode.removeChild(el);
+  chipEl && chipEl.classList.remove('taken');
+  activeLabel=null; IS_DRAGGING_LABEL=false;
+}
 
-    const onDown=(e)=>{
-      this.dragging=true;
-      this.pointerId = (e && e.pointerId) ? e.pointerId : 'mouse';
-      this.startPos=this.el.object3D.position.clone();
-      ensurePreview(); this.preview.setAttribute('visible','true');
-      canvas().setPointerCapture?.(this.pointerId);
-    };
-    const onMove=(e)=>{
-      if(!this.dragging || e.pointerId!==this.pointerId) return;
-      const p = worldPointFromClient(s, e.clientX, e.clientY);
-      if(!p){ this.preview.setAttribute('visible','false'); return; }
-      this.preview.setAttribute('position', p); this.preview.setAttribute('visible','true');
-      const local = toLocal(p); this.el.object3D.position.copy(local);
-    };
-    const onUp=(e)=>{
-      if(!this.dragging || e.pointerId!==this.pointerId) return;
-      this.dragging=false; this.pointerId=null; this.preview && this.preview.setAttribute('visible','false');
-      const me = labels.find(x=>x.el===this.el); if(!me) return;
-      const pos = this.el.object3D.position; const tol = 0.10;
-      const ok = distance(pos, me.target) <= tol;
-      if(ok){
-        this.el.object3D.position.set(me.target[0], me.target[1], me.target[2]);
-        me.locked=true; done.add(me.name); updateScore(); pingMark(me.target); showToast('¡Correcto!');
-        if(done.size === TARGETS[kind].length) showToast('¡Perfecto!');
-      }else{
-        shakeEntity(this.el); const home = me.home || this.startPos; setTimeout(()=> this.el.object3D.position.copy(home), 150);
-        wrong++; updateScore(); showToast('Intenta de nuevo');
-      }
-    };
-
-    // escuchas: A-Frame (mousedown con cursor) + touch global
-    const add=()=>{
-      const c=canvas();
-      this.el.addEventListener('mousedown', (ev)=>{ ev.preventDefault?.(); onDown(ev); }, {passive:false});
-
-      // touch start sobre la etiqueta
-      this.el.addEventListener('touchstart',(e)=>{
-        const t=e.touches && e.touches[0]; if(!t) return;
-        e.preventDefault(); onDown({pointerId:'touch', clientX:t.clientX, clientY:t.clientY});
-      }, {passive:false});
-
-      // seguimiento global mientras se arrastra (mouse/touch)
-      window.addEventListener('mousemove',(e)=>{
-        if(!this.dragging) return;
-        onMove({pointerId:this.pointerId, clientX:e.clientX, clientY:e.clientY, preventDefault:()=>{}});
-      }, {passive:false});
-
-      window.addEventListener('touchmove',(e)=>{
-        if(!this.dragging) return;
-        const t=e.touches && e.touches[0]; if(!t) return;
-        e.preventDefault();
-        onMove({pointerId:'touch', clientX:t.clientX, clientY:t.clientY, preventDefault:()=>{}});
-      }, {passive:false});
-
-      window.addEventListener('mouseup',()=>{ if(this.dragging) onUp({pointerId:(this.pointerId||'mouse')}); }, {passive:false});
-      window.addEventListener('touchend',()=>{ if(this.dragging) onUp({pointerId:'touch'}); }, {passive:false});
-    };
-    s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
-  }
-});
+/* ========= FEEDBACK VISUAL ========= */
+function colorizeOK(labelEl){
+  const bg=labelEl.children[0];
+  if(bg) bg.setAttribute('material','color:#0f2512; opacity:0.96; side:double');
+  const ring=document.createElement('a-entity');
+  ring.setAttribute('geometry','primitive: ring; radiusInner:0.05; radiusOuter:0.065');
+  ring.setAttribute('material',`color:#b0ffb0; emissive:#39ff14; emissiveIntensity:0.9; opacity:0.95`);
+  ring.setAttribute('rotation','90 0 0'); ring.setAttribute('position','0 -0.02 0');
+  labelEl.appendChild(ring);
+  setTimeout(()=>{ ring.parentNode && ring.parentNode.removeChild(ring); }, 1200);
+}
 function shakeEntity(el){
   const n=el.object3D; const a=[0,0.06,-0.06,0.04,-0.04,0]; let i=0; const startY=n.position.y;
   const t=setInterval(()=>{ if(i>=a.length){ clearInterval(t); n.position.y=startY; return; } n.position.y=startY + a[i]; i++; }, 30);
@@ -539,69 +553,61 @@ function shakeEntity(el){
 function pingMark(pos){
   const e=document.createElement('a-entity');
   e.setAttribute('geometry','primitive: torus; radius: 0.05; radiusTubular: 0.006');
-  e.setAttribute('material',`color:${'#b0ffb0'}; emissive:${'#39ff14'}; emissiveIntensity:0.9; opacity:0.9`);
+  e.setAttribute('material','color:#b0ffb0; emissive:#39ff14; emissiveIntensity:0.9; opacity:0.9');
   e.setAttribute('rotation','90 0 0'); e.setAttribute('position', pos.join(' '));
   modelEl.appendChild(e); setTimeout(()=>{ e.parentNode && e.parentNode.removeChild(e); }, 1200);
 }
 
-/* Chips */
-function renderChipList(){
-  chipsBox.innerHTML='';
-  const arr = TARGETS[kind].map(t=>t.name).sort((a,b)=>a.localeCompare(b));
-  arr.forEach(name=>{ const el=document.createElement('div'); el.className='chip'; el.textContent=name; chipsBox.appendChild(el); });
-  totalEl.textContent = TARGETS[kind].length;
-}
-
-/* Modelo */
-async function pick(){
-  // Forzamos GLB normal (sin Draco) para evitar configurar el decoder
-  return MAP[kind].normal;
-}
+/* ========= MODELO ========= */
+async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(),{method:'HEAD'}); return r.ok; }catch{return false;} }
+async function pick(){ const e=MAP[kind]; return (await exists(e.draco))?e.draco:e.normal; }
 async function loadModel(){
-  const url=(await pick())+'#'+Date.now();
+  const url=(await pick())+'?v='+Date.now(); // cache-bust correcto (no usar #)
   modelEl.removeAttribute('gltf-model');
-  modelEl.object3D.position.set(0,0,0); modelEl.object3D.rotation.set(0,0,0); modelEl.object3D.scale.set(0.4,0.4,0.4);
+  modelEl.object3D.position.set(0,0,0);
+  modelEl.object3D.rotation.set(0,0,0);
+  modelEl.object3D.scale.set(0.4,0.4,0.4);
   setTimeout(()=>modelEl.setAttribute('gltf-model',url),30);
 }
 
-/* Botones HUD */
+/* ========= BOTONES HUD ========= */
 btnAuto.addEventListener('click', ()=>{ const on = btnAuto.classList.toggle('active'); modelEl.setAttribute('auto-rotator',`enabled:${on}; speed:18`); });
 btnCenter.addEventListener('click', ()=> modelEl.object3D.position.set(0,0,0));
 btnResetView.addEventListener('click', ()=>{ modelEl.object3D.position.set(0,0,0); modelEl.object3D.rotation.set(0,0,0); modelEl.object3D.scale.set(DEFAULT_SCALE,DEFAULT_SCALE,DEFAULT_SCALE); });
 
-/* Ayuda */
-let ayudaOn=false;
-btnAyuda.addEventListener('click', ()=>{ ayudaOn=!ayudaOn; targetDots.forEach(d=> d.setAttribute('visible', ayudaOn)); btnAyuda.classList.toggle('active', ayudaOn); });
-
-/* Cambio modo animal/vegetal */
+/* ========= CAMBIO DE MODO ========= */
 function setMode(m){
-  if(kind===m) return; kind=m;
+  if(kind===m) return;
+  kind=m;
   modeAnimalBtn.classList.toggle('active', kind==='animal');
   modeVegetalBtn.classList.toggle('active', kind==='vegetal');
-  resetScore(); renderChipList(); clearTargetDots(); makeTargetDots(); spawnLabels(); loadModel();
+  cancelPickup();
+  resetScore(); renderChipList(); clearTargetDots(); makeTargetDots(); loadModel();
 }
 modeAnimalBtn.onclick = ()=> setMode('animal');
 modeVegetalBtn.onclick = ()=> setMode('vegetal');
 
-/* Reiniciar arrastre */
-btnReset.onclick = ()=>{ resetScore(); renderChipList(); clearTargetDots(); makeTargetDots(); spawnLabels(); };
+/* ========= REINICIAR ========= */
+btnReset.onclick = ()=>{
+  cancelPickup();
+  resetScore(); renderChipList(); clearTargetDots(); makeTargetDots();
+};
 
-/* Inicial (ARRASTRE) */
+/* ========= INICIAL ========= */
 modelEl.addEventListener('model-loaded', ()=>{ normalizeAndFrame(); });
 modelEl.addEventListener('model-error', e=>{ alert('No se pudo cargar el modelo'); console.error(e.detail); });
-(function initDrag(){
-  // Lee ?m=vegetal|animal (por defecto 'animal')
-  const mqp = (new URLSearchParams(location.search).get('m') || 'animal').toLowerCase();
-  kind = (mqp === 'vegetal') ? 'vegetal' : 'animal';
-  // Refleja estado en botones
+
+(function init(){
+  // set modo inicial por ?m=
   modeAnimalBtn.classList.toggle('active', kind==='animal');
   modeVegetalBtn.classList.toggle('active', kind==='vegetal');
 
-  resetScore(); renderChipList(); makeTargetDots(); spawnLabels(); loadModel();
+  resetScore(); renderChipList(); makeTargetDots(); loadModel();
+  setTab('drag'); // primera pestaña: arrastrar etiquetas
 })();
 
 /* ==========================================================
-   MCQ — TRIVIA DE ALTERNATIVAS
+   MCQ — TRIVIA DE ALTERNATIVAS (se mantiene)
    ========================================================== */
 const MCQ = [
   {q:"¿Qué orgánulo permite a las plantas realizar la fotosíntesis?", opts:["Mitocondria","Cloroplasto","Lisosoma","Núcleo"], a:1},
@@ -652,22 +658,19 @@ renderMCQ();
 btnMCQReset.onclick = ()=>{ renderMCQ(); alNombre.value=''; alApellido.value=''; alCurso.value=''; };
 
 btnFinish.onclick = ()=>{
-  // datos estudiante
   const nombre = alNombre.value.trim(); const apellido = alApellido.value.trim(); const curso = alCurso.value.trim();
   if(!nombre || !apellido || !curso){ alert('Por favor completa Nombre, Apellido y Curso antes de terminar.'); return; }
 
-  let correct=0, wrong=0; const detail=[];
+  let correct=0, wrongN=0; const detail=[];
   MCQ.forEach((item, idx)=>{
     const sel = document.querySelector(`input[name=q${idx}]:checked`);
     const choice = sel ? parseInt(sel.value,10) : -1;
-    const ok = (choice===item.a); if(ok) correct++; else wrong++;
+    const ok = (choice===item.a); if(ok) correct++; else wrongN++;
     detail.push({i:idx+1, q:item.q, choice, choiceText: choice>=0?item.opts[choice]:'(sin respuesta)', correct:item.opts[item.a], isOK:ok});
   });
   const scorePct = Math.round((correct/MCQ.length)*100);
-
-  // KPIs + resumen
   kpiCorrect.textContent = `✔ Correctas: ${correct}`;
-  kpiWrong.textContent   = `✘ Incorrectas: ${wrong}`;
+  kpiWrong.textContent   = `✘ Incorrectas: ${wrongN}`;
   kpiScore.textContent   = `🏁 Puntaje: ${scorePct}%`;
   sumList.innerHTML='';
   detail.forEach(d=>{
@@ -676,9 +679,7 @@ btnFinish.onclick = ()=>{
     sumList.appendChild(li);
   });
   mcqResult.style.display='block';
-
-  // guardar para enviar
-  window._lastReport = { nombre, apellido, curso, correct, wrong, scorePct, detail, when:new Date().toISOString() };
+  window._lastReport = { nombre, apellido, curso, correct, wrong:wrongN, scorePct, detail, when:new Date().toISOString() };
 };
 
 function ensureEmailJS(){
@@ -689,11 +690,9 @@ function ensureEmailJS(){
   try{ emailjs.init(EMAILJS_PUBLIC_KEY); }catch(e){}
   return true;
 }
-
 btnSendEmail.onclick = async ()=>{
   if(!window._lastReport){ alert('Primero termina y corrige la trivia.'); return; }
   if(!ensureEmailJS()) return;
-
   const r = window._lastReport;
   const bodyLines = [
     `Estudiante: ${r.nombre} ${r.apellido}`,
@@ -705,24 +704,15 @@ btnSendEmail.onclick = async ()=>{
     ...r.detail.map(d=>`${d.i}. ${d.q}\n - Tu respuesta: ${d.choiceText}\n - Correcta: ${d.correct}\n`)
   ];
   const body = bodyLines.join('\n');
-
   try{
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-      to: REPORT_TO.join(','),
-      subject: `Resultados Trivia Células — ${r.nombre} ${r.apellido} (${r.curso})`,
-      message: body
+      to: REPORT_TO.join(','), subject: `Resultados Trivia Células — ${r.nombre} ${r.apellido} (${r.curso})`, message: body
     });
     alert('¡Enviado! Los resultados fueron enviados a los profesores.');
-  }catch(err){
-    console.error(err);
-    alert('No se pudo enviar por EmailJS. Revisa tus credenciales en el código.');
-  }
+  }catch(err){ console.error(err); alert('No se pudo enviar por EmailJS. Revisa tus credenciales en el código.'); }
 };
 
-/* ==========================================================
-   Navegación inicial por querystring (?tab=mcq)
-   ========================================================== */
-const QP = new URLSearchParams(location.search);
+/* ========= Navegación por querystring (?tab=mcq) ========= */
 const tabQS = (QP.get('tab')||'').toLowerCase();
 if (tabQS==='mcq') setTab('mcq'); else if (tabQS==='form') setTab('form'); else setTab('drag');
 </script>
