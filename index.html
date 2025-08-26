@@ -32,7 +32,31 @@
   .topbar{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0 8px}
   .brand{display:flex; align-items:center; gap:10px}
   .brand .logo{width:36px;height:36px;border-radius:10px; background: radial-gradient(16px 16px at 30% 30%, #39ff14 0%, transparent 60%), #0d1420; border:1px solid #25415a}
-  .right{display:flex; gap:8px; align-items:center; position:relative}
+  /* Antes: .right era un flex */
+  /* Ahora: grid con 3 columnas iguales,
+   la fila de abajo (TRIVIA) se extiende por las 3 columnas */
+  .right{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(72px, 1fr));
+  gap:8px;
+  align-items:start;
+  position:relative;
+  }
+
+/* que los botones llenen su columna */
+.right .btn{ width:100%; }
+
+/* el dropdown (TRIVIA) ocupa las 3 columnas de ancho */
+.right .dropdown{ grid-column: 1 / -1; }
+
+/* botón del dropdown al 100% y centrado */
+.right .dropdown > .btn{
+  width:100%;
+  justify-content:center;
+}
+
+/* menú del dropdown: que se alinee sin “salirse” del ancho */
+.dropdown .menu{ right:0; left:0; margin:0 auto; }
 
   /* Botones */
   .btn{
@@ -120,7 +144,24 @@
       </div>
 
       <div class="right" aria-label="Acciones">
-       
+      <!-- Fila superior: Ayuda, ES, EN -->
+      <a class="btn ghost" href="./help.html" id="btnHelp"><span id="t_help">Ayuda</span></a>
+      <button class="btn" id="langES">ES</button>
+      <button class="btn" id="langEN">EN</button>
+
+      <!-- Fila inferior: TRIVIA a lo ancho de 3 columnas -->
+      <div class="dropdown" id="triviaDropdown">
+      <button class="btn ghost" id="btnTrivia" aria-haspopup="true" aria-expanded="false">
+      <span id="t_trivia">Trivia</span> ▾
+      </button>
+      <div class="menu" role="menu" aria-label="Menú Trivia">
+      <a role="menuitem" href="./quiz_labels.html?m=animal"  id="t_trivia_animal">Trivia Célula Animal</a>
+      <a role="menuitem" href="./quiz_labels.html?m=vegetal" id="t_trivia_veg">Trivia Célula Vegetal</a>
+      <a role="menuitem" href="./quiz_mcq.html"              id="t_trivia_mcq">Trivia de alternativas (MCQ)</a>
+      </div>
+      </div>
+      </div>
+      
         <!-- Botón Trivia con menú -->
         <div class="dropdown" id="triviaDropdown">
           <button class="btn ghost" id="btnTrivia" aria-haspopup="true" aria-expanded="false">
@@ -298,11 +339,14 @@ const i18n = {
     t_ver_tags_veg: "3D etiquetas",
     t_ra_veg: "Ver en Realidad Aumentada",
     t_qr_title: "Códigos QR (Realidad Aumentada con HIRO)",
+    t_trivia_mcq: "Trivia de alternativas (MCQ)",
     t_qr_animal: "Realidad Aumentada — Célula Animal",
     t_qr_vegetal: "Realidad Aumentada — Célula Vegetal",
     t_qr_tip: "Escanéame con tu cámara",
     t_qr_tip2: "Escanéame con tu cámara",
     t_footer: "Funciona en navegadores modernos. Para Realidad Aumentada (RA) usa el marcador HIRO."
+    
+    
   },
   en: {
     t_site: "Virtual Reality and Augmented Reality — Biology.",
@@ -333,8 +377,9 @@ const i18n = {
     t_qr_vegetal: "Augmented Reality — Plant Cell",
     t_qr_tip: "Scan me with your camera",
     t_qr_tip2: "Scan me with your camera",
+    t_trivia_mcq: "Multiple-choice Trivia (MCQ)".
     t_footer: "Works in modern browsers. For Augmented Reality (AR), use the HIRO marker."
-  }
+        }
 };
 function setLang(lc){
   const dict = i18n[lc] || i18n.es;
