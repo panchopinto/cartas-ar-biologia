@@ -13,41 +13,32 @@
     --radius:16px; --shadow:0 10px 30px rgba(0,0,0,.35);
   }
   *{box-sizing:border-box}
-  html,body{height:100%}
+  html,body{min-height:100%}
   body{
     margin:0; background:radial-gradient(1200px 600px at 70% -10%,#112033 0%,transparent 60%), var(--bg);
     color:var(--text); font:500 16px/1.45 system-ui,Segoe UI,Roboto,Arial,sans-serif;
-    /* ✅ permitir scroll en móvil */
-    overflow:auto;
+    overflow:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y;
   }
   a{color:inherit;text-decoration:none}
-
-  /* Layout */
-  .wrap{
-    display:grid; grid-template-columns:340px 1fr; gap:14px;
-    min-height:100vh; padding:12px; max-width:1400px; margin:0 auto;
-  }
-  .side{display:grid; grid-template-rows:auto auto auto auto; gap:10px}
+  .wrap{display:grid; grid-template-columns:340px 1fr; gap:14px; min-height:100vh; padding:12px; max-width:1400px; margin:0 auto}
+  .side{display:grid; grid-template-rows:auto auto 1fr auto; gap:10px}
   .panel{border:1px solid var(--line); border-radius:var(--radius); background:linear-gradient(180deg,#0b0f16,#0a0d13); box-shadow:var(--shadow); padding:12px}
   .topbar{display:flex; align-items:center; justify-content:space-between; gap:8px}
   .back{display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:12px; border:1px solid #2a3a4e; background:linear-gradient(180deg,#132132,#0d1623); color:#e8f7ff; font-weight:800}
-  .modes{display:flex; gap:8px; flex-wrap:wrap}
+  .modes{display:flex; gap:8px}
   .btn{cursor:pointer; border:1px solid #39536d; background:linear-gradient(180deg,#122033,#0d1623); color:#e8f7ff; font-weight:800; padding:8px 12px; border-radius:12px}
   .btn.active{background:rgba(60,201,255,.15); border-color:var(--accent)}
   .score{display:flex; align-items:center; justify-content:space-between; gap:8px; font-weight:800}
   .score .good{color:#b7ffb7} .score .bad{color:#ffb0be}
-
-  .list{display:flex; flex-wrap:wrap; gap:8px; max-height:260px; overflow:auto}
+  .list{display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start}
   .chip{
     padding:8px 10px; border-radius:999px; border:1px solid #3a4e66; color:#cfe6ff;
-    font:700 13px system-ui; background:linear-gradient(180deg,#0f1b2a,#0a1320); user-select:none;
+    font:700 13px system-ui; background:linear-gradient(180deg,#0f1b2a,#0a1320); user-select:none
   }
   .chip.taking{outline:2px dashed #6fe0ff}
   .chip.done{border-color:#2d9c2d; color:#c9ffd0; background:linear-gradient(180deg,#0f1b2a,#0d1f17)}
-  .chip.calSel{outline:2px solid #ffd166}
-
   .hint{color:var(--muted); font-size:13px; margin:4px 0 0}
-  .bottom{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap}
+  .bottom{display:flex; align-items:center; justify-content:space-between; gap:8px}
   .legend{display:flex; gap:8px; flex-wrap:wrap; font-size:13px; color:var(--muted)}
   .dot{width:10px;height:10px;border-radius:999px;display:inline-block;vertical-align:middle;margin-right:6px}
   .ok{background:var(--good)} .ko{background:var(--bad)} .target{background:var(--target)}
@@ -55,7 +46,6 @@
   /* Área 3D */
   .stage{position:relative; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden}
   a-scene{position:absolute; inset:0}
-
   .hud{
     position:absolute; left:10px; top:10px; display:flex; gap:8px; z-index:5; flex-wrap:wrap;
   }
@@ -70,11 +60,12 @@
   /* Etiquetas 3D */
   .label3d{pointer-events:auto}
 
-  /* Responsivo */
+  /* Importante: gestos sí dentro del canvas, scroll vertical fuera */
+  .stage a-scene, .stage canvas { touch-action:none; }
+
   @media (max-width:960px){
-    .wrap{grid-template-columns:1fr; grid-template-rows:auto auto auto auto 1fr; padding:10px}
-    .stage{height:65vh; margin-bottom:14px} /* ✅ deja espacio y permite scroll general */
-    .list{max-height:200px}
+    .wrap{grid-template-columns:1fr; grid-template-rows:auto 1fr; padding:10px}
+    .stage{height:58vh}
   }
   @media (min-width:961px){
     .stage{height:calc(100vh - 24px)}
@@ -88,7 +79,7 @@
     <div class="panel topbar">
       <a class="back" href="./index.html">← Volver</a>
       <div class="modes" role="tablist" aria-label="Modo de trivia">
-        <button id="modeAnimal" class="btn active" role="tab" aria-selected="true">Animal</button>
+        <button id="modeAnimal" class="btn" role="tab" aria-selected="false">Animal</button>
         <button id="modeVegetal" class="btn" role="tab" aria-selected="false">Vegetal</button>
       </div>
     </div>
@@ -101,7 +92,7 @@
     <div class="panel">
       <div style="font-weight:800;margin-bottom:6px">Etiquetas a ubicar</div>
       <div id="chips" class="list" aria-live="polite"></div>
-      <div class="hint">Tip (móvil): pellizca para zoom, arrastra con 1 dedo para rotar y con 2 dedos para mover. Presiona un chip para “tomarlo” y suéltalo sobre la célula.</div>
+      <div class="hint">Tip: rota con clic-izquierdo, zoom con rueda o ＋/－, mueve con botón derecho o Shift+arrastre. Presiona un chip para “tomarlo” y suéltalo sobre la célula.</div>
     </div>
 
     <div class="panel bottom">
@@ -110,12 +101,9 @@
         <span><i class="dot ok"></i>Correcto</span>
         <span><i class="dot ko"></i>Incorrecto</span>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;gap:8px">
         <button id="btnAyuda" class="btn">Ayuda</button>
         <button id="btnReset" class="btn">Reiniciar</button>
-        <!-- ✅ Controles de calibración -->
-        <button id="btnCalib" class="btn" title="Ajustar posiciones de destino">Calibrar</button>
-        <button id="btnCalibClear" class="btn" title="Borrar calibraciones guardadas">Borrar calibs.</button>
       </div>
     </div>
   </aside>
@@ -126,9 +114,8 @@
       <button id="btnAuto" class="btn" title="Auto-rotación">Auto</button>
       <button id="btnCenter" class="btn" title="Centrar">◎</button>
       <button id="btnResetView" class="btn" title="Reset vista">⟲</button>
-      <!-- ✅ Zoom explícito -->
-      <button id="btnZoomIn" class="btn" title="Aumentar tamaño">＋</button>
-      <button id="btnZoomOut" class="btn" title="Reducir tamaño">－</button>
+      <button id="btnZoomIn" class="btn" title="Acercar">＋</button>
+      <button id="btnZoomOut" class="btn" title="Alejar">－</button>
     </div>
     <div id="toast" class="toast">¡Bien!</div>
 
@@ -153,9 +140,10 @@
 </div>
 
 <script>
-/* ================== Componentes de gestos ================== */
-let LOCK_INPUT = false; // bloquea rotación/pan mientras “cargo” una etiqueta
+/* ====== Bloqueo de gestos mientras cargo una etiqueta desde chip ====== */
+let LOCK_INPUT = false;
 
+/* ====== Gestos (como viewer) ====== */
 AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},minScale:{default:0.05},maxScale:{default:3.0}},
   init:function(){this.oneFinger=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
     t.addEventListener('touchstart',e=>{if(e.touches.length===1){this.oneFinger=true;this.lastX=e.touches[0].clientX;}},{passive:false});
@@ -170,7 +158,7 @@ AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},min
 
 AFRAME.registerComponent('mouse-drag-rotate',{schema:{factor:{default:0.45}},
   init:function(){this.drag=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
-    t.addEventListener('mousedown',e=>{ if(LOCK_INPUT) return; if(e.button===0){this.drag=true;this.lastX=e.clientX;}});
+    t.addEventListener('mousedown',e=>{ if(LOCK_INPUT) return; if(e.button===0){this.drag=true;this.lastX=e.clientX;}}); 
     window.addEventListener('mouseup',()=>{this.drag=false;});
     window.addEventListener('mousemove',e=>{ if(LOCK_INPUT) return; if(!this.drag) return; const dx=e.clientX-this.lastX; this.lastX=e.clientX;
       this.el.object3D.rotation.y -= (dx*this.data.factor)*Math.PI/180; });
@@ -200,6 +188,7 @@ AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:
     s.hasLoaded?add():s.addEventListener('loaded',add,{once:true});
   }
 });
+
 AFRAME.registerComponent('mouse-pan',{schema:{panFactor:{default:1}},
   init:function(){
     const s=this.el.sceneEl; let down=false, start={x:0,y:0}, startPos=this.el.object3D.position.clone(), shift=false;
@@ -207,7 +196,7 @@ AFRAME.registerComponent('mouse-pan',{schema:{panFactor:{default:1}},
       const h = s.canvas.height || window.innerHeight; const y = 2 * cam.position.length() * Math.tan(fov/2) / h; const x = y * cam.aspect; return {x, y}; };
     const onDown=(e)=>{ if(LOCK_INPUT) return; shift=e.shiftKey; if (e.button===1 || e.button===2 || (e.button===0 && shift)){ down=true; start={x:e.clientX,y:e.clientY}; startPos=this.el.object3D.position.clone(); e.preventDefault(); } };
     const onMove=(e)=>{ if(LOCK_INPUT) return; if(!down) return; e.preventDefault(); const dx=e.clientX-start.x, dy=e.clientY-start.y; const wp=worldPerPixel();
-      const tx = dx * wp.x * this.data.panFactor; const ty = -dy * wp.y * this.data.panFactor; this.el.object3D.position.set(startPos.x + tx, startPos.y + ty, startPos.z); };
+      const tx = dx * wp.x * this.data.panFactor; const ty = -dy * wp.y * this.data.panFactor; this.el.object3D.position.set(startPos.x + tx, startPos.y + ty, this.el.object3D.position.z); };
     const onUp=()=>{ down=false; };
     const add=()=>{ const c=s.canvas||s; c.addEventListener('mousedown',onDown,{passive:false}); window.addEventListener('mousemove',onMove,{passive:false});
       window.addEventListener('mouseup',onUp,{passive:false}); c.addEventListener('contextmenu',(e)=>e.preventDefault()); };
@@ -220,58 +209,31 @@ AFRAME.registerComponent('tap-reset',{schema:{scale:{default:1},rotYdeg:{default
 AFRAME.registerComponent('auto-rotator',{schema:{speed:{default:18},enabled:{default:false}},tick:function(t,dt){ if(!this.data.enabled)return; this.el.object3D.rotation.y+=THREE.MathUtils.degToRad(this.data.speed)*(dt/1000); }});
 AFRAME.registerComponent('billboard',{tick:function(){const cam=this.el.sceneEl&&this.el.sceneEl.camera;if(!cam)return;this.el.object3D.quaternion.copy(cam.el.object3D.quaternion);}});
 
-/* ================== Datos ================== */
+/* ====== Datos ====== */
 const MAP={ 
   animal:"./assets/models/animal.glb",
   vegetal:"./assets/models/vegetal.glb"
 };
-/* Posiciones por defecto (puedes retocarlas) */
-const TARGETS_DEFAULT={
+const TARGETS={
   animal:[
-    {name:'Núcleo',pos:[0,0.10,0]},
-    {name:'Mitocondrias',pos:[0.16,0.05,0.05]},
-    {name:'Aparato de Golgi',pos:[0.10,0.00,-0.12]},
-    {name:'Ribosomas',pos:[-0.16,0.07,0.02]},
-    {name:'Lisosomas',pos:[-0.10,-0.02,0.12]},
-    {name:'Centriolos',pos:[0.14,0.12,-0.02]}
+    {name:'Núcleo',pos:[0,0.12,0]},
+    {name:'Mitocondrias',pos:[0.18,0.06,0.04]},
+    {name:'Aparato de Golgi',pos:[0.12,0.00,-0.15]},
+    {name:'Ribosomas',pos:[-0.18,0.08,0]},
+    {name:'Lisosomas',pos:[-0.12,-0.02,0.14]},
+    {name:'Centriolos',pos:[0.16,0.14,-0.02]}
   ],
   vegetal:[
-    {name:'Núcleo',pos:[0,0.10,0]},
-    {name:'Cloroplastos',pos:[0.16,0.04,0.02]},
-    {name:'Vacuola central',pos:[-0.10,0.02,-0.08]},
-    {name:'Pared celular',pos:[0,0,-0.18]},
-    {name:'Plasmodesmos',pos:[-0.16,0.00,0.10]},
-    {name:'Aparato de Golgi',pos:[0.10,0,-0.12]}
+    {name:'Núcleo',pos:[0,0.12,0]},
+    {name:'Cloroplastos',pos:[0.18,0.05,0]},
+    {name:'Vacuola central',pos:[-0.12,0.02,-0.1]},
+    {name:'Pared celular',pos:[0,0,-0.22]},
+    {name:'Plasmodesmos',pos:[-0.20,0.00,0.12]},
+    {name:'Aparato de Golgi',pos:[0.12,0,-0.15]}
   ]
 };
 
-/* Sobrescrituras guardadas (calibración) */
-function loadOverrides(kind){
-  const raw = localStorage.getItem('QUIZ_TARGETS_'+kind);
-  if(!raw) return null;
-  try{ return JSON.parse(raw); }catch{return null;}
-}
-function saveOverrides(kind, arr){
-  localStorage.setItem('QUIZ_TARGETS_'+kind, JSON.stringify(arr));
-}
-function clearOverrides(kind){
-  localStorage.removeItem('QUIZ_TARGETS_'+kind);
-}
-function getTargets(kind){
-  const o = loadOverrides(kind);
-  const base = TARGETS_DEFAULT[kind].map(t=>({name:t.name, pos:[...t.pos]}));
-  if(!o) return base;
-  // merge por nombre
-  o.forEach(ov=>{
-    const i = base.findIndex(x=>x.name===ov.name);
-    if(i>=0) base[i].pos = [...ov.pos];
-  });
-  return base;
-}
-
-let TARGETS = { animal:getTargets('animal'), vegetal:getTargets('vegetal') };
-
-/* ================== Estado/UI ================== */
+/* ====== Estado/UI ====== */
 const modeAnimalBtn = document.getElementById('modeAnimal');
 const modeVegetalBtn = document.getElementById('modeVegetal');
 const chipsBox = document.getElementById('chips');
@@ -281,7 +243,6 @@ const toast = document.getElementById('toast');
 const btnAuto = document.getElementById('btnAuto'); const btnCenter = document.getElementById('btnCenter'); const btnResetView = document.getElementById('btnResetView');
 const btnZoomIn = document.getElementById('btnZoomIn'); const btnZoomOut = document.getElementById('btnZoomOut');
 const btnReset = document.getElementById('btnReset'); const btnAyuda = document.getElementById('btnAyuda');
-const btnCalib = document.getElementById('btnCalib'); const btnCalibClear = document.getElementById('btnCalibClear');
 
 const modelEl = document.getElementById('cellModel');
 const scene = document.querySelector('a-scene');
@@ -290,10 +251,9 @@ let kind = (QP.get('m')==='vegetal') ? 'vegetal' : 'animal';
 let done=new Set(), wrong=0;
 let DEFAULT_SCALE=1.0;
 let targetDots=[], placedLabels=[]; // {name, el}
-let activeCarry = null; // {name, el, preview, pointerId}
-let CALIB_MODE=false, CALIB_SEL=null; // calibración
+let activeCarry = null; // {name, el, preview, pointerId, lastLocal, chipEl}
 
-/* ================== Util ================== */
+/* ====== Utils ====== */
 function showToast(msg){ toast.textContent=msg; toast.classList.add('show'); clearTimeout(showToast._t); showToast._t=setTimeout(()=>toast.classList.remove('show'),1000); }
 function resetScore(){ done.clear(); wrong=0; updateScore(); }
 function updateScore(){ okEl.textContent = done.size; koEl.textContent = wrong; progressMini.innerHTML = `${done.size} / <span id="total">${TARGETS[kind].length}</span>`; }
@@ -311,7 +271,7 @@ function worldPointFromClient(x,y){
 }
 function toLocal(pWorld){ const m = modelEl.object3D; const p = pWorld.clone(); m.worldToLocal(p); return p; }
 
-/* ================== Normalizar + encuadrar ================== */
+/* ====== Normalizar + encuadrar ====== */
 function frameCameraOnly(){
   const THREE = window.THREE; const cam = scene.camera; if(!cam) return;
   const box = new THREE.Box3().setFromObject(modelEl.object3D);
@@ -336,7 +296,7 @@ function normalizeAndFrame(){
   frameCameraOnly();
 }
 
-/* ================== Puntos objetivo (ayuda) ================== */
+/* ====== Puntos objetivo (ayuda) ====== */
 function clearTargetDots(){ targetDots.forEach(e=>e.parentNode && e.parentNode.removeChild(e)); targetDots=[]; }
 function makeTargetDots(){
   clearTargetDots();
@@ -351,7 +311,7 @@ function makeTargetDots(){
   });
 }
 
-/* ================== Etiquetas 3D: crear y colocar ================== */
+/* ====== Etiquetas 3D ====== */
 function make3DLabel(name){
   const wrap=document.createElement('a-entity'); wrap.classList.add('label3d'); wrap.setAttribute('billboard','');
   const bg=document.createElement('a-entity');
@@ -383,7 +343,7 @@ function pingMark(pos){
   setTimeout(()=>{ e.parentNode && e.parentNode.removeChild(e); }, 1200);
 }
 
-/* ================== Chips (lado izquierdo) ================== */
+/* ====== Chips (lado izquierdo) ====== */
 function renderChipList(){
   chipsBox.innerHTML='';
   const arr = TARGETS[kind].map(t=>t.name).sort((a,b)=>a.localeCompare(b));
@@ -393,26 +353,15 @@ function renderChipList(){
     el.textContent=name;
     el.tabIndex=0;
     el.dataset.name=name;
-
-    // tomar etiqueta (pointer o teclado enter)
-    const start = (ev)=>{ ev.preventDefault(); if(done.has(name) || CALIB_MODE) { // en modo calibración no se arrastra
-        if(CALIB_MODE){ selectCalibChip(el); }
-        return;
-      }
-      startCarry(el, name, ev);
-    };
+    const start = (ev)=>{ ev.preventDefault(); if(done.has(name)) return; startCarry(el, name, ev); };
     el.addEventListener('pointerdown', start, {passive:false});
     el.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' '){ start(e);} });
-
-    // selección de chip para calibrar
-    el.addEventListener('click', ()=>{ if(CALIB_MODE) selectCalibChip(el); });
-
     chipsBox.appendChild(el);
   });
   totalEl.textContent = TARGETS[kind].length;
 }
 
-/* ================== Flujo de “llevar” etiqueta desde chip ================== */
+/* ====== Llevar etiqueta desde chip hasta el modelo ====== */
 function startCarry(chipEl, name, ev){
   if(activeCarry) return;
   const target = TARGETS[kind].find(t=>t.name===name);
@@ -431,6 +380,7 @@ function startCarry(chipEl, name, ev){
 
   const move = (e)=>{
     if(activeCarry && e.pointerId!==activeCarry.pointerId) return;
+    if(e.clientX==null) return;
     const pW = worldPointFromClient(e.clientX, e.clientY);
     if(!pW){ preview.setAttribute('visible','false'); return; }
     preview.setAttribute('position', pW); preview.setAttribute('visible','true');
@@ -446,21 +396,22 @@ function startCarry(chipEl, name, ev){
     const me = activeCarry; activeCarry=null; LOCK_INPUT=false;
     chipEl.classList.remove('taking');
 
-    if(!me.lastLocal){ // nunca entró sobre el modelo
+    if(!me.lastLocal){
       shakeEntity(me.el); setTimeout(()=>{ me.el.remove(); me.preview.remove(); }, 150);
       wrong++; updateScore(); showToast('Intenta sobre la célula');
       return;
     }
 
-    const tol = 0.10;
+    const tol = 0.12; // tolerancia algo amplia para móvil
     const ok = distance(me.lastLocal, target.pos) <= tol;
 
     if(ok){
       me.el.object3D.position.set(target.pos[0], target.pos[1], target.pos[2]);
       done.add(name); updateScore(); pingMark(target.pos); showToast('¡Correcto!');
-      placedLabels.push({name, el:me.el}); // conservar etiqueta
+      placedLabels.push({name, el:me.el});
       me.preview.remove();
       chipEl.classList.add('done');
+      chipEl.replaceWith(chipEl); // quita listeners rápidos
       if(done.size === TARGETS[kind].length) showToast('¡Perfecto!');
     }else{
       shakeEntity(me.el);
@@ -469,7 +420,6 @@ function startCarry(chipEl, name, ev){
     }
   };
 
-  // apuntar al lugar actual del puntero
   if(ev.clientX!=null) {
     const pW0 = worldPointFromClient(ev.clientX, ev.clientY);
     if(pW0){ preview.setAttribute('position', pW0); preview.setAttribute('visible','true'); label.object3D.position.copy(toLocal(pW0)); }
@@ -479,56 +429,7 @@ function startCarry(chipEl, name, ev){
   window.addEventListener('pointerup', up, {passive:false});
 }
 
-/* ================== Modo Calibración ================== */
-function selectCalibChip(el){
-  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('calSel'));
-  el.classList.add('calSel');
-  CALIB_SEL = el.dataset.name;
-  showToast('Toca la célula para fijar destino de: ' + CALIB_SEL);
-}
-btnCalib.addEventListener('click', ()=>{
-  CALIB_MODE = !CALIB_MODE;
-  btnCalib.classList.toggle('active', CALIB_MODE);
-  CALIB_SEL = null;
-  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('calSel','taking'));
-  showToast(CALIB_MODE ? 'Calibración ACTIVADA' : 'Calibración DESACTIVADA');
-});
-btnCalibClear.addEventListener('click', ()=>{
-  clearOverrides(kind);
-  TARGETS[kind] = getTargets(kind);
-  clearTargetDots(); makeTargetDots();
-  showToast('Calibraciones borradas');
-});
-/* Registrar tap sobre la malla para guardar coordenada del chip seleccionado */
-(function attachCalibTap(){
-  const s = scene;
-  const onTap = (e)=>{
-    if(!CALIB_MODE || !CALIB_SEL) return;
-    const touch = e.touches && e.touches[0];
-    const x = (touch ? touch.clientX : e.clientX);
-    const y = (touch ? touch.clientY : e.clientY);
-    const pW = worldPointFromClient(x,y);
-    if(!pW) return;
-    const pL = toLocal(pW);
-    // guardar override
-    const arr = getTargets(kind);
-    const idx = arr.findIndex(t=>t.name===CALIB_SEL);
-    if(idx>=0){
-      arr[idx].pos = [Number(pL.x.toFixed(3)), Number(pL.y.toFixed(3)), Number(pL.z.toFixed(3))];
-      saveOverrides(kind, arr);
-      TARGETS[kind] = getTargets(kind);
-      clearTargetDots(); makeTargetDots();
-      showToast('Guardado: ' + CALIB_SEL);
-      // marcar chip
-      document.querySelectorAll('.chip').forEach(c=>{ if(c.dataset.name===CALIB_SEL){ c.classList.add('done'); c.classList.remove('calSel'); }});
-      CALIB_SEL=null;
-    }
-  };
-  s.addEventListener('click', onTap);
-  s.addEventListener('touchend', onTap, {passive:true});
-})();
-
-/* ================== Modelo ================== */
+/* ====== Modelo ====== */
 async function loadModel(){
   const url = MAP[kind] + '#' + Date.now(); // anti-cache
   modelEl.removeAttribute('gltf-model');
@@ -538,7 +439,7 @@ async function loadModel(){
   setTimeout(()=>modelEl.setAttribute('gltf-model', url), 30);
 }
 
-/* ================== Botones HUD ================== */
+/* ====== Botones HUD ====== */
 btnAuto.addEventListener('click', ()=>{
   const on = btnAuto.classList.toggle('active');
   modelEl.setAttribute('auto-rotator',`enabled:${on}; speed:18`);
@@ -549,14 +450,14 @@ btnResetView.addEventListener('click', ()=>{
   modelEl.object3D.rotation.set(0,0,0);
   modelEl.object3D.scale.set(DEFAULT_SCALE,DEFAULT_SCALE,DEFAULT_SCALE);
 });
-btnZoomIn.addEventListener('click', ()=>{
-  const s = modelEl.object3D.scale.x * 1.1;
+function setScaleMult(mult){
+  const min = 0.20, max = 3.0;
+  let s = modelEl.object3D.scale.x * mult;
+  s = THREE.MathUtils.clamp(s, min, max);
   modelEl.object3D.scale.set(s,s,s);
-});
-btnZoomOut.addEventListener('click', ()=>{
-  const s = modelEl.object3D.scale.x / 1.1;
-  modelEl.object3D.scale.set(s,s,s);
-});
+}
+btnZoomIn.addEventListener('click', ()=> setScaleMult(1.12));
+btnZoomOut.addEventListener('click', ()=> setScaleMult(0.89));
 
 /* Ayuda: mostrar/ocultar metas */
 let ayudaOn=false;
@@ -585,11 +486,8 @@ function clearPlaced(){
   placedLabels = [];
 }
 
-/* ================== Inicialización y reset ================== */
+/* ====== Inicialización y reset ====== */
 function resetAll(){
-  // refrescar TARGETS (por si calibraste)
-  TARGETS = { animal:getTargets('animal'), vegetal:getTargets('vegetal') };
-
   resetScore(); updateScore();
   renderChipList();
   clearTargetDots(); makeTargetDots();
@@ -600,11 +498,11 @@ modelEl.addEventListener('model-loaded', ()=>{ normalizeAndFrame(); });
 modelEl.addEventListener('model-error', e=>{ alert('No se pudo cargar el modelo. Revisa la ruta del GLB.'); console.error(e.detail); });
 
 (function init(){
-  modeAnimalBtn.classList.toggle('active', kind==='animal');
-  modeVegetalBtn.classList.toggle('active', kind==='vegetal');
+  // Pre-selección por query ?m=vegetal o ?m=animal
+  if(kind==='animal'){ modeAnimalBtn.classList.add('active'); modeVegetalBtn.classList.remove('active'); }
+  else { modeVegetalBtn.classList.add('active'); modeAnimalBtn.classList.remove('active'); }
   resetAll();
 })();
 </script>
 </body>
 </html>
-
