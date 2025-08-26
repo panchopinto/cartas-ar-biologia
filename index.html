@@ -32,7 +32,12 @@
   .topbar{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0 8px}
   .brand{display:flex; align-items:center; gap:10px}
   .brand .logo{width:36px;height:36px;border-radius:10px; background: radial-gradient(16px 16px at 30% 30%, #39ff14 0%, transparent 60%), #0d1420; border:1px solid #25415a}
-  .right{display:flex; gap:8px; align-items:center; position:relative}
+
+  /* Lado derecho: fila (Ayuda | ES | EN) arriba + botón TRIVIA debajo con mismo ancho */
+  .right{display:flex; flex-direction:column; align-items:flex-end; gap:8px}
+  .actionsRow{display:flex; gap:8px; flex-wrap:nowrap}
+  /* en pantallas chicas, que la fila pueda saltar de línea y el botón siga igualando el ancho total */
+  @media (max-width:520px){ .actionsRow{flex-wrap:wrap; max-width:100%} }
 
   /* Botones */
   .btn{
@@ -47,14 +52,13 @@
   .btn.ghost{background:transparent;border-color:#39536d}
   .btn.active{background:rgba(60,201,255,.15); color:#e7f7ff; border-color:var(--accent)}
 
-  /* Dropdown Trivia */
-  .dropdown{position:relative}
+  /* Dropdown Trivia (igual look, solo que ocupa el mismo ancho del botón) */
+  .dropdown{position:relative; width:100%} /* hereda el ancho del botón */
   .dropdown .menu{
-    position:absolute; right:0; top:110%;
-    min-width:240px; padding:8px;
-    border:1px solid var(--line); border-radius:12px;
-    background:linear-gradient(180deg,#0b0f16,#0a0d13);
-    box-shadow:var(--shadow);
+    position:absolute; left:0; top:110%;
+    width:100%;
+    padding:8px; border:1px solid var(--line); border-radius:12px;
+    background:linear-gradient(180deg,#0b0f16,#0a0d13); box-shadow:var(--shadow);
     display:none; z-index:20;
   }
   .dropdown.open .menu{display:block}
@@ -119,23 +123,25 @@
         </div>
       </div>
 
+      <!-- Acciones (arriba) + Trivia (abajo con mismo ancho) -->
       <div class="right" aria-label="Acciones">
-       
-        <!-- Botón Trivia con menú -->
+        <div class="actionsRow" id="topActionsRow">
+          <a class="btn ghost" href="./help.html" id="btnHelp"><span id="t_help">Ayuda</span></a>
+          <button class="btn" id="langES">ES</button>
+          <button class="btn" id="langEN">EN</button>
+        </div>
+
+        <!-- Botón Trivia con menú, ancho sincronizado por JS -->
         <div class="dropdown" id="triviaDropdown">
-          <button class="btn ghost" id="btnTrivia" aria-haspopup="true" aria-expanded="false">
+          <button class="btn ghost" id="btnTrivia" aria-haspopup="true" aria-expanded="false" style="width:100%">
             <span id="t_trivia">Trivia</span> ▾
           </button>
           <div class="menu" role="menu" aria-label="Menú Trivia">
             <a role="menuitem" href="./quiz_labels.html?m=animal" id="t_trivia_animal">Trivia Célula Animal</a>
             <a role="menuitem" href="./quiz_labels.html?m=vegetal" id="t_trivia_veg">Trivia Célula Vegetal</a>
+            <a role="menuitem" href="./quiz_mcq.html" id="t_trivia_mcq">Trivia de alternativas (MCQ)</a>
           </div>
         </div>
-         <!-- Botón Ayuda -->
-        <a class="btn ghost" href="./help.html" id="btnHelp"><span id="t_help">Ayuda</span></a>
-        <!-- Botones idioma -->
-        <button class="btn" id="langES">ES</button>
-        <button class="btn" id="langEN">EN</button>
       </div>
     </div>
 
@@ -147,7 +153,6 @@
         <div class="cta">
           <a class="btn accent" id="ctaAnimal" href="./viewer.html?m=animal">Ver Animal</a>
           <a class="btn" id="ctaVegetal" href="./viewer.html?m=vegetal">Ver Vegetal</a>
-          <!-- Si más tarde reactivas etiquetas, descomenta el siguiente -->
           <!-- <a class="btn ghost" id="ctaEtiquetas" href="./viewer_hotspots.html?m=animal">Ver 3D (etiquetas)</a> -->
         </div>
       </div>
@@ -254,7 +259,8 @@ const links = {
   ra_animal: './arjs-demo/animal_glb.html?v=2&m=animal',
   ra_veg: './arjs-demo/vegetal_glb.html?v=2&m=vegetal',
   trivia_animal: './quiz_labels.html?m=animal',
-  trivia_veg: './quiz_labels.html?m=vegetal'
+  trivia_veg: './quiz_labels.html?m=vegetal',
+  trivia_mcq: './quiz_mcq.html'
 };
 
 /* ========= QR generator ========= */
@@ -279,6 +285,7 @@ const i18n = {
     t_trivia: "Trivia",
     t_trivia_animal: "Trivia Célula Animal",
     t_trivia_veg: "Trivia Célula Vegetal",
+    t_trivia_mcq: "Trivia de alternativas (MCQ)",
     t_hero_title: "Explora la célula en 3D y Realidad Aumentada",
     t_hero_sub: "Elige Célula Animal o Vegetal, mira sus componentes, aprende sus funciones y compárala con diferencias clave.",
     t_badge: "Educativo",
@@ -310,6 +317,7 @@ const i18n = {
     t_trivia: "Trivia",
     t_trivia_animal: "Animal Cell Trivia",
     t_trivia_veg: "Plant Cell Trivia",
+    t_trivia_mcq: "Multiple-choice Trivia (MCQ)",
     t_hero_title: "Explore the Cell in 3D and Augmented Reality",
     t_hero_sub: "Choose Animal or Plant Cell, see their components, learn their functions, and compare key differences.",
     t_badge: "Educational",
@@ -366,33 +374,38 @@ if (btnEtiq) btnEtiq.href = links.tags_animal;
   if(!dd || !btn) return;
   const menu = dd.querySelector('.menu');
 
-  function close(){
-    dd.classList.remove('open');
-    btn.setAttribute('aria-expanded','false');
-  }
-  function open(){
-    dd.classList.add('open');
-    btn.setAttribute('aria-expanded','true');
-  }
+  function close(){ dd.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+  function open(){ dd.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
 
   btn.addEventListener('click', (e)=>{
     e.stopPropagation();
     dd.classList.contains('open') ? close() : open();
   });
 
-  // cierre por click afuera
-  document.addEventListener('click', (e)=>{
-    if(!dd.contains(e.target)) close();
-  });
-
-  // teclado: ESC cierra
-  document.addEventListener('keydown', (e)=>{
-    if(e.key === 'Escape') close();
-  });
+  // cierre por click afuera y ESC
+  document.addEventListener('click', (e)=>{ if(!dd.contains(e.target)) close(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') close(); });
 
   // set links (por si cambias rutas)
-  menu.querySelector('a[href*="animal"]').href = links.trivia_animal;
-  menu.querySelector('a[href*="vegetal"]').href = links.trivia_veg;
+  menu.querySelector('a[href*="quiz_labels"][href*="animal"]').href = links.trivia_animal;
+  menu.querySelector('a[href*="quiz_labels"][href*="vegetal"]').href = links.trivia_veg;
+  menu.querySelector('a[href*="quiz_mcq"]').href = links.trivia_mcq;
+})();
+
+/* ========= Sincronizar ancho del botón TRIVIA con el ancho del grupo superior ========= */
+(function syncTriviaWidth(){
+  function apply(){
+    const row = document.getElementById('topActionsRow');
+    const btn = document.getElementById('btnTrivia');
+    if(!row || !btn) return;
+    const w = Math.ceil(row.getBoundingClientRect().width);
+    // Limita para móviles a 100% del contenedor
+    const max = row.parentElement.getBoundingClientRect().width;
+    btn.style.width = Math.min(w, max) + 'px';
+  }
+  // aplicar al cargar y al redimensionar
+  window.addEventListener('load', ()=>{ requestAnimationFrame(apply); setTimeout(apply, 150); });
+  window.addEventListener('resize', apply);
 })();
 </script>
 </body>
