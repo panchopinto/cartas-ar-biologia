@@ -30,3 +30,12 @@ gltf-pipeline -i Celula_animal.glb -o Celula_animal_draco.glb -d
   - RA: https://panchopinto.github.io/cartas-ar-biologia/arjs-demo/animal_glb.html
   - 3D con etiquetas: https://panchopinto.github.io/cartas-ar-biologia/viewer_hotspots.html
 - El selector de idioma persiste en `localStorage`.
+
+
+# Aviso legal
+
+© 2025 Pancho Pinto — Proyecto AR Biología. Todos los derechos reservados.
+
+Queda prohibida la copia, redistribución o adaptación de los contenidos, modelos 3D, imágenes y código aquí publicados sin autorización expresa por escrito.
+
+**Canary:** Proyecto AR Biología — build:__BUILD_DATE__ — hash:__BUILD_HASH__
