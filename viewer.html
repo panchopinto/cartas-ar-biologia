@@ -9,9 +9,22 @@
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
   canvas,.a-canvas{position:fixed;inset:0;width:100vw!important;height:100vh!important;background:#000!important}
 
-  .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;font:600 14px system-ui;z-index:5;
-       background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0))}
-  .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px;z-index:6}
+  .hud{
+    position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;font:600 14px system-ui;z-index:5;
+    background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));
+    line-height:1.25; /* ayuda cuando el título ocupa 2 líneas */
+    padding-bottom:.7rem; /* respirito extra para el cálculo */
+  }
+
+  /* Fallback: empuja la toolbar un poco más abajo por defecto (JS la colocará con precisión) */
+  .toolbar{
+    position:fixed;right:8px;top:calc(12px + env(safe-area-inset-top, 0px));
+    display:flex;gap:8px;z-index:6;
+  }
+  @media (max-width: 600px){
+    .toolbar{ top:calc(48px + env(safe-area-inset-top, 0px)); }
+  }
+
   .btn{border:1px solid rgba(255,255,255,.25);color:#fff;background:rgba(0,0,0,.35);
        border-radius:10px;padding:6px 10px;font:600 13px system-ui;cursor:pointer}
   .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
@@ -62,7 +75,7 @@
 </style>
 </head>
 <body>
-  <div class="hud">3D — Célula <span id="labelKind" style="opacity:.9">Animal</span></div>
+  <div class="hud" id="hud">3D — Célula <span id="labelKind" style="opacity:.9">Animal</span></div>
   <div class="toolbar">
     <button id="btnAnimal" class="btn">Animal</button>
     <button id="btnVegetal" class="btn">Vegetal</button>
@@ -537,6 +550,40 @@ resetBtn.addEventListener('click',()=>{ const init=INIT[kind]||INIT.animal; mode
 centerBtn.addEventListener('click',()=> modelEl.object3D.position.set(0,0,0));
 scaleRange.addEventListener('input',()=> setScaleUniform(parseFloat(scaleRange.value)));
 speedRange.addEventListener('input',()=>{ const en=btnAuto.classList.contains('active'); modelEl.setAttribute('auto-rotator',`enabled:${en}; speed:${parseFloat(speedRange.value)}`); });
+
+/* ====== Colocar toolbar bajo la HUD (dinámico) ====== */
+function placeToolbar() {
+  const hud = document.getElementById('hud');
+  const tb  = document.querySelector('.toolbar');
+  if (!hud || !tb) return;
+  const rect = hud.getBoundingClientRect();
+  const margin = 8; // px debajo del título
+  const topPx = Math.round(rect.bottom + margin);
+  tb.style.top = `${topPx}px`;
+
+  // Mover también la barra de progreso un poco debajo de la toolbar
+  const progress = document.getElementById('progress');
+  if (progress) progress.style.top = `${topPx + 42}px`;
+}
+
+// Recolocar en eventos relevantes
+window.addEventListener('load', placeToolbar);
+window.addEventListener('resize', placeToolbar);
+window.addEventListener('orientationchange', placeToolbar);
+
+// Si cambia el texto (Animal/Vegetal), recolocamos también
+const labelKindEl = document.getElementById('labelKind');
+if (labelKindEl) {
+  const mo = new MutationObserver(placeToolbar);
+  mo.observe(labelKindEl, { childList:true, characterData:true, subtree:true });
+}
+
+/* Hook rápido: tras setUI() recalcular cuando el DOM ya pintó el nuevo texto */
+const __setUI_original = setUI;
+setUI = function(){
+  __setUI_original.apply(this, arguments);
+  requestAnimationFrame(placeToolbar);
+};
 
 /* ====== Inicio ====== */
 setUI(); renderInfoAndSelect(); load();
