@@ -6,112 +6,188 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=3,user-scalable=yes"/>
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 <style>
-  :root{ --uiScale:1; }
+  :root{
+    --uiScale:1;
+    --safeTop: env(safe-area-inset-top, 0px);
+    --gap: 8px;
+  }
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
   canvas,.a-canvas{position:fixed;inset:0;width:100vw!important;height:100vh!important;background:#000!important}
 
-  /* Cuando activas pinch-zoom de página */
+  /* Modo pinch-zoom de página */
   body.pinch-page{ touch-action: pinch-zoom !important; }
   body.pinch-page canvas, body.pinch-page .a-canvas{ touch-action: pinch-zoom !important; }
 
-  /* Todo el HUD dentro de un root para poder escalarlo si quisieras */
+  /* Root de UI escalable */
   .uiRoot{ position:fixed; inset:0; pointer-events:none; transform:scale(var(--uiScale)); transform-origin: top left; }
   .uiRoot > *{ pointer-events:auto; }
 
-  .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;font:600 14px system-ui;z-index:5;
-       background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0))}
-  .toolbar{position:fixed;right:8px;top:8px;display:flex;flex-wrap:wrap;gap:8px;z-index:6}
-  .btn{border:1px solid rgba(255,255,255,.25);color:#fff;background:rgba(0,0,0,.35);
-       border-radius:10px;padding:6px 10px;font:600 13px system-ui;cursor:pointer}
-  .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
+  /* CONTENEDOR SUPERIOR (Título + Toolbar + Progreso) */
+  .topStack{
+    position:fixed; left:0; right:0; top:0;
+    padding: calc(var(--safeTop) + 6px) 8px 0 8px;
+    display:flex; flex-direction:column; gap:10px;
+    z-index:9;
+    background:linear-gradient(180deg,rgba(0,0,0,.65),rgba(0,0,0,.25),rgba(0,0,0,0));
+  }
+  .hud{
+    color:#fff; font:600 14px/1.1 system-ui;
+    padding: 2px 4px 0 4px;
+  }
 
-  /* Progreso */
-  .progress{position:fixed;left:50%;transform:translateX(-50%);top:90px;z-index:9;width:min(60vw,520px);height:10px;
-            background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden;display:none;border:1px solid rgba(57,255,20,.35)}
-  .progress .bar{width:0%;height:100%;background:linear-gradient(90deg,#39ff14,#bfff00);
-                 box-shadow:0 0 12px #39ff14,0 0 24px #39ff14;transition:width .15s ease}
-  .progress .pct{position:absolute;right:0;top:-22px;font:700 12px system-ui;color:#bfff00;text-shadow:0 0 8px #39ff14}
+  .toolbar{
+    width:100%;
+    display:flex; flex-wrap:wrap; gap:var(--gap);
+    align-items:center;
+    /* Si no cabe, permite arrastre horizontal con el dedo */
+    overflow:auto; -webkit-overflow-scrolling:touch;
+    padding-bottom:2px;
+  }
+  .toolbar::-webkit-scrollbar{height:0} /* oculta scrollbar en móvil */
+  .btn{
+    border:1px solid rgba(255,255,255,.28);
+    color:#fff; background:rgba(0,0,0,.35);
+    border-radius:10px; padding:8px 12px;
+    font:600 13px system-ui; cursor:pointer; white-space:nowrap;
+  }
+  .btn:focus{ outline:2px solid #3cc9ff66; outline-offset:2px }
+  .btn.active{ background:rgba(60,201,255,.25); border-color:#3cc9ff }
+  .btn[aria-pressed="true"]{ background:rgba(60,201,255,.25); border-color:#3cc9ff }
 
-  .infoPanel{position:fixed;left:10px;top:100px;z-index:8;width:min(360px,86vw);max-height:60vh;overflow:auto;padding:12px;
-             background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.28);border-radius:14px;backdrop-filter:blur(2px)}
+  /* Progreso debajo de la toolbar */
+  .progressWrap{ display:flex; justify-content:center }
+  .progress{
+    width:min(90vw,560px); height:10px;
+    background:rgba(255,255,255,.15); border-radius:999px;
+    overflow:hidden; display:none;
+    border:1px solid rgba(57,255,20,.35)
+  }
+  .progress .bar{
+    width:0%; height:100%;
+    background:linear-gradient(90deg,#39ff14,#bfff00);
+    box-shadow:0 0 12px #39ff14,0 0 24px #39ff14;
+    transition:width .15s ease
+  }
+  .progress .pct{
+    position:absolute; right:0; transform:translateY(-120%);
+    font:700 12px system-ui; color:#bfff00; text-shadow:0 0 8px #39ff14
+  }
+
+  .infoPanel{
+    position:fixed; left:10px; top:calc(120px + var(--safeTop));
+    z-index:8; width:min(360px,86vw); max-height:60vh; overflow:auto; padding:12px;
+    background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.28); border-radius:14px; backdrop-filter:blur(2px)
+  }
   .infoPanel h3{margin:0 0 6px;font:700 16px system-ui;color:#fff}
   .infoPanel h4{margin:10px 0 6px;font:700 13px system-ui;color:#cfe6ff}
   .infoPanel ul{margin:0;padding-left:16px}
   .infoPanel li{margin:2px 0;color:#e9f2ff;font:13px system-ui}
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-  .chip{padding:6px 8px;border-radius:999px;font:700 12px system-ui;color:#132;background:rgba(57,255,20,.15);border:1px solid #39ff14;
-        box-shadow:0 0 8px rgba(57,255,20,.5) inset,0 0 6px rgba(57,255,20,.25)}
+  .chip{
+    padding:6px 8px;border-radius:999px;font:700 12px system-ui;color:#132;
+    background:rgba(57,255,20,.15); border:1px solid #39ff14;
+    box-shadow:0 0 8px rgba(57,255,20,.5) inset,0 0 6px rgba(57,255,20,.25)
+  }
 
-  .controls{position:fixed;right:10px;bottom:10px;z-index:8;display:grid;grid-template-columns:repeat(3,48px);grid-gap:8px}
-  .ctrl{width:48px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.45);color:#fff;
-        font:600 20px/48px system-ui;text-align:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+  .controls{
+    position:fixed; right:10px; bottom:10px; z-index:8;
+    display:grid; grid-template-columns:repeat(3,48px); grid-gap:8px
+  }
+  .ctrl{
+    width:48px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,.28);
+    background:rgba(0,0,0,.45);color:#fff; font:600 20px/48px system-ui;text-align:center;cursor:pointer;
+    box-shadow:0 4px 14px rgba(0,0,0,.25)
+  }
 
-  .panel{position:fixed;left:10px;bottom:10px;z-index:8;padding:8px 10px;background:rgba(0,0,0,.45);
-         border:1px solid rgba(255,255,255,.28);border-radius:10px;min-width:190px}
+  .panel{
+    position:fixed; left:10px; bottom:10px; z-index:8; padding:8px 10px;
+    background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.28); border-radius:10px; min-width:190px
+  }
   .panel label{display:flex;align-items:center;gap:6px;font:600 12px system-ui;color:#fff;margin:4px 0}
   .panel input[type=range]{width:130px}
 
-  .listPanel{position:fixed;right:10px;top:100px;z-index:8;padding:10px;background:rgba(0,0,0,.55);
-             border:1px solid rgba(255,255,255,.28);border-radius:12px;min-width:220px}
+  .listPanel{
+    position:fixed; right:10px; top:calc(120px + var(--safeTop)); z-index:8; padding:10px;
+    background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.28); border-radius:12px; min-width:220px
+  }
   .listPanel h4{margin:0 0 6px;font:700 13px system-ui;color:#cfe6ff}
   .listPanel select{width:100%;font:600 12px system-ui;padding:6px;border-radius:10px;border:1px solid #3cc9ff;background:#021525;color:#e8fbff}
   .listPanel .row{display:flex;gap:6px;margin-top:8px}
   .listPanel .row .btn{flex:1}
 
+  /* Botón flotante para ocultar UI */
+  .hideUI{
+    position:fixed; left:10px; top:calc(60px + var(--safeTop)); z-index:10;
+    border:1px solid rgba(255,255,255,.28); color:#fff; background:rgba(0,0,0,.45);
+    border-radius:999px; padding:6px 10px; font:600 12px system-ui; cursor:pointer
+  }
+
+  .ui-hidden .topStack,
+  .ui-hidden .infoPanel,
+  .ui-hidden .listPanel,
+  .ui-hidden .panel,
+  .ui-hidden .controls,
+  .ui-hidden .hideUI { display:none !important; }
+
   @media (max-width:480px){
-    .panel{padding:6px 8px;min-width:170px}
-    .panel input[type=range]{width:110px}
     .controls{grid-gap:6px}
     .ctrl{width:44px;height:44px;font:600 18px/44px system-ui}
-    .listPanel{right:8px;top:90px;min-width:200px}
+    .panel{padding:6px 8px;min-width:170px}
+    .panel input[type=range]{width:110px}
+    .listPanel{right:8px;min-width:200px}
   }
 </style>
 </head>
 <body>
   <div class="uiRoot">
-    <div class="hud">3D — Célula <span id="labelKind" style="opacity:.9">Animal</span></div>
-    <div class="toolbar">
-      <button id="btnAnimal" class="btn">Animal</button>
-      <button id="btnVegetal" class="btn">Vegetal</button>
-      <button id="btnAuto" class="btn" title="Auto-rotación">Auto</button>
-      <button id="btnTags" class="btn active" title="Mostrar/Ocultar etiquetas">Etiquetas</button>
-      <button id="btnDiff" class="btn active" title="Resaltar diferencias">Diferencias</button>
-      <!-- NEW: Solo seleccionado -->
-      <button id="btnSolo" class="btn" title="Mostrar solo el seleccionado">Solo</button>
-      <!-- NEW: Pinch página -->
-      <button id="btnPinchPage" class="btn" title="Pellizcar para hacer zoom de la página (no del modelo)">Pinch página</button>
-      <button id="btnInfo" class="btn active" title="Ver/Ocultar ficha">Info</button>
+    <button id="btnHideUI" class="hideUI" title="Ocultar/mostrar interfaz (H)">Ocultar UI</button>
+
+    <div class="topStack" id="topStack">
+      <div class="hud" id="hudTitle">3D — Célula <span id="labelKind" style="opacity:.9">Animal</span></div>
+
+      <div class="toolbar" id="toolbar" role="toolbar" aria-label="Controles de vista">
+        <button id="btnAnimal" class="btn" aria-pressed="false">Animal</button>
+        <button id="btnVegetal" class="btn" aria-pressed="false">Vegetal</button>
+        <button id="btnAuto" class="btn" title="Auto-rotación" aria-pressed="false">Auto</button>
+        <button id="btnTags" class="btn" title="Mostrar/Ocultar etiquetas" aria-pressed="true">Etiquetas</button>
+        <button id="btnDiff" class="btn" title="Resaltar diferencias" aria-pressed="true">Diferencias</button>
+        <button id="btnSolo" class="btn" title="Mostrar solo el seleccionado" aria-pressed="false">Solo</button>
+        <button id="btnPinchPage" class="btn" title="Pellizcar para hacer zoom de la página (no del modelo)" aria-pressed="false">Pinch página</button>
+        <button id="btnInfo" class="btn" title="Ver/Ocultar ficha" aria-pressed="true">Info</button>
+      </div>
+
+      <div class="progressWrap">
+        <div class="progress" id="progress"><div class="bar" id="progressBar"></div><div class="pct" id="progressPct">0%</div></div>
+      </div>
     </div>
 
-    <!-- Progreso -->
-    <div class="progress" id="progress"><div class="bar" id="progressBar"></div><div class="pct" id="progressPct">0%</div></div>
     <!-- Ficha EDU -->
     <div class="infoPanel" id="infoPanel"></div>
 
     <!-- Lista de componentes / acciones -->
     <div class="listPanel" id="listPanel">
       <h4>Componentes</h4>
-      <select id="compSelect"></select>
+      <select id="compSelect" aria-label="Selecciona componente"></select>
       <div class="row">
-        <button class="btn" id="btnFocus">Enfocar</button>
-        <button class="btn" id="btnPing">Ping</button>
+        <button class="btn" id="btnFocus" title="Enfocar (F)">Enfocar</button>
+        <button class="btn" id="btnPing"  title="Ping (P)">Ping</button>
       </div>
     </div>
 
     <!-- Controles -->
     <div class="controls" id="controls">
-      <div class="ctrl" id="rotL" title="Rotar izquierda">↶</div>
-      <div class="ctrl" id="reset" title="Reset">⟲</div>
-      <div class="ctrl" id="rotR" title="Rotar derecha">↷</div>
+      <div class="ctrl" id="rotL"   title="Rotar izquierda">↶</div>
+      <div class="ctrl" id="reset"  title="Reset">⟲</div>
+      <div class="ctrl" id="rotR"   title="Rotar derecha">↷</div>
       <div class="ctrl" id="zoomOut" title="Zoom -">−</div>
-      <div class="ctrl" id="center" title="Centrar">◎</div>
-      <div class="ctrl" id="zoomIn" title="Zoom +">+</div>
+      <div class="ctrl" id="center"  title="Centrar">◎</div>
+      <div class="ctrl" id="zoomIn"  title="Zoom +">+</div>
     </div>
 
     <!-- Panel sliders -->
     <div class="panel" id="panel">
-      <label>Zoom <input type="range" id="scaleRange" min="0.20" max="3.00" step="0.01" value="0.40"></label>
-      <label>Vel. rotación <input type="range" id="speedRange" min="-60" max="60" step="1" value="20"></label>
+      <label>Zoom <input type="range" id="scaleRange" min="0.20" max="3.00" step="0.01" value="0.40" aria-label="Zoom"></label>
+      <label>Vel. rotación <input type="range" id="speedRange" min="-60" max="60" step="1" value="20" aria-label="Velocidad auto-rotación"></label>
     </div>
   </div>
 
@@ -133,20 +209,30 @@
   </a-scene>
 
 <script>
-/* ====== Estado global para pinch mode ====== */
-// NEW: 'model' (por defecto) o 'page'
+/* =================== Util =================== */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+function toggleBtn(btn, on){
+  btn.classList.toggle('active', on);
+  btn.setAttribute('aria-pressed', String(!!on));
+}
+function savePref(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch{} }
+function loadPref(key, def){ try{ const v=JSON.parse(localStorage.getItem(key)); return (v===null||v===undefined)?def:v; }catch{ return def; } }
+
+/* =================== Estado global (pinch) =================== */
 window.PINCH_MODE = 'model';
 function setPinchMode(mode){
   window.PINCH_MODE = mode;
   document.body.classList.toggle('pinch-page', mode==='page');
-  // Cambiamos viewport para permitir zoom del navegador
+  // Control del viewport para zoom de página
   let mv = document.querySelector('meta[name="viewport"]');
   if (!mv) { mv = document.createElement('meta'); mv.setAttribute('name','viewport'); document.head.appendChild(mv); }
   mv.setAttribute('content', mode==='page' ? 'width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes'
                                            : 'width=device-width,initial-scale=1,maximum-scale=3,user-scalable=yes');
+  savePref('vh_pinch_mode', mode);
 }
 
-/* ====== Gestos / utilidades ====== */
+/* =================== Gestos / componentes =================== */
 AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},minScale:{default:0.05},maxScale:{default:3.0}},
   init:function(){this.oneFinger=false;this.lastX=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
     t.addEventListener('touchstart',e=>{ if(window.PINCH_MODE==='page') return; if(e.touches.length===1){this.oneFinger=true;this.lastX=e.touches[0].clientX;}},{passive:false});
@@ -184,11 +270,10 @@ AFRAME.registerComponent('auto-rotator',{schema:{speed:{default:20},enabled:{def
   if(!this.data.enabled)return; this.el.object3D.rotation.y+=THREE.MathUtils.degToRad(this.data.speed)*(dt/1000);
 }});
 
-/* Billboard para etiquetas */
 AFRAME.registerComponent('billboard',{tick:function(){const cam=this.el.sceneEl&&this.el.sceneEl.camera;if(!cam)return;this.el.object3D.quaternion.copy(cam.el.object3D.quaternion);}});
 
-/* ====== Hotspots (default + custom) ====== */
-const HS_DEFAULT={ /* … (igual que ya tenías) … */ 
+/* =================== Datos / contenido =================== */
+const HS_DEFAULT={
   animal:[
     {name:'Núcleo',desc:'Controla la célula y guarda el ADN.',pos:[0,0.12,0]},
     {name:'Mitocondrias',desc:'Producen ATP (energía).',pos:[0.18,0.06,0.04]},
@@ -219,70 +304,74 @@ function getHotspots(kind){
   return custom.map(c=>({ ...byName.get(c.name)||{}, ...c }));
 }
 
-/* ====== App ====== */
 const INIT={ animal:{scale:0.40,rotYdeg:0}, vegetal:{scale:0.36,rotYdeg:0} };
 const MIN_SCALE=0.20, MAX_SCALE=3.0, ROT_STEP_DEG=8, ZOOM_STEP=1.12;
-
-/* Ajusta rutas si hace falta */
-const MAP={ 
+const MAP={
   animal:{normal:"./assets/models/animal.glb",draco:"./assets/models/animal_draco.glb"},
   vegetal:{normal:"./assets/models/vegetal.glb",draco:"./assets/models/vegetal_draco.glb"}
 };
-
-const CONTENT={ /* … igual a tu versión anterior … */ 
-  animal:{titulo:"Célula Animal", componentes:[["Núcleo","Controla la célula y guarda el ADN."],["Membrana plasmática","Delimita y regula el intercambio de sustancias."],["Citoplasma","Medio donde ocurren reacciones químicas."],["Ribosomas","Fabrican proteínas."],["R.E. rugoso","Sintetiza y procesa proteínas."],["R.E. liso","Sintetiza lípidos y detoxifica."],["Aparato de Golgi","Empaqueta y distribuye proteínas/lípidos."],["Mitocondrias","Producen ATP (energía)."],["Lisosomas","Digieren desechos y partículas."],["Peroxisomas","Metabolismo de peróxidos."],["Citoesqueleto","Forma, soporte y transporte interno."],["Centriolos","Organizan huso mitótico en división celular."]], diferencia:["Sin pared celular","Sin cloroplastos","Vacuolas pequeñas y múltiples","Centriolos presentes","Lisosomas abundantes"]},
-  vegetal:{titulo:"Célula Vegetal", componentes:[["Núcleo","Controla la célula y guarda el ADN."],["Membrana plasmática","Regula el intercambio con el exterior."],["Pared celular (celulosa)","Aporta rigidez y protección."],["Citoplasma","Medio de reacciones celulares."],["Ribosomas","Síntesis de proteínas."],["R.E. rugoso/liso","Proteínas y lípidos."],["Aparato de Golgi","Empaque y secreción."],["Mitocondrias","Producción de ATP."],["Vacuola central","Almacenamiento y turgencia (presión interna)."],["Cloroplastos","Fotosíntesis: luz → energía química."],["Plasmodesmos","Canales de comunicación entre células vegetales."],["Citoesqueleto","Estructura y transporte."]], diferencia:["Pared celular (celulosa)","Cloroplastos (fotosíntesis)","Vacuola central grande","Plasmodesmos","Sin centriolos típicos"]}
+const CONTENT={
+  animal:{titulo:"Célula Animal",
+    componentes:[["Núcleo","Controla la célula y guarda el ADN."],["Membrana plasmática","Delimita y regula el intercambio de sustancias."],["Citoplasma","Medio donde ocurren reacciones químicas."],["Ribosomas","Fabrican proteínas."],["R.E. rugoso","Sintetiza y procesa proteínas."],["R.E. liso","Sintetiza lípidos y detoxifica."],["Aparato de Golgi","Empaqueta y distribuye proteínas/lípidos."],["Mitocondrias","Producen ATP (energía)."],["Lisosomas","Digieren desechos y partículas."],["Peroxisomas","Metabolismo de peróxidos."],["Citoesqueleto","Forma, soporte y transporte interno."],["Centriolos","Organizan huso mitótico en división celular."]],
+    diferencia:["Sin pared celular","Sin cloroplastos","Vacuolas pequeñas y múltiples","Centriolos presentes","Lisosomas abundantes"]},
+  vegetal:{titulo:"Célula Vegetal",
+    componentes:[["Núcleo","Controla la célula y guarda el ADN."],["Membrana plasmática","Regula el intercambio con el exterior."],["Pared celular (celulosa)","Aporta rigidez y protección."],["Citoplasma","Medio de reacciones celulares."],["Ribosomas","Síntesis de proteínas."],["R.E. rugoso/liso","Proteínas y lípidos."],["Aparato de Golgi","Empaque y secreción."],["Mitocondrias","Producción de ATP."],["Vacuola central","Almacenamiento y turgencia (presión interna)."],["Cloroplastos","Fotosíntesis: luz → energía química."],["Plasmodesmos","Canales de comunicación entre células vegetales."],["Citoesqueleto","Estructura y transporte."]],
+    diferencia:["Pared celular (celulosa)","Cloroplastos (fotosíntesis)","Vacuola central grande","Plasmodesmos","Sin centriolos típicos"]}
 };
 
+/* =================== DOM refs =================== */
 const params=new URLSearchParams(location.search);
 let kind=(params.get('m')||'animal').toLowerCase(); if(!MAP[kind]) kind='animal';
 
 const modelEl=document.getElementById('cellModel');
 const labelEl=document.getElementById('labelKind');
+
 const btnA=document.getElementById('btnAnimal');
 const btnV=document.getElementById('btnVegetal');
 const btnAuto=document.getElementById('btnAuto');
 const btnTags=document.getElementById('btnTags');
 const btnDiff=document.getElementById('btnDiff');
-const btnSolo=document.getElementById('btnSolo');          // NEW
-const btnPinchPage=document.getElementById('btnPinchPage'); // NEW
+const btnSolo=document.getElementById('btnSolo');
+const btnPinchPage=document.getElementById('btnPinchPage');
 const btnInfo=document.getElementById('btnInfo');
+const btnHideUI=document.getElementById('btnHideUI');
 
-const rotL=document.getElementById('rotL'), rotR=document.getElementById('rotR');
-const zoomIn=document.getElementById('zoomIn'), zoomOut=document.getElementById('zoomOut');
-const resetBtn=document.getElementById('reset'), centerBtn=document.getElementById('center');
-const scaleRange=document.getElementById('scaleRange'), speedRange=document.getElementById('speedRange');
-
-const infoPanel=document.getElementById('infoPanel');
 const compSelect=document.getElementById('compSelect');
 const btnFocus=document.getElementById('btnFocus');
 const btnPing=document.getElementById('btnPing');
 
-/* Progreso */
-const progress=document.getElementById('progress'); const progressBar=document.getElementById('progressBar'); const progressPct=document.getElementById('progressPct');
+const progress=document.getElementById('progress');
+const progressBar=document.getElementById('progressBar');
+const progressPct=document.getElementById('progressPct');
+
+/* =================== Progreso =================== */
 function showProgress(p){ progress.style.display='block'; setProgress(p); }
 function setProgress(p){ const v=Math.max(0,Math.min(1,p||0)); progressBar.style.width=(v*100).toFixed(0)+'%'; progressPct.textContent=(v*100).toFixed(0)+'%'; }
-function hideProgress(){ setProgress(1); setTimeout(()=>{progress.style.display='none';},300); }
+function hideProgress(){ setProgress(1); setTimeout(()=>{progress.style.display='none';},250); }
 const manager=THREE.DefaultLoadingManager; manager.onStart=()=>showProgress(0); manager.onProgress=(u,l,t)=>{if(t&&t>0)setProgress(l/t)}; manager.onLoad=()=>hideProgress();
 
-/* Info EDU */
-function renderInfo(k){ const c=CONTENT[k]; let html=`<h3>${c.titulo}</h3><h4>Componentes y función</h4><ul>`;
-  for(const [n,d] of c.componentes){ html+=`<li><b>${n}:</b> ${d}</li>`;} html+=`</ul><h4>Se diferencia por…</h4><div class="chips">`;
-  for(const it of c.diferencia){ html+=`<span class="chip">${it}</span>`;} html+=`</div>`; infoPanel.innerHTML=html; }
-function setUI(){ btnA.classList.toggle('active',kind==='animal'); btnV.classList.toggle('active',kind==='vegetal');
-  labelEl.textContent=(kind==='animal'?'Animal':'Vegetal'); renderInfo(kind);
-  const u=new URL(location.href); u.searchParams.set('m',kind); history.replaceState(null,'',u.toString());}
+/* =================== Info EDU =================== */
+function renderInfo(k){
+  const c=CONTENT[k]; let html=`<h3>${c.titulo}</h3><h4>Componentes y función</h4><ul>`;
+  for(const [n,d] of c.componentes){ html+=`<li><b>${n}:</b> ${d}</li>`;}
+  html+=`</ul><h4>Se diferencia por…</h4><div class="chips">`;
+  for(const it of c.diferencia){ html+=`<span class="chip">${it}</span>`;}
+  html+=`</div>`;
+  document.getElementById('infoPanel').innerHTML=html;
+}
+function setUI(){
+  toggleBtn(btnA, kind==='animal'); toggleBtn(btnV, kind==='vegetal');
+  labelEl.textContent=(kind==='animal'?'Animal':'Vegetal');
+  renderInfo(kind);
+  const u=new URL(location.href); u.searchParams.set('m',kind); history.replaceState(null,'',u.toString());
+}
 
-/* Rutas modelos */
-async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(),{method:'HEAD'}); return r.ok; }catch{return false;} }
-async function pick(){ const e=MAP[kind]; return (await exists(e.draco))?e.draco:e.normal; }
-
-/* Hotspots runtime */
+/* =================== Hotspots runtime =================== */
 let hsRoot=null, hsRecords=[];
 function clearHotspots(){ const old=document.getElementById('hsRoot'); if(old&&old.parentNode) old.parentNode.removeChild(old); hsRecords=[]; compSelect.innerHTML=''; }
 function populateSelect(items){ compSelect.innerHTML=''; items.forEach((it,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=it.name; compSelect.appendChild(o); }); }
 
-/* Dibuja hotspots (etiquetas visibles si Tags activo) */
+/* Dibuja hotspots */
 function makeHotspots(kind){
   clearHotspots();
   const items = getHotspots(kind) || [];
@@ -315,14 +404,12 @@ function makeHotspots(kind){
 
     tip.appendChild(bg); tip.appendChild(txt);
 
-    // Lógica "Solo seleccionado": solo deja visible tip/stem del elegido
     const showThis = labelsOn && (!soloOn || idx===selectedIndex);
     tip.setAttribute('visible', showThis);
     if (showThis) wrap.appendChild(stem);
     wrap.appendChild(dot); wrap.appendChild(tip);
 
     wrap.addEventListener('click', ()=>{
-      // Tap rápido: ping y, si está en "Solo", mover selección a éste
       dot.emit('ping');
       if (btnSolo.classList.contains('active')) {
         compSelect.value = idx;
@@ -339,20 +426,17 @@ function makeHotspots(kind){
 
   populateSelect(items);
 }
-
-/* Filtrado “Solo seleccionado”: oculta todas las etiquetas menos la elegida */
 function applySoloFilter(){
   const solo = btnSolo.classList.contains('active');
   const idx = parseInt(compSelect.value||0,10)||0;
+  const showLabels = btnTags.classList.contains('active');
   hsRecords.forEach(r=>{
-    const show = !solo ? btnTags.classList.contains('active') : (r.idx===idx);
+    const show = solo ? (r.idx===idx) : showLabels;
     r.tip.setAttribute('visible', show);
     if (show && !r.stem.parentNode) r.wrap.appendChild(r.stem);
     if (!show && r.stem.parentNode) r.wrap.removeChild(r.stem);
   });
 }
-
-/* Enfocar: gira el modelo hacia el hotspot */
 function focusHotspot(index){
   const rec = hsRecords[index]; if(!rec) return;
   const p = rec.wrap.object3D.position.clone();
@@ -369,10 +453,40 @@ function focusHotspot(index){
   rec.dot.emit('ping');
 }
 
-/* Info + UI */
-function setUIAndURL(){ setUI(); const u=new URL(location.href); u.searchParams.set('m',kind); history.replaceState(null,'',u.toString()); }
+/* =================== Normalizar & encuadrar =================== */
+function frameCameraOnly(){
+  const scene=modelEl.sceneEl; if(!scene) return;
+  const cam=scene.camera; if(!cam) return;
+  const THREE = window.THREE;
+  const box = new THREE.Box3().setFromObject(modelEl.object3D);
+  const sphere = box.getBoundingSphere(new THREE.Sphere());
+  const radius = sphere.radius * 1.12;
+  const fov = (cam.fov||60)*Math.PI/180;
+  const aspect = cam.aspect || (scene.canvas ? scene.canvas.width/scene.canvas.height : 1.777);
+  const distV = radius / Math.sin(fov/2);
+  const hFov = 2*Math.atan(Math.tan(fov/2)*aspect);
+  const distH = radius / Math.sin(hFov/2);
+  const dist = Math.max(distV,distH);
+  cam.el?.setAttribute('position', `0 0 ${dist.toFixed(4)}`);
+  cam.near=Math.max(0.01,dist*0.01); cam.far=dist*10; cam.updateProjectionMatrix();
+}
+function normalizeAndFrame(){
+  const THREE = window.THREE;
+  const mesh = modelEl.getObject3D('mesh'); if(!mesh) return;
+  const box = new THREE.Box3().setFromObject(mesh);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const maxDim = Math.max(size.x,size.y,size.z) || 1;
+  mesh.position.sub(center);
+  const s  = (kind==='animal'?0.30:0.30) / maxDim;
+  modelEl.object3D.scale.set(s,s,s);
+  frameCameraOnly();
+}
+window.addEventListener('resize', ()=>{ frameCameraOnly(); });
 
-/* Carga del modelo */
+/* =================== Carga del modelo =================== */
+async function exists(u){ try{ const r=await fetch(u+'?t='+Date.now(),{method:'HEAD'}); return r.ok; }catch{return false;} }
+async function pick(){ const e=MAP[kind]; return (await exists(e.draco))?e.draco:e.normal; }
 async function load(){
   showProgress(0);
   const url=(await pick())+'#'+Date.now(); const init=INIT[kind]||INIT.animal;
@@ -381,49 +495,76 @@ async function load(){
   modelEl.object3D.scale.set(init.scale,init.scale,init.scale);
   modelEl.object3D.rotation.set(0,THREE.MathUtils.degToRad(init.rotYdeg),0);
   modelEl.object3D.position.set(0,0,0);
-  scaleRange.value=init.scale;
+  document.getElementById('scaleRange').value=init.scale;
 
-  modelEl.setAttribute('auto-rotator',`enabled:${btnAuto.classList.contains('active')}; speed:${parseFloat(speedRange.value)}`);
+  modelEl.setAttribute('auto-rotator',`enabled:${btnAuto.classList.contains('active')}; speed:${parseFloat(document.getElementById('speedRange').value)}`);
   clearHotspots();
   setTimeout(()=>modelEl.setAttribute('gltf-model',url),30);
 }
 
-/* Botones top */
-btnA.onclick=()=>{ kind='animal'; setUIAndURL(); load(); };
-btnV.onclick=()=>{ kind='vegetal'; setUIAndURL(); load(); };
-btnAuto.onclick=()=>{ const en=!btnAuto.classList.contains('active'); btnAuto.classList.toggle('active',en);
-  modelEl.setAttribute('auto-rotator',`enabled:${en}; speed:${parseFloat(speedRange.value)}`);};
-btnInfo.onclick=()=>{ const v=infoPanel.style.display!=='none'; infoPanel.style.display=v?'none':'block'; btnInfo.classList.toggle('active',!v);};
-btnTags.onclick=()=>{ btnTags.classList.toggle('active'); makeHotspots(kind); };
-btnDiff.onclick=()=>{ btnDiff.classList.toggle('active'); makeHotspots(kind); };
-btnSolo.onclick=()=>{ btnSolo.classList.toggle('active'); applySoloFilter(); };
-// NEW: toggle pinch mode
-btnPinchPage.onclick=()=>{ const page = window.PINCH_MODE!=='page'; setPinchMode(page?'page':'model'); btnPinchPage.classList.toggle('active', page); };
+/* =================== Botones / eventos =================== */
+function restoreTogglesFromStorage(){
+  toggleBtn(btnTags, loadPref('vh_tags', true));
+  toggleBtn(btnDiff, loadPref('vh_diff', true));
+  toggleBtn(btnSolo, loadPref('vh_solo', false));
+  const pm = loadPref('vh_pinch_mode','model'); setPinchMode(pm);
+  toggleBtn(btnPinchPage, pm==='page');
+  toggleBtn(btnInfo, loadPref('vh_info', true));
+  document.getElementById('infoPanel').style.display = btnInfo.classList.contains('active') ? 'block' : 'none';
+}
+btnA.onclick=()=>{ kind='animal'; setUI(); load(); };
+btnV.onclick=()=>{ kind='vegetal'; setUI(); load(); };
+btnAuto.onclick=()=>{ const en=!btnAuto.classList.contains('active'); toggleBtn(btnAuto,en);
+  modelEl.setAttribute('auto-rotator',`enabled:${en}; speed:${parseFloat(document.getElementById('speedRange').value)}`);};
 
-/* Lista acciones */
+btnInfo.onclick=()=>{ const on=!btnInfo.classList.contains('active'); toggleBtn(btnInfo,on);
+  document.getElementById('infoPanel').style.display= on?'block':'none'; savePref('vh_info', on); };
+
+btnTags.onclick=()=>{ const on=!btnTags.classList.contains('active'); toggleBtn(btnTags,on); savePref('vh_tags', on); makeHotspots(kind); };
+btnDiff.onclick=()=>{ const on=!btnDiff.classList.contains('active'); toggleBtn(btnDiff,on); savePref('vh_diff', on); makeHotspots(kind); };
+btnSolo.onclick=()=>{ const on=!btnSolo.classList.contains('active'); toggleBtn(btnSolo,on); savePref('vh_solo', on); applySoloFilter(); };
+
+btnPinchPage.onclick=()=>{ const page = window.PINCH_MODE!=='page'; setPinchMode(page?'page':'model'); toggleBtn(btnPinchPage, page); };
+
+document.getElementById('rotL').addEventListener('click',()=>{ modelEl.object3D.rotation.y+=THREE.MathUtils.degToRad(ROT_STEP_DEG); });
+document.getElementById('rotR').addEventListener('click',()=>{ modelEl.object3D.rotation.y-=THREE.MathUtils.degToRad(ROT_STEP_DEG); });
+document.getElementById('zoomIn').addEventListener('click',()=> setScaleUniform(modelEl.object3D.scale.x*ZOOM_STEP));
+document.getElementById('zoomOut').addEventListener('click',()=> setScaleUniform(modelEl.object3D.scale.x/ZOOM_STEP));
+document.getElementById('reset').addEventListener('click',()=>{ const init=INIT[kind]||INIT.animal; modelEl.object3D.scale.set(init.scale,init.scale,init.scale);
+  modelEl.object3D.rotation.set(0,THREE.MathUtils.degToRad(init.rotYdeg),0); document.getElementById('scaleRange').value=init.scale; });
+document.getElementById('center').addEventListener('click',()=> modelEl.object3D.position.set(0,0,0));
+document.getElementById('scaleRange').addEventListener('input',()=> setScaleUniform(parseFloat(document.getElementById('scaleRange').value)));
+document.getElementById('speedRange').addEventListener('input',()=>{ const en=btnAuto.classList.contains('active'); modelEl.setAttribute('auto-rotator',`enabled:${en}; speed:${parseFloat(document.getElementById('speedRange').value)}`); });
+
+function clampScale(s){ return Math.min(Math.max(s,MIN_SCALE),MAX_SCALE); }
+function setScaleUniform(s){ s=clampScale(s); modelEl.object3D.scale.set(s,s,s); document.getElementById('scaleRange').value=s.toFixed(2); }
+
 compSelect.addEventListener('change', applySoloFilter);
 btnFocus.onclick = ()=> focusHotspot(parseInt(compSelect.value||0,10)||0);
 btnPing.onclick  = ()=> { const rec=hsRecords[parseInt(compSelect.value||0,10)||0]; rec && rec.dot.emit('ping'); };
 
-/* Eventos de carga → dibujar hotspots */
-modelEl.addEventListener('model-loaded',()=>{ hideProgress(); makeHotspots(kind); });
+/* Ocultar/mostrar UI */
+btnHideUI.addEventListener('click', ()=>{
+  document.body.classList.toggle('ui-hidden');
+  btnHideUI.textContent = document.body.classList.contains('ui-hidden') ? 'Mostrar UI' : 'Ocultar UI';
+});
+window.addEventListener('keydown', (e)=>{
+  if(e.key.toLowerCase()==='h'){ btnHideUI.click(); }
+  if(e.key.toLowerCase()==='f'){ btnFocus.click(); }
+  if(e.key.toLowerCase()==='p'){ btnPing.click(); }
+});
+
+/* =================== Eventos de carga =================== */
+modelEl.addEventListener('model-loaded',()=>{ hideProgress(); normalizeAndFrame(); makeHotspots(kind); });
 modelEl.addEventListener('model-error',e=>{ hideProgress(); alert('No se pudo cargar el modelo.'); console.error(e.detail);});
 
-/* Controles */
-function clampScale(s){ return Math.min(Math.max(s,MIN_SCALE),MAX_SCALE); }
-function setScaleUniform(s){ s=clampScale(s); modelEl.object3D.scale.set(s,s,s); scaleRange.value=s.toFixed(2); }
-rotL.addEventListener('click',()=>{ modelEl.object3D.rotation.y+=THREE.MathUtils.degToRad(ROT_STEP_DEG); });
-rotR.addEventListener('click',()=>{ modelEl.object3D.rotation.y-=THREE.MathUtils.degToRad(ROT_STEP_DEG); });
-zoomIn.addEventListener('click',()=> setScaleUniform(modelEl.object3D.scale.x*ZOOM_STEP));
-zoomOut.addEventListener('click',()=> setScaleUniform(modelEl.object3D.scale.x/ZOOM_STEP));
-resetBtn.addEventListener('click',()=>{ const init=INIT[kind]||INIT.animal; modelEl.object3D.scale.set(init.scale,init.scale,init.scale);
-  modelEl.object3D.rotation.set(0,THREE.MathUtils.degToRad(init.rotYdeg),0); scaleRange.value=init.scale;});
-centerBtn.addEventListener('click',()=> modelEl.object3D.position.set(0,0,0));
-scaleRange.addEventListener('input',()=> setScaleUniform(parseFloat(scaleRange.value)));
-speedRange.addEventListener('input',()=>{ const en=btnAuto.classList.contains('active'); modelEl.setAttribute('auto-rotator',`enabled:${en}; speed:${parseFloat(speedRange.value)}`); });
-
-/* Inicio */
-setUI(); load(); setPinchMode('model'); // arranca con pellizco para el modelo
+/* =================== Inicio =================== */
+(function init(){
+  // Restaura toggles/estado UI
+  restoreTogglesFromStorage();
+  setUI();
+  load();
+})();
 </script>
 </body>
 </html>
