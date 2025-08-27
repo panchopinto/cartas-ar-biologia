@@ -1,0 +1,26 @@
+Asunto: Solicitud de retirada por infracción de copyright (DMCA)
+
+A la atención del equipo legal de [PROVEEDOR/HOST]:
+
+Yo, Pancho Pinto, soy el titular de derechos de autor de los contenidos en:
+[URL ORIGINAL 1]
+[URL ORIGINAL 2]
+(Repositorio original: [URL de tu repo/source])
+
+Se ha publicado sin autorización el siguiente contenido infractor:
+[URL INFRINGENTE 1]
+[URL INFRINGENTE 2]
+
+Los materiales copiados incluyen (no limitativo): código fuente, modelos 3D, imágenes, textos. 
+Identificadores internos (canary): “Proyecto AR Biología — build:AAAA-MM-DD — hash:XXXXXX”.
+
+Solicito la retirada o deshabilitación inmediata del acceso a dicho contenido, al amparo de la DMCA.
+
+Declaro bajo pena de perjurio que:
+1) La información contenida en este aviso es exacta.
+2) Soy el propietario del derecho o estoy autorizado a actuar en su nombre.
+
+Firma:
+Nombre: Pancho Pinto
+Email: [tu email]
+Fecha: [fecha]
