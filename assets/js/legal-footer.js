@@ -1,27 +1,35 @@
-<script>
+// assets/js/legal-footer.js
 // Inyecta meta "canary" en <head> + footer legal fijo en <body>
-// ⚠️ Cambia CANARY_DATE y CANARY_HASH en cada release
-(function(){
-  var CANARY_DATE = '2025-08-27';
-  var CANARY_HASH = 'build-v3_FAPA-PROTOTYPE-K9999'; // usa algo único por versión (p.ej. git short sha)
+// ⚠️ Actualiza CANARY_DATE y CANARY_HASH en cada release
+(() => {
+  const CANARY_DATE = '2025-08-27';
+  const CANARY_HASH = 'build-v3_FAPA-PROTOTYPE-K9999'; // p.ej. git rev corto
 
-  // Meta canary (head)
+  // Meta canary (head) — crea o sobreescribe
   try {
-    var meta = document.querySelector('meta[name="canary"]');
+    let meta = document.querySelector('meta[name="canary"]');
     if (!meta) {
       meta = document.createElement('meta');
       meta.name = 'canary';
-      meta.content = 'Proyecto AR Biología — build:' + CANARY_DATE + ' — hash:' + CANARY_HASH;
       document.head.appendChild(meta);
     }
-  } catch(e){ /* nada */ }
+    meta.content = `Proyecto AR Biología — build:${CANARY_DATE} — hash:${CANARY_HASH}`;
+  } catch {}
 
   // Footer legal (body)
-  function addFooter(){
+  function addFooter() {
+    if (window.NO_LEGAL_FOOTER) return;              // opcional: desactivar por página
     if (document.getElementById('legalFooter')) return;
-    var f = document.createElement('div');
+
+    const yearStart = 2025;
+    const y = new Date().getFullYear();
+    const yearText = y > yearStart ? `${yearStart}–${y}` : `${y}`;
+
+    const f = document.createElement('div');
     f.id = 'legalFooter';
-    f.textContent = '© 2025 Pancho Pinto — Prohibida la copia y distribucion de contenido';
+    f.textContent =
+      window.LEGAL_FOOTER_TEXT ||
+      `© ${yearText} Pancho Pinto — Prohibida la copia y distribución de contenido`;
     f.style.cssText = [
       'position:fixed','left:10px','bottom:10px','z-index:99999',
       'padding:4px 8px','border:1px solid rgba(255,255,255,.25)',
@@ -30,10 +38,10 @@
     ].join(';');
     document.body.appendChild(f);
   }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', addFooter);
   } else {
     addFooter();
   }
 })();
-</script>
