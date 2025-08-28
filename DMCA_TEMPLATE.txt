@@ -8,6 +8,22 @@ https://panchopinto.github.io/cartas-ar-biologia/viewer.html?m=animal
 
 https://panchopinto.github.io/cartas-ar-biologia/viewer.html?m=vegetal
 
+https://panchopinto.github.io/cartas-ar-biologia/quiz_labels.html?m=animal
+
+https://panchopinto.github.io/cartas-ar-biologia/quiz_labels.html?m=vegetal
+
+https://panchopinto.github.io/cartas-ar-biologia/quiz_mcq.html
+
+https://panchopinto.github.io/cartas-ar-biologia/help.html
+
+https://panchopinto.github.io/cartas-ar-biologia/viewer_hotspots.html?m=animal
+
+https://panchopinto.github.io/cartas-ar-biologia/viewer_hotspots.html?m=vegetal
+
+https://panchopinto.github.io/cartas-ar-biologia/arjs-demo/animal_glb.html?v=2&m=animal
+
+https://panchopinto.github.io/cartas-ar-biologia/arjs-demo/vegetal_glb.html?v=2&m=vegetal
+
 (Repositorio original: https://panchopinto.github.io/cartas-ar-biologia/)
 
 Se ha publicado sin autorización el siguiente contenido infractor:
@@ -27,4 +43,5 @@ Firma:
 Nombre: Pancho Pinto
 Email: franciscoandresp@gmail.com
 Fecha: 01/07/2025
+
 
