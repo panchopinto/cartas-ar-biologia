@@ -6,25 +6,17 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 <style>
+  :root{
+    /* Offset dinámico para no chocar con footer/badges fijos (se setea vía JS) */
+    --fixedBottomOffset: 0px;
+  }
+
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
   canvas,.a-canvas{position:fixed;inset:0;width:100vw!important;height:100vh!important;background:#000!important}
 
-  .hud{
-    position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;font:600 14px system-ui;z-index:5;
-    background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));
-    line-height:1.25; /* ayuda cuando el título ocupa 2 líneas */
-    padding-bottom:.7rem; /* respirito extra para el cálculo */
-  }
-
-  /* Fallback: empuja la toolbar un poco más abajo por defecto (JS la colocará con precisión) */
-  .toolbar{
-    position:fixed;right:8px;top:calc(12px + env(safe-area-inset-top, 0px));
-    display:flex;gap:8px;z-index:6;
-  }
-  @media (max-width: 600px){
-    .toolbar{ top:calc(48px + env(safe-area-inset-top, 0px)); }
-  }
-
+  .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;font:600 14px system-ui;z-index:5;
+       background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0))}
+  .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px;z-index:6}
   .btn{border:1px solid rgba(255,255,255,.25);color:#fff;background:rgba(0,0,0,.35);
        border-radius:10px;padding:6px 10px;font:600 13px system-ui;cursor:pointer}
   .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
@@ -43,15 +35,19 @@
   .infoPanel li{margin:2px 0;color:#e9f2ff;font:13px system-ui}
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
   .chip{padding:6px 8px;border-radius:999px;font:700 12px system-ui;color:#d7e9ff;background:rgba(0,0,0,.25);border:1px solid #39536d}
-  /* Resaltado de diferencias (animal/vegetal) */
   .chip--diff{ color:#fff !important; border-color:#39ff14 !important; background:rgba(57,255,20,.15) !important; box-shadow:0 0 10px rgba(57,255,20,.25) inset }
 
   .controls{position:fixed;right:10px;bottom:10px;z-index:8;display:grid;grid-template-columns:repeat(3,48px);grid-gap:8px}
   .ctrl{width:48px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.45);color:#fff;
         font:600 20px/48px system-ui;text-align:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25)}
 
-  .panel{position:fixed;left:10px;bottom:10px;z-index:8;padding:8px 10px;background:rgba(0,0,0,.45);
-         border:1px solid rgba(255,255,255,.28);border-radius:10px;min-width:190px}
+  .panel{
+    position:fixed;left:10px;
+    /* antes: bottom:10px; ahora subimos según footer/badges */
+    bottom: calc(10px + var(--fixedBottomOffset));
+    z-index:8;padding:8px 10px;background:rgba(0,0,0,.45);
+    border:1px solid rgba(255,255,255,.28);border-radius:10px;min-width:190px
+  }
   .panel label{display:flex;align-items:center;gap:6px;font:600 12px system-ui;color:#fff;margin:4px 0}
   .panel input[type=range]{width:130px}
 
@@ -75,7 +71,7 @@
 </style>
 </head>
 <body>
-  <div class="hud" id="hud">3D — Célula <span id="labelKind" style="opacity:.9">Animal</span></div>
+  <div class="hud">3D — Célula <span id="labelKind" style="opacity:.9">Animal</span></div>
   <div class="toolbar">
     <button id="btnAnimal" class="btn">Animal</button>
     <button id="btnVegetal" class="btn">Vegetal</button>
@@ -142,7 +138,6 @@
       tap-reset="scale:0.40; rotYdeg:0"
       auto-rotator="enabled:false; speed:20"></a-entity>
 
-    <!-- Cámara y cursor para clicks -->
     <a-entity id="cameraRig">
       <a-entity camera position="0 0 1.4" cursor="rayOrigin: mouse" raycaster="objects: .hs-click"></a-entity>
     </a-entity>
@@ -384,11 +379,11 @@ const infoPanel=document.getElementById('infoPanel');
 const editor=document.getElementById('editor'); const hsSelect=document.getElementById('hsSelect');
 const stepInput=document.getElementById('step'); const dragToggle=document.getElementById('dragToggle');
 
-/* ====== Normalización & encuadre (query: ?size=&pad=&zoom=) ====== */
+/* ====== Normalización & encuadre ====== */
 const QP = new URLSearchParams(location.search);
-const TARGET_SIZE = parseFloat(QP.get('size') || '0.30'); // diámetro máximo final, en unidades de escena
-const TARGET_PAD  = parseFloat(QP.get('pad')  || '1.10'); // margen para que quepa en pantalla
-const ZOOM0       = parseFloat(QP.get('zoom') || '1.00'); // multiplicador inicial opcional
+const TARGET_SIZE = parseFloat(QP.get('size') || '0.30');
+const TARGET_PAD  = parseFloat(QP.get('pad')  || '1.10');
+const ZOOM0       = parseFloat(QP.get('zoom') || '1.00');
 let DEFAULT_SCALE = 1.0;
 let USER_MULT     = 1.0;
 
@@ -417,7 +412,7 @@ function normalizeAndFrame(){
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
   const maxDim = Math.max(size.x,size.y,size.z) || 1;
-  mesh.position.sub(center); // centra el modelo
+  mesh.position.sub(center);
   const s  = TARGET_SIZE / maxDim;
   const s2 = s * ZOOM0;
   modelEl.object3D.scale.set(s2,s2,s2);
@@ -438,7 +433,7 @@ function setProgress(p){ const v=Math.max(0,Math.min(1,p||0)); progressBar.style
 function hideProgress(){ setProgress(1); setTimeout(()=>{progress.style.display='none';},300); }
 const manager=THREE.DefaultLoadingManager; manager.onStart=()=>showProgress(0); manager.onProgress=(u,l,t)=>{if(t&&t>0)setProgress(l/t)}; manager.onLoad=()=>hideProgress();
 
-/* ====== Ficha EDU (chips verdes) ====== */
+/* ====== Ficha EDU ====== */
 function renderInfo(k){
   const c=CONTENT[k]; let html=`<h3>${c.titulo}</h3><h4>Componentes y función</h4><ul>`;
   for(const [n,d] of c.componentes){ html+=`<li><b>${n}:</b> ${d}</li>`;}
@@ -551,42 +546,25 @@ centerBtn.addEventListener('click',()=> modelEl.object3D.position.set(0,0,0));
 scaleRange.addEventListener('input',()=> setScaleUniform(parseFloat(scaleRange.value)));
 speedRange.addEventListener('input',()=>{ const en=btnAuto.classList.contains('active'); modelEl.setAttribute('auto-rotator',`enabled:${en}; speed:${parseFloat(speedRange.value)}`); });
 
-/* ====== Colocar toolbar bajo la HUD (dinámico) ====== */
-function placeToolbar() {
-  const hud = document.getElementById('hud');
-  const tb  = document.querySelector('.toolbar');
-  if (!hud || !tb) return;
-  const rect = hud.getBoundingClientRect();
-  const margin = 8; // px debajo del título
-  const topPx = Math.round(rect.bottom + margin);
-  tb.style.top = `${topPx}px`;
-
-  // Mover también la barra de progreso un poco debajo de la toolbar
-  const progress = document.getElementById('progress');
-  if (progress) progress.style.top = `${topPx + 42}px`;
-}
-
-// Recolocar en eventos relevantes
-window.addEventListener('load', placeToolbar);
-window.addEventListener('resize', placeToolbar);
-window.addEventListener('orientationchange', placeToolbar);
-
-// Si cambia el texto (Animal/Vegetal), recolocamos también
-const labelKindEl = document.getElementById('labelKind');
-if (labelKindEl) {
-  const mo = new MutationObserver(placeToolbar);
-  mo.observe(labelKindEl, { childList:true, characterData:true, subtree:true });
-}
-
-/* Hook rápido: tras setUI() recalcular cuando el DOM ya pintó el nuevo texto */
-const __setUI_original = setUI;
-setUI = function(){
-  __setUI_original.apply(this, arguments);
-  requestAnimationFrame(placeToolbar);
-};
-
 /* ====== Inicio ====== */
 setUI(); renderInfoAndSelect(); load();
+</script>
+
+<!-- Ajuste dinámico para evitar solape con footer/badges fijos -->
+<script>
+(function reserveBottomForFixedBadges(){
+  function h(el){ return el ? Math.ceil(el.getBoundingClientRect().height) : 0; }
+  function apply(){
+    // IDs comunes de overlays fijos en tu sitio
+    const ids = ['legalFooter','acSourceBadge','acSource','sourceBadge'];
+    let maxH = 0;
+    for(const id of ids){ maxH = Math.max(maxH, h(document.getElementById(id))); }
+    const pad = maxH ? 14 : 0; // aire extra
+    document.documentElement.style.setProperty('--fixedBottomOffset', (maxH + pad) + 'px');
+  }
+  window.addEventListener('load', ()=>{ apply(); setTimeout(apply,150); });
+  window.addEventListener('resize', apply);
+})();
 </script>
   <script src="./assets/js/legal-footer.js" defer></script>
   <script src="./assets/js/anti-copy.js" defer></script>
