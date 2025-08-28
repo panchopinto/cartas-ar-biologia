@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Proyecto AR Biología — Selector de Célula</title>
+  <title>Proyecto Realidad Aumentada Biología — Selector de Célula</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     :root{--bg:#0b0f14;--card:#111825;--muted:#9ab;--text:#e6eef7;--accent:#3cc9ff;}
@@ -30,9 +30,9 @@
       <div class="card">
         <div class="row">
           <div>
-            <h2>AR — Célula Animal</h2>
+            <h2>Realidad Aumentada — Célula Animal</h2>
             <p>Usa el marcador HIRO y permite acceso a la cámara.</p>
-            <a class="btn" href="arjs-demo/cell_ar.html?m=animal">Abrir RA (Animal)</a>
+            <a class="btn" href="arjs-demo/cell_ar.html?m=animal">Abrir Realidad Aumentada (Animal)</a>
           </div>
           <div id="qrAnimal" class="qr"></div>
         </div>
@@ -41,9 +41,9 @@
       <div class="card">
         <div class="row">
           <div>
-            <h2>AR — Célula Vegetal</h2>
+            <h2>Realidad Aumentada — Célula Vegetal</h2>
             <p>Usa el marcador HIRO y permite acceso a la cámara.</p>
-            <a class="btn" href="arjs-demo/cell_ar.html?m=vegetal">Abrir RA (Vegetal)</a>
+            <a class="btn" href="arjs-demo/cell_ar.html?m=vegetal">Abrir Realidad Aumentada (Vegetal)</a>
           </div>
           <div id="qrVegetal" class="qr"></div>
         </div>
@@ -66,6 +66,6 @@
   new QRCode(document.getElementById("qrAnimal"),  { text: urlAnimal,  width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
   new QRCode(document.getElementById("qrVegetal"), { text: urlVegetal, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
 </script>
-
+<script src="./assets/js/legal-footer.js" defer></script>
 </body>
 </html>
