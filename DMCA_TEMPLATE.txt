@@ -3,9 +3,12 @@ Asunto: Solicitud de retirada por infracción de copyright (DMCA)
 A la atención del equipo legal de [PROVEEDOR/HOST]:
 
 Yo, Pancho Pinto, soy el titular de derechos de autor de los contenidos en:
-[URL ORIGINAL 1]
-[URL ORIGINAL 2]
-(Repositorio original: [URL de tu repo/source])
+
+https://panchopinto.github.io/cartas-ar-biologia/viewer.html?m=animal
+
+https://panchopinto.github.io/cartas-ar-biologia/viewer.html?m=vegetal
+
+(Repositorio original: https://panchopinto.github.io/cartas-ar-biologia/)
 
 Se ha publicado sin autorización el siguiente contenido infractor:
 [URL INFRINGENTE 1]
@@ -22,5 +25,6 @@ Declaro bajo pena de perjurio que:
 
 Firma:
 Nombre: Pancho Pinto
-Email: [tu email]
-Fecha: [fecha]
+Email: franciscoandresp@gmail.com
+Fecha: 01/07/2025
+
