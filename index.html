@@ -11,11 +11,11 @@
 <meta property="og:image" content="./assets/img/og_cover.jpg">
 <meta property="og:type" content="website">
 
-<!-- Canary para anti-clon -->
-<meta name="canary" content="Proyecto AR Biología — build:2025-08-28 — hash:site-index-01"/>
-
 <link rel="icon" href="./assets/img/favicon.png">
 <script src="https://unpkg.com/qrious@4.0.2/dist/qrious.min.js"></script>
+
+<!-- legal-footer (inyecta meta canary + footer legal) -->
+<script src="./assets/js/legal-footer.js" defer></script>
 
 <style>
   :root{
@@ -413,12 +413,10 @@ if (btnEtiq) btnEtiq.href = links.tags_animal;
 })();
 </script>
 
-<!-- (Opcional) Anti-copia y telemetría: descomenta cuando tengas los archivos/endpoint -->
-<!-- <script src="./assets/js/anti-copy.js" defer></script> -->
+<!-- (Opcional) Telemetría educativa — descomenta cuando tengas endpoint -->
 <!-- <script src="./assets/js/edu-telemetry.js" defer data-endpoint="https://TU-ENDPOINT" data-project="AR-BIO" data-ask-name="off"></script> -->
 
-<!-- Footer legal (correcto cargarlo aquí o en <head> con defer) -->
-<script src="./assets/js/legal-footer.js" defer></script>
+<!-- Anti-copia (activo) -->
 <script src="./assets/js/anti-copy.js" defer></script>
 </body>
 </html>
