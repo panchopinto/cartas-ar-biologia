@@ -3,7 +3,7 @@
 // ⚠️ Cambia CANARY_DATE y CANARY_HASH en cada release
 (function(){
   var CANARY_DATE = '2025-08-27';
-  var CANARY_HASH = 'build-v3'; // usa algo único por versión (p.ej. git short sha)
+  var CANARY_HASH = 'build-v3_FAPA-PROTOTYPE-K9999'; // usa algo único por versión (p.ej. git short sha)
 
   // Meta canary (head)
   try {
@@ -21,7 +21,7 @@
     if (document.getElementById('legalFooter')) return;
     var f = document.createElement('div');
     f.id = 'legalFooter';
-    f.textContent = '© 2025 Pancho Pinto — Prohibida la copia';
+    f.textContent = '© 2025 Pancho Pinto — Prohibida la copia y distribucion de contenido';
     f.style.cssText = [
       'position:fixed','left:10px','bottom:10px','z-index:99999',
       'padding:4px 8px','border:1px solid rgba(255,255,255,.25)',
