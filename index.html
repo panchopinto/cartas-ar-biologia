@@ -11,6 +11,9 @@
 <meta property="og:image" content="./assets/img/og_cover.jpg">
 <meta property="og:type" content="website">
 
+<!-- Canary para anti-clon -->
+<meta name="canary" content="Proyecto AR Biología — build:2025-08-28 — hash:site-index-01"/>
+
 <link rel="icon" href="./assets/img/favicon.png">
 <script src="https://unpkg.com/qrious@4.0.2/dist/qrious.min.js"></script>
 
@@ -54,7 +57,7 @@
   /* Forzar mayúsculas SOLO al botón TRIVIA */
   #btnTrivia { text-transform: uppercase; letter-spacing: .5px; }
 
-  /* Dropdown Trivia (igual look, solo que ocupa el mismo ancho del botón) */
+  /* Dropdown Trivia */
   .dropdown{position:relative; width:100%}
   .dropdown .menu{
     position:absolute; left:0; top:110%;
@@ -166,7 +169,7 @@
             <li id="t_point1">Hotspots con nombre y función</li>
             <li id="t_point2">Resaltado de diferencias</li>
             <li id="t_point3">Auto-rotación, centrar y zoom</li>
-            <li id="t_point4">Modo Realidad Aunmentada con marcador HIRO</li>
+            <li id="t_point4">Modo Realidad Aumentada con marcador HIRO</li>
           </ul>
           <div class="chips">
             <span class="chip">3D</span>
@@ -282,7 +285,7 @@ makeQR('qrVegetal', links.ra_veg);
 /* ========= Idiomas ========= */
 const i18n = {
   es: {
-    t_site: "Realidad Virtual y Realidad Aumentada - Biología.",
+    t_site: "Realidad Aumentada y Realidad Virtual - Biología",
     t_site_sub: "Célula Animal y Vegetal en 3D y RA",
     t_help: "Ayuda",
     t_trivia: "Trivia",
@@ -295,7 +298,7 @@ const i18n = {
     t_point1: "Hotspots con nombre y función",
     t_point2: "Resaltado de diferencias",
     t_point3: "Auto-rotación, centrar y zoom",
-    t_point4: "Modo Realidad Aunmentada con marcador HIRO",
+    t_point4: "Modo Realidad Aumentada con marcador HIRO",
     t_animal_title: "Célula Animal",
     t_animal_desc: "Estructuras típicas: lisosomas y centriolos. Sin pared celular ni cloroplastos.",
     t_veg_title: "Célula Vegetal",
@@ -314,7 +317,7 @@ const i18n = {
     t_footer: "Funciona en navegadores modernos. Para Realidad Aumentada (RA) usa el marcador HIRO."
   },
   en: {
-    t_site: "Virtual Reality and Augmented Reality — Biology.",
+    t_site: "Virtual Reality and Augmented Reality — Biology",
     t_site_sub: "Animal and Plant Cell in 3D & AR",
     t_help: "Help",
     t_trivia: "Trivia",
@@ -409,6 +412,12 @@ if (btnEtiq) btnEtiq.href = links.tags_animal;
   window.addEventListener('resize', apply);
 })();
 </script>
-  <script src="./assets/js/legal-footer.js" defer></script>
+
+<!-- (Opcional) Anti-copia y telemetría: descomenta cuando tengas los archivos/endpoint -->
+<!-- <script src="./assets/js/anti-copy.js" defer></script> -->
+<!-- <script src="./assets/js/edu-telemetry.js" defer data-endpoint="https://TU-ENDPOINT" data-project="AR-BIO" data-ask-name="off"></script> -->
+
+<!-- Footer legal (correcto cargarlo aquí o en <head> con defer) -->
+<script src="./assets/js/legal-footer.js" defer></script>
 </body>
 </html>
