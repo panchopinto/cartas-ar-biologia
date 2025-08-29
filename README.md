@@ -1,6 +1,6 @@
 # Realidad Aumentada y Realidad Virtual Biología — v2 (sin app, gratis) 
 
-Este proyecto ofrece un visor 3D interactivo para estudiar la célula animal y la célula vegetal directamente en el navegador (móvil y PC)
+Este proyecto ofrece un visor 3D interactivo para estudiar la célula animal y la célula vegetal directamente en el navegador (móvil, PC, tablet, oculus quest)
 El objetivo es apoyar el aprendizaje de biología con visualizaciones claras, responsivas y fáciles de manipular con una experiencia fluida en teléfonos y computadoras.
 
 Incluye:
