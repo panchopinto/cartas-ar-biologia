@@ -109,6 +109,36 @@
     .ctrl{width:44px;height:44px;font:600 18px/44px system-ui}
     .listPanel{right:8px;min-width:200px}
   }
+
+  /* ===== Ayuda VR (overlay modal) ===== */
+  .helpVR-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,.55);
+    display:none; align-items:center; justify-content:center; z-index:99999;
+    backdrop-filter: blur(2px);
+  }
+  .helpVR{
+    width:min(720px,92vw);
+    background:rgba(2,14,24,.9);
+    border:1px solid rgba(60,201,255,.35);
+    border-radius:14px; padding:14px; color:#def;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
+  }
+  .helpVR h3{margin:0 0 8px; font:700 16px system-ui; color:#fff}
+  .helpVR p{margin:4px 0 10px; font:600 13px system-ui; color:#d5ebff}
+  .helpRow{display:grid; grid-template-columns: 36px 1fr; gap:10px; align-items:flex-start; margin:8px 0}
+  .helpKey{
+    width:36px; height:36px; border-radius:10px; display:grid; place-items:center;
+    background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.25); color:#fff; font:700 14px system-ui;
+  }
+  .helpTitle{font:700 13px system-ui; color:#bfe8ff}
+  .helpDesc{font:600 12px system-ui; color:#d7f3ff; opacity:.95}
+  .helpActions{display:flex; gap:8px; justify-content:flex-end; margin-top:10px}
+  .helpBtn{
+    border:1px solid rgba(255,255,255,.25); color:#fff; background:rgba(0,0,0,.35);
+    border-radius:10px; padding:6px 10px; font:700 12px system-ui; cursor:pointer;
+  }
+  .helpBtn.primary{ background:#1279c4; border-color:#0e68a8 }
+  .helpVR-backdrop.show{ display:flex }
 </style>
 </head>
 <body>
@@ -123,6 +153,8 @@
       <button id="btnSolo" class="btn" title="Mostrar solo el seleccionado">Solo</button>
       <button id="btnPinchPage" class="btn" title="Pellizcar para zoom de la página (no del modelo)">Pinch página</button>
       <button id="btnInfo" class="btn active" title="Ver/Ocultar ficha">Info</button>
+      <!-- NUEVO: botón Ayuda VR -->
+      <button id="btnHelpVR" class="btn" title="Controles en casco (Quest 2)">Ayuda VR</button>
     </div>
 
     <!-- Progreso -->
@@ -154,6 +186,51 @@
     <div class="panel" id="panel">
       <label>Zoom <input type="range" id="scaleRange" min="0.20" max="3.00" step="0.01" value="0.40"></label>
       <label>Vel. rotación <input type="range" id="speedRange" min="-60" max="60" step="1" value="20"></label>
+    </div>
+  </div>
+
+  <!-- ===== Overlay Ayuda VR ===== -->
+  <div id="helpVRBackdrop" class="helpVR-backdrop" aria-hidden="true">
+    <div class="helpVR" role="dialog" aria-modal="true" aria-labelledby="helpVRTitle">
+      <h3 id="helpVRTitle">Controles en Oculus Quest 2</h3>
+      <p>Apunta con el <b>rayo</b> del control derecho al modelo. Usa estos gestos dentro del casco:</p>
+
+      <div class="helpRow">
+        <div class="helpKey">RT</div>
+        <div>
+          <div class="helpTitle">Gatillo derecho (Trigger)</div>
+          <div class="helpDesc">Mantén presionado para <b>agarrar</b> el modelo y <b>moverlo</b> con la mano. Suelta para dejarlo en el lugar.</div>
+        </div>
+      </div>
+
+      <div class="helpRow">
+        <div class="helpKey">↔︎</div>
+        <div>
+          <div class="helpTitle">Stick derecho (Izq/Der)</div>
+          <div class="helpDesc"><b>Rota</b> la célula sobre su eje Y.</div>
+        </div>
+      </div>
+
+      <div class="helpRow">
+        <div class="helpKey">↕︎</div>
+        <div>
+          <div class="helpTitle">Stick derecho (Arriba/Abajo)</div>
+          <div class="helpDesc"><b>Escala</b> el modelo (con límites de tamaño).</div>
+        </div>
+      </div>
+
+      <div class="helpRow">
+        <div class="helpKey">VR</div>
+        <div>
+          <div class="helpTitle">Autoposicionar</div>
+          <div class="helpDesc">Al entrar a VR, si la célula quedó en el piso, se coloca automáticamente <b>frente a ti</b> y a <b>1.2 m</b> de altura.</div>
+        </div>
+      </div>
+
+      <div class="helpActions">
+        <button id="helpVRToggleHint" class="helpBtn">No mostrar automáticamente</button>
+        <button id="helpVRClose" class="helpBtn primary">Entendido</button>
+      </div>
     </div>
   </div>
 
@@ -251,7 +328,7 @@ AFRAME.registerComponent('mouse-pan',{schema:{panFactor:{default:1}},
       const y=2*z*Math.tan(fov/2)/h; const x=y*(cam.aspect||1.777); return {x,y}; };
     const onDown=(e)=>{ shift=e.shiftKey; if(e.button===1 || e.button===2 || (e.button===0 && shift)){ down=true; start={x:e.clientX,y:e.clientY}; startPos=this.el.object3D.position.clone(); e.preventDefault(); } };
     const onMove=(e)=>{ if(!down) return; e.preventDefault(); const dx=e.clientX-start.x, dy=e.clientY-start.y; const wp=worldPerPixel();
-      const tx=dx*wp.x*this.data.panFactor; const ty=-dy*wp.y*this.data.panFactor; this.el.object3D.position.set(startPos.x+tx, startPos.y+ty, startPos.z); };
+      const tx=dx*wp.x*this.data.panFactor; const ty=-dy*wp.y*this.data.panFactor; this.el.object3D.position.set(startPos.x+tx, startPos.y+ty, this.el.object3D.position.z); };
     const onUp=()=>{ down=false; };
     const add=()=>{ const c=s.canvas||s; c.addEventListener('mousedown',onDown,{passive:false}); window.addEventListener('mousemove',onMove,{passive:false});
       window.addEventListener('mouseup',onUp,{passive:false}); c.addEventListener('contextmenu',e=>e.preventDefault()); };
@@ -334,6 +411,7 @@ const btnDiff=document.getElementById('btnDiff');
 const btnSolo=document.getElementById('btnSolo');
 const btnPinchPage=document.getElementById('btnPinchPage');
 const btnInfo=document.getElementById('btnInfo');
+const btnHelpVR=document.getElementById('btnHelpVR');
 
 const rotL=document.getElementById('rotL'), rotR=document.getElementById('rotR');
 const zoomIn=document.getElementById('zoomIn'), zoomOut=document.getElementById('zoomOut');
@@ -535,6 +613,9 @@ function restoreTogglesFromStorage(){
 
   const sc = localStorage.getItem('vh_scale'); if(sc) { const v=parseFloat(sc); if(!isNaN(v)) scaleRange.value=v; }
   const sp = localStorage.getItem('vh_speed'); if(sp){ const v=parseFloat(sp); if(!isNaN(v)) speedRange.value=v; }
+
+  // ayuda VR
+  const hv = localStorage.getItem('vh_help_auto'); if(hv===null){ localStorage.setItem('vh_help_auto','1'); } // default: mostrar auto
 }
 function saveToggle(id, val){ localStorage.setItem(id, val ? '1' : '0'); }
 
@@ -573,11 +654,35 @@ centerBtn.addEventListener('click',()=> modelEl.object3D.position.set(0,0,0));
 scaleRange.addEventListener('input',()=> setScaleUniform(parseFloat(scaleRange.value)));
 speedRange.addEventListener('input',()=>{ const en=btnAuto.classList.contains('active'); modelEl.setAttribute('auto-rotator',`enabled:${en}; speed:${parseFloat(speedRange.value)}`); localStorage.setItem('vh_speed', parseFloat(speedRange.value)); });
 
+/* ====== Ayuda VR (lógica) ====== */
+const helpVRBackdrop = document.getElementById('helpVRBackdrop');
+const helpVRClose = document.getElementById('helpVRClose');
+const helpVRToggleHint = document.getElementById('helpVRToggleHint');
+function openHelpVR(){ helpVRBackdrop.classList.add('show'); helpVRBackdrop.setAttribute('aria-hidden','false'); }
+function closeHelpVR(){ helpVRBackdrop.classList.remove('show'); helpVRBackdrop.setAttribute('aria-hidden','true'); }
+btnHelpVR.addEventListener('click', openHelpVR);
+helpVRClose.addEventListener('click', closeHelpVR);
+helpVRBackdrop.addEventListener('click', (e)=>{ if(e.target===helpVRBackdrop) closeHelpVR(); });
+helpVRToggleHint.addEventListener('click', ()=>{
+  const cur = localStorage.getItem('vh_help_auto') !== '0';
+  const next = !cur;
+  localStorage.setItem('vh_help_auto', next ? '1' : '0');
+  helpVRToggleHint.textContent = next ? 'No mostrar automáticamente' : 'Volver a mostrar automáticamente';
+});
+
 /* ====== Inicio ====== */
 (function init(){
   restoreTogglesFromStorage();
   setUI();
   load();
+
+  // Mostrar ayuda automáticamente al entrar a VR solo si está activado (por defecto sí).
+  const scene = document.querySelector('a-scene');
+  const autoHelp = () => {
+    const shouldShow = localStorage.getItem('vh_help_auto') !== '0';
+    if (shouldShow) openHelpVR();
+  };
+  scene.addEventListener('enter-vr', autoHelp, false);
 })();
 </script>
 
@@ -621,6 +726,12 @@ AFRAME.registerComponent('vr-grab-rotate-scale', {
       const worldPoint = hit[0].point.clone();
       const obj = tgt.object3D;
       obj.worldToLocal(this.localHit.copy(worldPoint));
+
+      // Haptics suave al agarrar (si disponible)
+      try {
+        const gp = (this.right.components['oculus-touch-controls']||{}).controller;
+        gp?.hapticActuators?.[0]?.pulse(0.4, 80);
+      } catch(e){}
     }
   },
   endGrab: function () { this.grabbing = false; },
