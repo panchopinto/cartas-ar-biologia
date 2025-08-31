@@ -39,10 +39,12 @@
   }
   .hud .tag{opacity:.9}
 
-  /* Barra de botones debajo del HUD */
+  /* Barra de botones debajo del HUD (centrada) */
   .toolbar{
-    position:fixed; right:8px;
+    position:fixed;
     top: calc(var(--hudH) + env(safe-area-inset-top) + 6px);
+    left:50%;
+    transform:translateX(-50%);
     display:flex;flex-wrap:wrap;gap:8px;z-index:6
   }
   .btn{
