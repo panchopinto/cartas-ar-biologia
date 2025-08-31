@@ -9,7 +9,14 @@
   :root{
     --uiScale:1;
     --hudH: 44px;           /* altura del título */
+    /* Jerarquía de capas */
+    --z-hud: 10;
+    --z-toolbar: 12;
+    --z-progress: 14;
+    --z-list: 20;           /* panel de componentes por encima de todo */
+    --z-controls: 8;        /* controles de abajo */
   }
+
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
   canvas,.a-canvas{
     position:fixed;inset:0;width:100vw!important;height:100vh!important;background:#000!important;
@@ -28,39 +35,70 @@
   }
   .uiRoot > *{ pointer-events:auto; }
 
-  /* Título/HUD: reservamos altura para no chocar con toolbar */
-.hud{
-  position:fixed;left:0;right:0;top:0;
-  height: calc(var(--hudH) + env(safe-area-inset-top));
-  padding: 8px 12px calc(8px + env(safe-area-inset-top)) 12px;
-  display:flex; align-items:flex-end; gap:8px;
-  justify-content:center;           /* 🔥 centra el título */
-  text-align:center;                /* 🔥 centra el texto interno */
-  color:#fff;font:600 14px system-ui; z-index:5;
-  background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));
-}
-
+  /* Título/HUD */
+  .hud{
+    position:fixed;left:0;right:0;top:0;
+    height: calc(var(--hudH) + env(safe-area-inset-top));
+    padding: 8px 12px calc(8px + env(safe-area-inset-top)) 12px;
+    display:flex; align-items:flex-end; gap:8px;
+    justify-content:center;           /* centra el título */
+    text-align:center;                /* centra el texto interno */
+    color:#fff;font:600 14px system-ui; z-index: var(--z-hud);
+    background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));
+  }
   .hud .tag{opacity:.9}
 
-  /* Barra de botones debajo del HUD (centrada) */
+  /* Toolbar “chip bar” centrada bajo el título */
   .toolbar{
     position:fixed;
-    top: calc(var(--hudH) + env(safe-area-inset-top) + 30px);
+    top: calc(var(--hudH) + env(safe-area-inset-top) + 18px);
     left:50%;
     transform:translateX(-50%);
-    display:flex;flex-wrap:wrap;gap:8px;z-index:6
-  }
-  .btn{
-    border:1px solid rgba(255,255,255,.25);color:#fff;background:rgba(0,0,0,.35);
-    border-radius:10px;padding:6px 10px;font:600 13px system-ui;cursor:pointer
-  }
-  .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
+    display:flex;flex-wrap:wrap;gap:10px;
+    z-index: var(--z-toolbar);
 
-  /* Progreso */
+    /* chip bar */
+    padding:8px 10px;
+    border-radius:999px;
+    background:rgba(0,0,0,.35);
+    border:1px solid rgba(255,255,255,.18);
+    backdrop-filter: blur(6px);
+    box-shadow:0 8px 24px rgba(0,0,0,.25);
+    max-width:min(92vw,1100px);
+    justify-content:center;
+  }
+
+  /* Botones */
+  .btn{
+    border:1px solid rgba(255,255,255,.22);
+    color:#fff;
+    background:rgba(0,0,0,.35);
+    border-radius:12px;
+    padding:8px 12px;
+    font:600 13px/1 system-ui;
+    cursor:pointer;
+    transition:transform .08s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+    min-height:36px;
+  }
+  .btn:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px); }
+  .btn:active{ transform:translateY(0); }
+  .btn:focus-visible{
+    outline:none;
+    box-shadow:0 0 0 2px rgba(60,201,255,.55);
+    border-color:#3cc9ff;
+  }
+  .btn.active{
+    background:rgba(60,201,255,.22);
+    border-color:#3cc9ff;
+    box-shadow:0 0 0 1px rgba(60,201,255,.25) inset;
+  }
+
+  /* Progreso (alineado con la toolbar) */
   .progress{
     position:fixed;left:50%;transform:translateX(-50%);
-    top: calc(var(--hudH) + env(safe-area-inset-top) + 56px);
-    z-index:9;width:min(60vw,520px);height:10px;
+    top: calc(var(--hudH) + env(safe-area-inset-top) + 66px);
+    z-index: var(--z-progress);
+    width:min(60vw,520px);height:10px;
     background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden;display:none;border:1px solid rgba(57,255,20,.35)
   }
   .progress .bar{width:0%;height:100%;background:linear-gradient(90deg,#39ff14,#bfff00);
@@ -69,7 +107,7 @@
 
   /* Ficha EDU */
   .infoPanel{
-    position:fixed;left:10px;top: calc(var(--hudH) + env(safe-area-inset-top) + 56px);z-index:8;
+    position:fixed;left:10px;top: calc(var(--hudH) + env(safe-area-inset-top) + 66px);z-index:8;
     width:min(360px,86vw);max-height:60vh;overflow:auto;padding:12px;
     background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.28);border-radius:14px;backdrop-filter:blur(2px)
   }
@@ -84,22 +122,39 @@
     box-shadow:0 0 8px rgba(57,255,20,.5) inset,0 0 6px rgba(57,255,20,.25)
   }
 
-  /* Lista de componentes / acciones */
+  /* Lista de componentes / acciones (encima de todo) */
   .listPanel{
-    position:fixed;right:10px;top: calc(var(--hudH) + env(safe-area-inset-top) + 56px);z-index:8;
-    padding:10px;background:rgba(0,0,0,.55);
-    border:1px solid rgba(255,255,255,.28);border-radius:12px;min-width:220px
+    position:fixed;
+    right:12px;
+    top: calc(var(--hudH) + env(safe-area-inset-top) + 66px);
+    z-index: var(--z-list);
+    padding:12px;background:rgba(0,0,0,.55);
+    border:1px solid rgba(255,255,255,.28);border-radius:12px;min-width:240px;
+    box-shadow:0 6px 24px rgba(0,0,0,.35);
+    backdrop-filter: blur(2px);
   }
   .listPanel h4{margin:0 0 6px;font:700 13px system-ui;color:#cfe6ff}
-  .listPanel select{width:100%;font:600 12px system-ui;padding:6px;border-radius:10px;border:1px solid #3cc9ff;background:#021525;color:#e8fbff}
-  .listPanel .row{display:flex;gap:6px;margin-top:8px}
-  .listPanel .row .btn{flex:1}
+  .listPanel select{width:100%;font:600 12px system-ui;padding:8px;border-radius:10px;border:1px solid #3cc9ff;background:#021525;color:#e8fbff}
+  .listPanel .row{display:flex;gap:8px;margin-top:10px}
+  .listPanel .row .btn{flex:1;text-align:center}
 
   /* Controles (abajo) */
-  .controls{position:fixed;right:10px;bottom:10px;z-index:8;display:grid;grid-template-columns:repeat(3,48px);grid-gap:8px}
+  .controls{
+    position:fixed;right:10px;bottom:10px;z-index: var(--z-controls);
+    display:grid;grid-template-columns:repeat(3,48px);grid-gap:8px
+  }
   .ctrl{
-    width:48px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.45);color:#fff;
-    font:600 20px/48px system-ui;text-align:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25)
+    width:48px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,.24);
+    background:rgba(0,0,0,.45);color:#fff;
+    font:600 20px/48px system-ui;text-align:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);
+    transition:transform .06s ease, background .15s ease, border-color .15s ease;
+  }
+  .ctrl:hover{ background:rgba(255,255,255,.08); transform:translateY(-1px); }
+  .ctrl:active{ transform:translateY(0); }
+  .ctrl:focus-visible{
+    outline:none;
+    box-shadow:0 0 0 2px rgba(60,201,255,.55), 0 4px 14px rgba(0,0,0,.25);
+    border-color:#3cc9ff;
   }
 
   .panel{position:fixed;left:10px;bottom:10px;z-index:8;padding:8px 10px;background:rgba(0,0,0,.45);
@@ -112,7 +167,9 @@
     .panel input[type=range]{width:110px}
     .controls{grid-gap:6px}
     .ctrl{width:44px;height:44px;font:600 18px/44px system-ui}
-    .listPanel{right:8px;min-width:200px}
+    .listPanel{right:8px;min-width:210px}
+    .toolbar{ gap:8px; padding:8px; }
+    .btn{ padding:7px 10px; min-height:34px; }
   }
 
   /* ===== Ayuda VR (overlay modal) ===== */
@@ -149,6 +206,8 @@
 <body>
   <div class="uiRoot">
     <div class="hud">3D — Célula <span id="labelKind" class="tag">Animal</span></div>
+
+    <!-- Toolbar chip bar -->
     <div class="toolbar">
       <button id="btnAnimal" class="btn">Animal</button>
       <button id="btnVegetal" class="btn">Vegetal</button>
@@ -158,13 +217,13 @@
       <button id="btnSolo" class="btn" title="Mostrar solo el seleccionado">Solo</button>
       <button id="btnPinchPage" class="btn" title="Pellizcar para zoom de la página (no del modelo)">Pinch página</button>
       <button id="btnInfo" class="btn" title="Ver/Ocultar ficha">Info</button>
-      <!-- NUEVO: botón Ayuda VR -->
       <button id="btnHelpVR" class="btn" title="Controles en casco (Quest 2)">Ayuda VR</button>
     </div>
 
     <!-- Progreso -->
     <div class="progress" id="progress"><div class="bar" id="progressBar"></div><div class="pct" id="progressPct">0%</div></div>
-    <!-- Ficha EDU -->
+
+    <!-- Ficha EDU (apagada por defecto) -->
     <div class="infoPanel" id="infoPanel" style="display:none"></div>
 
     <!-- Lista de componentes / acciones -->
@@ -177,7 +236,7 @@
       </div>
     </div>
 
-    <!-- Controles -->
+    <!-- Controles inferiores -->
     <div class="controls" id="controls">
       <div class="ctrl" id="rotL" title="Rotar izquierda">↶</div>
       <div class="ctrl" id="reset" title="Reset">⟲</div>
@@ -613,17 +672,18 @@ function restoreTogglesFromStorage(){
   const diff   = localStorage.getItem('vh_diff');   if(diff!==null) btnDiff.classList.toggle('active', diff==='1');
   const solo   = localStorage.getItem('vh_solo');   if(solo!==null) btnSolo.classList.toggle('active', solo==='1');
   const auto   = localStorage.getItem('vh_auto');   if(auto!==null) btnAuto.classList.toggle('active', auto==='1');
-  // 🔽 cambia este bloque
-const infoOn = localStorage.getItem('vh_info');
-if (infoOn !== null) {
-  const on = infoOn === '1';
-  btnInfo.classList.toggle('active', on);
-  infoPanel.style.display = on ? 'block' : 'none';
-} else {
-  // por defecto apagado
-  btnInfo.classList.remove('active');
-  infoPanel.style.display = 'none';
-}
+
+  // Info: si no existe clave, queda apagado
+  const infoOn = localStorage.getItem('vh_info');
+  if (infoOn !== null) {
+    const on = infoOn === '1';
+    btnInfo.classList.toggle('active', on);
+    infoPanel.style.display = on ? 'block' : 'none';
+  } else {
+    btnInfo.classList.remove('active');
+    infoPanel.style.display = 'none';
+  }
+
   const pinch  = localStorage.getItem('vh_pinch') || 'model'; setPinchMode(pinch);
 
   const sc = localStorage.getItem('vh_scale'); if(sc) { const v=parseFloat(sc); if(!isNaN(v)) scaleRange.value=v; }
