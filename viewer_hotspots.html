@@ -16,8 +16,11 @@
     --z-list: 20;
     --z-controls: 8;
     --z-float: 30;
-    /* Ancho estándar (mínimo) para los botones de la columna izquierda */
-    --leftBtnMinW: 180px;
+
+    /* Columna izquierda */
+    --leftColMaxW: 340px;       /* máximo en px */
+    --leftColVW:   44vw;        /* máximo relativo en viewport */
+    --leftBtnMinLines: 2;       /* altura pensada para 2 líneas */
   }
 
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
@@ -35,45 +38,50 @@
     height: calc(var(--hudH) + var(--safeTop));
     padding: 8px 12px calc(8px + var(--safeTop)) 12px;
     display:flex; align-items:flex-end; gap:8px; justify-content:center;
-    color:#fff; font:600 14px system-ui; z-index: var(--z-hud);
+    color:#fff; font:600 clamp(12px,1.6vw,14px) system-ui; z-index: var(--z-hud);
     background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));
   }
   .hud .tag{opacity:.9}
 
-  /* ===== Columna izquierda ===== */
+  /* ===== Columna izquierda (dos tarjetas: 1) Animal/Vegetal  2) resto) ===== */
   .leftColumn{
     position:fixed; z-index: var(--z-sides);
     left:12px;
     top: calc(var(--hudH) + var(--safeTop) + 10px);
     display:flex; flex-direction:column; gap:10px;
-    width:min(44vw, 320px);
+    width: min(var(--leftColVW), var(--leftColMaxW));
+    max-width: 92vw;
   }
   .card{
     background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.18);
     backdrop-filter: blur(6px); border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.25);
-    padding:8px;
+    padding:10px;
   }
   .group{ display:flex; flex-direction:column; gap:8px }
 
-  /* Botones base */
+  /* Botones base (multilínea y tipografía responsiva) */
   .btn{
     border:1px solid rgba(255,255,255,.22);
     color:#fff; background:rgba(0,0,0,.35);
-    border-radius:12px; padding:9px 12px; text-align:left;
-    font:600 13px/1 system-ui; cursor:pointer; transition:.15s; min-height:36px;
+    border-radius:12px;
+    padding:10px 12px;                 /* margen cómodo para varias líneas */
+    text-align:left;
+    font:600 clamp(12px,1.6vw,14px)/1.25 system-ui;
+    cursor:pointer;
+    transition:.15s;
+    min-height: calc( (1.25em * var(--leftBtnMinLines)) + 10px + 10px ); /* 2 líneas + padding */
+    white-space: normal;               /* permite multilínea */
+    word-break: break-word;            /* evita desbordes en palabras largas */
   }
   .btn:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px) }
   .btn:active{ transform:translateY(0) }
   .btn:focus-visible{ outline:none; box-shadow:0 0 0 2px rgba(60,201,255,.55); border-color:#3cc9ff }
   .btn.active{ background:rgba(60,201,255,.22); border-color:#3cc9ff; box-shadow:0 0 0 1px rgba(60,201,255,.25) inset }
 
-  /* Botones de la columna izquierda */
+  /* Botones de la izquierda: todos mismo ancho (100% del contenedor) */
   .leftBtn{
     display:inline-flex; align-items:center; justify-content:flex-start;
-    white-space:nowrap;
-    min-width: var(--leftBtnMinW);
-    width: fit-content;
-    max-width: 100%;
+    width: 100%;
   }
 
   /* Progreso centrado */
@@ -88,21 +96,21 @@
                  box-shadow:0 0 12px #39ff14,0 0 24px #39ff14;transition:width .15s ease}
   .progress .pct{position:absolute;right:0;top:-22px;font:700 12px system-ui;color:#bfff00;text-shadow:0 0 8px #39ff14}
 
-  /* Info EDU */
+  /* Info EDU (se mantiene) */
   .infoPanel{
     position:fixed;left:12px;z-index:8; padding:12px; width:min(360px,86vw);max-height:60vh;overflow:auto;
     background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.28);border-radius:14px;backdrop-filter:blur(2px)
   }
   .infoPanel{ top: calc(var(--hudH) + var(--safeTop) + 10px + 200px) }
-  .infoPanel h3{margin:0 0 6px;font:700 16px system-ui;color:#fff}
-  .infoPanel h4{margin:10px 0 6px;font:700 13px system-ui;color:#cfe6ff}
+  .infoPanel h3{margin:0 0 6px;font:700 clamp(14px,1.8vw,16px) system-ui;color:#fff}
+  .infoPanel h4{margin:10px 0 6px;font:700 clamp(12px,1.6vw,13px) system-ui;color:#cfe6ff}
   .infoPanel ul{margin:0;padding-left:16px}
-  .infoPanel li{margin:2px 0;color:#e9f2ff;font:13px system-ui}
+  .infoPanel li{margin:2px 0;color:#e9f2ff;font: clamp(12px,1.6vw,13px) system-ui}
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
   .chip{ padding:6px 8px;border-radius:999px;font:700 12px system-ui;color:#132;
     background:rgba(57,255,20,.15);border:1px solid #39ff14; box-shadow:0 0 8px rgba(57,255,20,.5) inset,0 0 6px rgba(57,255,20,.25) }
 
-  /* Panel Componentes (derecha) */
+  /* Panel Componentes (derecha): botones también uniformes y multilínea */
   .listPanel{
     position:fixed; right:12px; z-index: var(--z-list);
     top: calc(var(--hudH) + var(--safeTop) + 10px);
@@ -110,10 +118,14 @@
     border:1px solid rgba(255,255,255,.28);border-radius:12px;min-width:240px;
     box-shadow:0 6px 24px rgba(0,0,0,.35); backdrop-filter: blur(2px);
   }
-  .listPanel h4{margin:0 0 6px;font:700 13px system-ui;color:#cfe6ff}
-  .listPanel select{width:100%;font:600 12px system-ui;padding:8px;border-radius:10px;border:1px solid #3cc9ff;background:#021525;color:#e8fbff}
+  .listPanel h4{margin:0 0 6px;font:700 clamp(12px,1.6vw,13px) system-ui;color:#cfe6ff}
+  .listPanel select{width:100%;font:600 clamp(12px,1.6vw,12.5px) system-ui;padding:8px;border-radius:10px;border:1px solid #3cc9ff;background:#021525;color:#e8fbff}
   .listPanel .row{display:flex;gap:8px;margin-top:10px}
-  .listPanel .row .btn{flex:1;text-align:center}
+  .listPanel .row .btn{
+    flex:1;text-align:center;
+    white-space: normal; word-break: break-word; line-height:1.25;
+    min-height: calc( (1.25em * var(--leftBtnMinLines)) + 10px + 10px );
+  }
 
   /* Controles inferiores */
   .controls{
@@ -138,20 +150,23 @@
     border:1px solid rgba(255,255,255,.28);border-radius:10px;min-width:190px
   }
   body.no-vr-button .panel{ bottom:10px }
-  .panel label{display:flex;align-items:center;gap:6px;font:600 12px system-ui;color:#fff;margin:4px 0}
+  .panel label{display:flex;align-items:center;gap:6px;font:600 clamp(12px,1.6vw,12.5px) system-ui;color:#fff;margin:4px 0}
   .panel input[type=range]{width:130px}
 
   /* Ayuda VR flotante (0.5cm más abajo que antes) */
   #btnHelpVRFloat{
     position:fixed; right:12px; bottom:64px; z-index: var(--z-float);
     border:1px solid rgba(255,255,255,.22); color:#fff; background:rgba(0,0,0,.55);
-    border-radius:12px; padding:10px 14px; font:700 13px system-ui; cursor:pointer;
+    border-radius:12px; padding:10px 14px; font:700 clamp(12px,1.6vw,13px) system-ui; cursor:pointer;
     box-shadow:0 6px 18px rgba(0,0,0,.35);
   }
   body.no-vr-button #btnHelpVRFloat{ display:none }
 
+  /* Ajustes móviles */
   @media (max-width:480px){
-    .btn{ padding:8px 10px; min-height:34px }
+    .leftColumn{ left:8px }
+    .card{ padding:8px }
+    .btn{ padding:9px 10px }
     .controls{grid-gap:6px}
     .ctrl{width:44px;height:44px;font:600 18px/44px system-ui}
     .listPanel{min-width:210px}
@@ -160,14 +175,14 @@
   /* ===== Ayuda VR overlay ===== */
   .helpVR-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:99999; backdrop-filter: blur(2px) }
   .helpVR{ width:min(720px,92vw); background:rgba(2,14,24,.9); border:1px solid rgba(60,201,255,.35); border-radius:14px; padding:14px; color:#def; box-shadow:0 10px 30px rgba(0,0,0,.4) }
-  .helpVR h3{margin:0 0 8px; font:700 16px system-ui; color:#fff}
-  .helpVR p{margin:4px 0 10px; font:600 13px system-ui; color:#d5ebff}
+  .helpVR h3{margin:0 0 8px; font:700 clamp(14px,1.8vw,16px) system-ui; color:#fff}
+  .helpVR p{margin:4px 0 10px; font:600 clamp(12px,1.6vw,13px) system-ui; color:#d5ebff}
   .helpRow{display:grid; grid-template-columns: 36px 1fr; gap:10px; align-items:flex-start; margin:8px 0}
   .helpKey{ width:36px; height:36px; border-radius:10px; display:grid; place-items:center; background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.25); color:#fff; font:700 14px system-ui }
-  .helpTitle{font:700 13px system-ui; color:#bfe8ff}
-  .helpDesc{font:600 12px system-ui; color:#d7f3ff; opacity:.95}
+  .helpTitle{font:700 clamp(12px,1.6vw,13px) system-ui; color:#bfe8ff}
+  .helpDesc{font:600 clamp(12px,1.6vw,13px) system-ui; color:#d7f3ff; opacity:.95}
   .helpActions{display:flex; gap:8px; justify-content:flex-end; margin-top:10px}
-  .helpBtn{ border:1px solid rgba(255,255,255,.25); color:#fff; background:rgba(0,0,0,.35); border-radius:10px; padding:6px 10px; font:700 12px system-ui; cursor:pointer }
+  .helpBtn{ border:1px solid rgba(255,255,255,.25); color:#fff; background:rgba(0,0,0,.35); border-radius:10px; padding:6px 10px; font:700 clamp(12px,1.6vw,12.5px) system-ui; cursor:pointer }
   .helpBtn.primary{ background:#1279c4; border-color:#0e68a8 }
   .helpVR-backdrop.show{ display:flex }
 </style>
@@ -187,11 +202,11 @@
       <div class="card">
         <div class="group">
           <button id="btnAuto"       class="btn leftBtn" title="Auto-rotación">Auto</button>
-          <button id="btnTags"       class="btn leftBtn active" title="Mostrar/Ocultar etiquetas">Etiquetas</button>
-          <button id="btnDiff"       class="btn leftBtn active" title="Resaltar diferencias">Diferencias</button>
-          <button id="btnSolo"       class="btn leftBtn" title="Mostrar solo el seleccionado">Solo</button>
-          <button id="btnPinchPage"  class="btn leftBtn" title="Pellizcar para zoom de la página (no del modelo)">Pinch página</button>
-          <button id="btnInfo"       class="btn leftBtn" title="Ver/Ocultar ficha">Info</button>
+          <button id="btnTags"       class="btn leftBtn active" title="Mostrar u ocultar las etiquetas en el modelo 3D">Etiquetas</button>
+          <button id="btnDiff"       class="btn leftBtn active" title="Resaltar las diferencias principales entre célula animal y vegetal">Diferencias</button>
+          <button id="btnSolo"       class="btn leftBtn" title="Mostrar solo el componente seleccionado de la lista">Solo</button>
+          <button id="btnPinchPage"  class="btn leftBtn" title="Activar pellizcar para hacer zoom de la PÁGINA (no del modelo)">Pinch página</button>
+          <button id="btnInfo"       class="btn leftBtn" title="Ver u ocultar la ficha informativa">Info</button>
         </div>
       </div>
     </div>
@@ -316,7 +331,7 @@
   </a-scene>
 
 <script>
-/* === Colocar Ayuda VR justo sobre el VR, bajado 0.5cm === */
+/* === Posicionar “Ayuda VR” sobre el botón VR, con margen adicional de 0.5cm === */
 (function watchVRButton(){
   const clsNoVR  = 'no-vr-button';
   const helpBtn  = document.getElementById('btnHelpVRFloat');
@@ -326,7 +341,6 @@
     if (vrBtn){
       document.body.classList.remove(clsNoVR);
       const h = Math.max(56, vrBtn.offsetHeight || 56);
-      /* posición respecto al botón VR; 0.5cm más abajo del offset previo */
       helpBtn.style.bottom = `calc(${h + 12}px - 0.5cm)`;
       helpBtn.style.right  = '12px';
       helpBtn.style.display = 'block';
@@ -341,7 +355,7 @@
   place();
 })();
 
-/* Abrir/cerrar overlay de ayuda */
+/* Overlay de ayuda */
 const helpVRBackdrop = document.getElementById('helpVRBackdrop');
 const helpVRClose = document.getElementById('helpVRClose');
 const helpVRToggleHint = document.getElementById('helpVRToggleHint');
@@ -370,7 +384,7 @@ function setPinchMode(mode){
   localStorage.setItem('vh_pinch', mode);
 }
 
-/* ====== Gestos ====== */
+/* ====== Gestos / interacción de tu versión anterior (sin cambios lógicos) ====== */
 AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},minScale:{default:0.05},maxScale:{default:3.0}},
   init:function(){this.oneFinger=false;this.lastX=0;this.lastY=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
     t.addEventListener('touchstart',e=>{ if(window.PINCH_MODE==='page') return; if(e.touches.length===1){this.oneFinger=true;this.lastX=e.touches[0].clientX; this.lastY=e.touches[0].clientY;}},{passive:false});
@@ -782,7 +796,7 @@ speedRange.addEventListener('input',()=>{ const en=btnAuto.classList.contains('a
   setUI();
   load();
 
-  // Mostrar ayuda automáticamente al entrar a VR solo si está activado (por defecto sí).
+  // Mostrar ayuda automáticamente al entrar a VR si está activado.
   const scene = document.querySelector('a-scene');
   const autoHelp = () => {
     const shouldShow = localStorage.getItem('vh_help_auto') !== '0';
@@ -833,7 +847,7 @@ AFRAME.registerComponent('vr-grab-rotate-scale', {
       const obj = tgt.object3D;
       obj.worldToLocal(this.localHit.copy(worldPoint));
 
-      // Haptics suave al agarrar (si disponible)
+      // Haptics suave (si disponible)
       try {
         const gp = (this.right.components['oculus-touch-controls']||{}).controller;
         gp?.hapticActuators?.[0]?.pulse(0.4, 80);
