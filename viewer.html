@@ -9,17 +9,42 @@
   :root{
     /* Offset dinámico para no chocar con footer/badges fijos (se setea vía JS) */
     --fixedBottomOffset: 0px;
+
+    /* NUEVO: alto de la barra del título y safe-area superior (notch) */
+    --hudH: 48px;
+    --safeTop: env(safe-area-inset-top, 0px);
   }
 
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
   canvas,.a-canvas{position:fixed;inset:0;width:100vw!important;height:100vh!important;background:#000!important}
 
-  .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;font:600 14px system-ui;z-index:5;
-       background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0))}
+  /* Barra de título (reservamos altura fija) */
+  .hud{
+    position:fixed;left:0;right:0;top:0;
+    height:var(--hudH);
+    display:flex;align-items:center;
+    padding:8px 12px;
+    padding-top: calc(8px + var(--safeTop));
+    color:#fff;font:600 14px system-ui;z-index:5;
+    background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));
+    box-sizing:border-box;
+  }
+
+  /* Toolbar: por defecto arriba a la derecha */
   .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px;z-index:6}
   .btn{border:1px solid rgba(255,255,255,.25);color:#fff;background:rgba(0,0,0,.35);
        border-radius:10px;padding:6px 10px;font:600 13px system-ui;cursor:pointer}
   .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
+
+  /* En móvil, la toolbar baja debajo del título para que no se superponga */
+  @media (max-width: 600px){
+    .toolbar{
+      right:8px;
+      top: calc(var(--safeTop) + var(--hudH) + 6px);
+      flex-wrap:wrap; /* por si no cabe en una sola línea */
+      gap:6px;
+    }
+  }
 
   .progress{position:fixed;left:50%;transform:translateX(-50%);top:90px;z-index:9;width:min(60vw,520px);height:10px;
             background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden;display:none;border:1px solid rgba(57,255,20,.35)}
@@ -43,7 +68,6 @@
 
   .panel{
     position:fixed;left:10px;
-    /* antes: bottom:10px; ahora subimos según footer/badges */
     bottom: calc(10px + var(--fixedBottomOffset));
     z-index:8;padding:8px 10px;background:rgba(0,0,0,.45);
     border:1px solid rgba(255,255,255,.28);border-radius:10px;min-width:190px
@@ -61,6 +85,7 @@
   .nudge{display:grid;grid-template-columns:repeat(3,40px);grid-gap:6px;justify-content:center}
   .nudge button{height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.45);color:#fff;cursor:pointer}
   .editor .small{font:600 12px system-ui;padding:6px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.4);color:#fff;cursor:pointer}
+
   @media (max-width:480px){
     .panel{padding:6px 8px;min-width:170px}
     .panel input[type=range]{width:110px}
@@ -72,6 +97,7 @@
 </head>
 <body>
   <div class="hud">3D — Célula <span id="labelKind" style="opacity:.9">Animal</span></div>
+
   <div class="toolbar">
     <button id="btnAnimal" class="btn">Animal</button>
     <button id="btnVegetal" class="btn">Vegetal</button>
@@ -292,7 +318,7 @@ AFRAME.registerComponent('mouse-pan',{schema:{panFactor:{default:1}},
       const cam=s.camera; if(!cam||!s.canvas) return {x:0,y:0};
       const fov=(cam.fov||60)*Math.PI/180; const h=s.canvas.height||window.innerHeight;
       const z=Math.max(0.001, Math.abs(cam.position.z||1));
-      const wpy=2*z*Math.tan(fov/2)/h; const wpx=wpy*(cam.aspect||1.777); return {x:wpx,y:wpy};
+      const wpy=2*z*Math.tan(fov/2)/h; const wpx=wpy*(cam.aspect||1.777); return {x:wpx,y=wpy};
     };
     const onDown=(e)=>{ shift=e.shiftKey;
       if(e.button===1 || e.button===2 || (e.button===0 && shift)){ down=true; btn=e.button; start={x:e.clientX,y:e.clientY}; startPos=this.el.object3D.position.clone(); e.preventDefault(); }
