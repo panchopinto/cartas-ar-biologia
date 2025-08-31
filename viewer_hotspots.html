@@ -8,30 +8,27 @@
 <style>
   :root{
     --uiScale:1;
-    --hudH: 44px;           /* altura del título */
-    /* Jerarquía de capas */
+    --hudH: 44px;
     --z-hud: 10;
     --z-toolbar: 12;
     --z-progress: 14;
-    --z-list: 20;           /* panel de componentes por encima de todo */
-    --z-controls: 8;        /* controles de abajo */
+    --z-list: 20;      /* panel de componentes por encima de todo */
+    --z-controls: 8;   /* controles de abajo */
   }
 
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
   canvas,.a-canvas{
     position:fixed;inset:0;width:100vw!important;height:100vh!important;background:#000!important;
-    z-index:0; /* canvas al fondo */
+    z-index:0;
   }
 
-  /* Cuando activas pinch-zoom de página */
   body.pinch-page{ touch-action: pinch-zoom !important; }
   body.pinch-page canvas, body.pinch-page .a-canvas{ touch-action: pinch-zoom !important; }
 
-  /* Root UI escalable y por encima del canvas */
   .uiRoot{
     position:fixed; inset:0; pointer-events:none;
     transform:scale(var(--uiScale)); transform-origin: top left;
-    z-index:9999; /* UI arriba */
+    z-index:9999;
   }
   .uiRoot > *{ pointer-events:auto; }
 
@@ -41,62 +38,47 @@
     height: calc(var(--hudH) + env(safe-area-inset-top));
     padding: 8px 12px calc(8px + env(safe-area-inset-top)) 12px;
     display:flex; align-items:flex-end; gap:8px;
-    justify-content:center;           /* centra el título */
-    text-align:center;                /* centra el texto interno */
+    justify-content:center; text-align:center;
     color:#fff;font:600 14px system-ui; z-index: var(--z-hud);
     background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));
   }
   .hud .tag{opacity:.9}
 
-  /* Toolbar “chip bar” centrada bajo el título */
+  /* Toolbar: IZQUIERDA bajo el título */
   .toolbar{
     position:fixed;
-    top: calc(var(--hudH) + env(safe-area-inset-top) + 18px);
-    left:50%;
-    transform:translateX(-50%);
-    display:flex;flex-wrap:wrap;gap:10px;
+    top: calc(var(--hudH) + env(safe-area-inset-top) + 12px);
+    left:12px; right:auto; transform:none;
+    display:flex; flex-wrap:wrap; gap:8px;
     z-index: var(--z-toolbar);
 
-    /* chip bar */
     padding:8px 10px;
-    border-radius:999px;
+    border-radius:16px;
     background:rgba(0,0,0,.35);
     border:1px solid rgba(255,255,255,.18);
     backdrop-filter: blur(6px);
     box-shadow:0 8px 24px rgba(0,0,0,.25);
-    max-width:min(92vw,1100px);
-    justify-content:center;
+    max-width:min(92vw,680px);     /* no invadir el centro en móvil */
+    justify-content:flex-start;
   }
 
-  /* Botones */
   .btn{
     border:1px solid rgba(255,255,255,.22);
-    color:#fff;
-    background:rgba(0,0,0,.35);
-    border-radius:12px;
-    padding:8px 12px;
-    font:600 13px/1 system-ui;
-    cursor:pointer;
+    color:#fff; background:rgba(0,0,0,.35);
+    border-radius:12px; padding:8px 12px;
+    font:600 13px/1 system-ui; cursor:pointer;
     transition:transform .08s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
     min-height:36px;
   }
   .btn:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px); }
   .btn:active{ transform:translateY(0); }
-  .btn:focus-visible{
-    outline:none;
-    box-shadow:0 0 0 2px rgba(60,201,255,.55);
-    border-color:#3cc9ff;
-  }
-  .btn.active{
-    background:rgba(60,201,255,.22);
-    border-color:#3cc9ff;
-    box-shadow:0 0 0 1px rgba(60,201,255,.25) inset;
-  }
+  .btn:focus-visible{ outline:none; box-shadow:0 0 0 2px rgba(60,201,255,.55); border-color:#3cc9ff; }
+  .btn.active{ background:rgba(60,201,255,.22); border-color:#3cc9ff; box-shadow:0 0 0 1px rgba(60,201,255,.25) inset; }
 
-  /* Progreso (alineado con la toolbar) */
+  /* Progreso */
   .progress{
     position:fixed;left:50%;transform:translateX(-50%);
-    top: calc(var(--hudH) + env(safe-area-inset-top) + 66px);
+    top: calc(var(--hudH) + env(safe-area-inset-top) + 60px);
     z-index: var(--z-progress);
     width:min(60vw,520px);height:10px;
     background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden;display:none;border:1px solid rgba(57,255,20,.35)
@@ -107,7 +89,7 @@
 
   /* Ficha EDU */
   .infoPanel{
-    position:fixed;left:10px;top: calc(var(--hudH) + env(safe-area-inset-top) + 66px);z-index:8;
+    position:fixed;left:10px;top: calc(var(--hudH) + env(safe-area-inset-top) + 60px);z-index:8;
     width:min(360px,86vw);max-height:60vh;overflow:auto;padding:12px;
     background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.28);border-radius:14px;backdrop-filter:blur(2px)
   }
@@ -122,11 +104,11 @@
     box-shadow:0 0 8px rgba(57,255,20,.5) inset,0 0 6px rgba(57,255,20,.25)
   }
 
-  /* Lista de componentes / acciones (encima de todo) */
+  /* Panel Componentes ENCIMA de controles */
   .listPanel{
     position:fixed;
     right:12px;
-    top: calc(var(--hudH) + env(safe-area-inset-top) + 66px);
+    top: calc(var(--hudH) + env(safe-area-inset-top) + 60px);
     z-index: var(--z-list);
     padding:12px;background:rgba(0,0,0,.55);
     border:1px solid rgba(255,255,255,.28);border-radius:12px;min-width:240px;
@@ -138,11 +120,15 @@
   .listPanel .row{display:flex;gap:8px;margin-top:10px}
   .listPanel .row .btn{flex:1;text-align:center}
 
-  /* Controles (abajo) */
+  /* Controles de giro/zoom (subidos para no tapar VR) */
   .controls{
-    position:fixed;right:10px;bottom:10px;z-index: var(--z-controls);
+    position:fixed;right:10px;z-index: var(--z-controls);
+    bottom: 88px; /* ← altura segura por si aparece el botón VR en la esquina */
     display:grid;grid-template-columns:repeat(3,48px);grid-gap:8px
   }
+  /* Si NO hay botón VR, bajamos a 10px del borde */
+  body.no-vr-button .controls{ bottom:10px; }
+
   .ctrl{
     width:48px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,.24);
     background:rgba(0,0,0,.45);color:#fff;
@@ -151,14 +137,15 @@
   }
   .ctrl:hover{ background:rgba(255,255,255,.08); transform:translateY(-1px); }
   .ctrl:active{ transform:translateY(0); }
-  .ctrl:focus-visible{
-    outline:none;
-    box-shadow:0 0 0 2px rgba(60,201,255,.55), 0 4px 14px rgba(0,0,0,.25);
-    border-color:#3cc9ff;
-  }
+  .ctrl:focus-visible{ outline:none; box-shadow:0 0 0 2px rgba(60,201,255,.55), 0 4px 14px rgba(0,0,0,.25); border-color:#3cc9ff; }
 
-  .panel{position:fixed;left:10px;bottom:10px;z-index:8;padding:8px 10px;background:rgba(0,0,0,.45);
-         border:1px solid rgba(255,255,255,.28);border-radius:10px;min-width:190px}
+  .panel{
+    position:fixed;left:10px;z-index:8;
+    bottom: 88px; /* igual que controles (que queden por encima del VR) */
+    padding:8px 10px;background:rgba(0,0,0,.45);
+    border:1px solid rgba(255,255,255,.28);border-radius:10px;min-width:190px
+  }
+  body.no-vr-button .panel{ bottom:10px; }
   .panel label{display:flex;align-items:center;gap:6px;font:600 12px system-ui;color:#fff;margin:4px 0}
   .panel input[type=range]{width:130px}
 
@@ -168,7 +155,7 @@
     .controls{grid-gap:6px}
     .ctrl{width:44px;height:44px;font:600 18px/44px system-ui}
     .listPanel{right:8px;min-width:210px}
-    .toolbar{ gap:8px; padding:8px; }
+    .toolbar{ gap:6px; padding:8px; max-width:94vw; }
     .btn{ padding:7px 10px; min-height:34px; }
   }
 
@@ -188,26 +175,22 @@
   .helpVR h3{margin:0 0 8px; font:700 16px system-ui; color:#fff}
   .helpVR p{margin:4px 0 10px; font:600 13px system-ui; color:#d5ebff}
   .helpRow{display:grid; grid-template-columns: 36px 1fr; gap:10px; align-items:flex-start; margin:8px 0}
-  .helpKey{
-    width:36px; height:36px; border-radius:10px; display:grid; place-items:center;
-    background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.25); color:#fff; font:700 14px system-ui;
-  }
+  .helpKey{ width:36px; height:36px; border-radius:10px; display:grid; place-items:center;
+    background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.25); color:#fff; font:700 14px system-ui; }
   .helpTitle{font:700 13px system-ui; color:#bfe8ff}
   .helpDesc{font:600 12px system-ui; color:#d7f3ff; opacity:.95}
   .helpActions{display:flex; gap:8px; justify-content:flex-end; margin-top:10px}
-  .helpBtn{
-    border:1px solid rgba(255,255,255,.25); color:#fff; background:rgba(0,0,0,.35);
-    border-radius:10px; padding:6px 10px; font:700 12px system-ui; cursor:pointer;
-  }
+  .helpBtn{ border:1px solid rgba(255,255,255,.25); color:#fff; background:rgba(0,0,0,.35);
+    border-radius:10px; padding:6px 10px; font:700 12px system-ui; cursor:pointer; }
   .helpBtn.primary{ background:#1279c4; border-color:#0e68a8 }
   .helpVR-backdrop.show{ display:flex }
 </style>
 </head>
-<body>
+<body class="no-vr-button">
   <div class="uiRoot">
     <div class="hud">3D — Célula <span id="labelKind" class="tag">Animal</span></div>
 
-    <!-- Toolbar chip bar -->
+    <!-- Toolbar izquierda bajo el título -->
     <div class="toolbar">
       <button id="btnAnimal" class="btn">Animal</button>
       <button id="btnVegetal" class="btn">Vegetal</button>
@@ -226,7 +209,7 @@
     <!-- Ficha EDU (apagada por defecto) -->
     <div class="infoPanel" id="infoPanel" style="display:none"></div>
 
-    <!-- Lista de componentes / acciones -->
+    <!-- Panel Componentes (encima de controles) -->
     <div class="listPanel" id="listPanel">
       <h4>Componentes</h4>
       <select id="compSelect"></select>
@@ -236,7 +219,7 @@
       </div>
     </div>
 
-    <!-- Controles inferiores -->
+    <!-- Controles de giro/zoom (subidos) -->
     <div class="controls" id="controls">
       <div class="ctrl" id="rotL" title="Rotar izquierda">↶</div>
       <div class="ctrl" id="reset" title="Reset">⟲</div>
@@ -246,7 +229,7 @@
       <div class="ctrl" id="zoomIn" title="Zoom +">+</div>
     </div>
 
-    <!-- Panel sliders -->
+    <!-- Panel sliders (también subido) -->
     <div class="panel" id="panel">
       <label>Zoom <input type="range" id="scaleRange" min="0.20" max="3.00" step="0.01" value="0.40"></label>
       <label>Vel. rotación <input type="range" id="speedRange" min="-60" max="60" step="1" value="20"></label>
@@ -337,6 +320,16 @@
   </a-scene>
 
 <script>
+/* ====== Botón VR: detectar y ajustar layout ====== */
+(function watchVRButton(){
+  const clsOn  = 'no-vr-button';
+  const obs = new MutationObserver(()=>{
+    const btn = document.querySelector('.a-enter-vr-button, .a-enter-ar-button');
+    if (btn) document.body.classList.remove(clsOn); else document.body.classList.add(clsOn);
+  });
+  obs.observe(document.body, {childList:true, subtree:true});
+})();
+
 /* ====== Pinch mode global: 'model' o 'page' ====== */
 window.PINCH_MODE = 'model';
 function setPinchMode(mode){
@@ -350,7 +343,7 @@ function setPinchMode(mode){
   localStorage.setItem('vh_pinch', mode);
 }
 
-/* ====== Gestos ====== */
+/* ====== Gestos / Controles de escena ====== */
 AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},minScale:{default:0.05},maxScale:{default:3.0}},
   init:function(){this.oneFinger=false;this.lastX=0;this.lastY=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
     t.addEventListener('touchstart',e=>{ if(window.PINCH_MODE==='page') return; if(e.touches.length===1){this.oneFinger=true;this.lastX=e.touches[0].clientX; this.lastY=e.touches[0].clientY;}},{passive:false});
@@ -414,7 +407,7 @@ AFRAME.registerComponent('auto-rotator',{schema:{speed:{default:20},enabled:{def
 AFRAME.registerComponent('billboard',{tick:function(){const cam=this.el.sceneEl&&this.el.sceneEl.camera;if(!cam)return;this.el.object3D.quaternion.copy(cam.el.object3D.quaternion);}});
 
 /* ====== Datos ==== */
-const HS_DEFAULT={
+const HS_DEFAULT={ /* ... (igual que tu versión) ... */ 
   animal:[
     {name:'Núcleo',desc:'Controla la célula y guarda el ADN.',pos:[0,0.12,0]},
     {name:'Mitocondrias',desc:'Producen ATP (energía).',pos:[0.18,0.06,0.04]},
@@ -520,7 +513,7 @@ function normalizeAndFrame(){
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
   const maxDim = Math.max(size.x,size.y,size.z) || 1;
-  mesh.position.sub(center); // centra el modelo
+  mesh.position.sub(center);
   const s  = TARGET_SIZE / maxDim;
   const s2 = s * ZOOM0;
   modelEl.object3D.scale.set(s2,s2,s2);
@@ -560,7 +553,6 @@ let hsRoot=null, hsRecords=[];
 function clearHotspots(){ const old=document.getElementById('hsRoot'); if(old&&old.parentNode) old.parentNode.removeChild(old); hsRecords=[]; compSelect.innerHTML=''; }
 function populateSelect(items){ compSelect.innerHTML=''; items.forEach((it,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=it.name; compSelect.appendChild(o); }); }
 
-/* Dibuja hotspots */
 function makeHotspots(kind){
   clearHotspots();
   const items = getHotspots(kind) || [];
@@ -629,7 +621,7 @@ function applySoloFilter(){
   });
 }
 
-/* Enfocar hotspot (rota el modelo hacia el punto) */
+/* Enfocar hotspot */
 function focusHotspot(index){
   const rec = hsRecords[index]; if(!rec) return;
   const p = rec.wrap.object3D.position.clone();
@@ -666,14 +658,13 @@ async function load(){
   setTimeout(()=>modelEl.setAttribute('gltf-model',url),30);
 }
 
-/* ====== UI helpers (persistencia) ====== */
+/* ====== Persistencia ====== */
 function restoreTogglesFromStorage(){
   const tags   = localStorage.getItem('vh_tags');   if(tags!==null) btnTags.classList.toggle('active', tags==='1');
   const diff   = localStorage.getItem('vh_diff');   if(diff!==null) btnDiff.classList.toggle('active', diff==='1');
   const solo   = localStorage.getItem('vh_solo');   if(solo!==null) btnSolo.classList.toggle('active', solo==='1');
   const auto   = localStorage.getItem('vh_auto');   if(auto!==null) btnAuto.classList.toggle('active', auto==='1');
 
-  // Info: si no existe clave, queda apagado
   const infoOn = localStorage.getItem('vh_info');
   if (infoOn !== null) {
     const on = infoOn === '1';
@@ -689,8 +680,7 @@ function restoreTogglesFromStorage(){
   const sc = localStorage.getItem('vh_scale'); if(sc) { const v=parseFloat(sc); if(!isNaN(v)) scaleRange.value=v; }
   const sp = localStorage.getItem('vh_speed'); if(sp){ const v=parseFloat(sp); if(!isNaN(v)) speedRange.value=v; }
 
-  // ayuda VR
-  const hv = localStorage.getItem('vh_help_auto'); if(hv===null){ localStorage.setItem('vh_help_auto','1'); } // default: mostrar auto
+  const hv = localStorage.getItem('vh_help_auto'); if(hv===null){ localStorage.setItem('vh_help_auto','1'); }
 }
 function saveToggle(id, val){ localStorage.setItem(id, val ? '1' : '0'); }
 
@@ -712,7 +702,7 @@ compSelect.addEventListener('change', applySoloFilter);
 btnFocus.onclick = ()=> focusHotspot(parseInt(compSelect.value||0,10)||0);
 btnPing.onclick  = ()=> { const rec=hsRecords[parseInt(compSelect.value||0,10)||0]; rec && rec.dot.emit('ping'); };
 
-/* Carga eventos del modelo */
+/* Carga del modelo */
 modelEl.addEventListener('model-loaded',()=>{ hideProgress(); normalizeAndFrame(); makeHotspots(kind); });
 modelEl.addEventListener('model-error',e=>{ hideProgress(); alert('No se pudo cargar el modelo. Revisa las rutas de GLB.'); console.error(e.detail);});
 
@@ -751,7 +741,7 @@ helpVRToggleHint.addEventListener('click', ()=>{
   setUI();
   load();
 
-  // Mostrar ayuda automáticamente al entrar a VR solo si está activado (por defecto sí).
+  // Mostrar ayuda automáticamente al entrar a VR si está activado.
   const scene = document.querySelector('a-scene');
   const autoHelp = () => {
     const shouldShow = localStorage.getItem('vh_help_auto') !== '0';
@@ -761,28 +751,18 @@ helpVRToggleHint.addEventListener('click', ()=>{
 })();
 </script>
 
-<!-- ====== CONTROLES VR: agarrar/rotar/escalar (Quest 2) + autoplace ====== -->
+<!-- ====== CONTROLES VR (Quest 2) + autoplace ====== -->
 <script>
 AFRAME.registerComponent('vr-grab-rotate-scale', {
-  schema: {
-    target: {type: 'selector'},
-    rotateSpeed: {default: 1.8},
-    scaleSpeed: {default: 0.003},
-    minScale: {default: 0.05},
-    maxScale: {default: 5.0}
-  },
+  schema: { target:{type:'selector'}, rotateSpeed:{default:1.8}, scaleSpeed:{default:0.003}, minScale:{default:0.05}, maxScale:{default:5.0} },
   init: function () {
     this.right = document.getElementById('rightHand');
-    this.grabbing = false;
-    this.grabDistance = 0;
-    this.ray = new THREE.Raycaster();
-    this.tmpDir = new THREE.Vector3();
-    this.localHit = new THREE.Vector3();
-
+    this.grabbing = false; this.grabDistance = 0;
+    this.ray = new THREE.Raycaster(); this.tmpDir = new THREE.Vector3(); this.localHit = new THREE.Vector3();
     if (this.right) {
       this.right.addEventListener('triggerdown', () => this.startGrab());
       this.right.addEventListener('triggerup',   () => this.endGrab());
-      this.right.addEventListener('axismove', (e) => this.onAxisMove(e)); // stick derecho
+      this.right.addEventListener('axismove', (e) => this.onAxisMove(e));
     }
     this.el.sceneEl.addEventListener('exit-vr', () => this.endGrab());
   },
@@ -796,37 +776,24 @@ AFRAME.registerComponent('vr-grab-rotate-scale', {
     const mesh = tgt.getObject3D('mesh'); if (!mesh) return;
     const hit = this.ray.intersectObject(mesh, true);
     if (hit.length) {
-      this.grabbing = true;
-      this.grabDistance = hit[0].distance;
+      this.grabbing = true; this.grabDistance = hit[0].distance;
       const worldPoint = hit[0].point.clone();
-      const obj = tgt.object3D;
-      obj.worldToLocal(this.localHit.copy(worldPoint));
-
-      // Haptics suave al agarrar (si disponible)
-      try {
-        const gp = (this.right.components['oculus-touch-controls']||{}).controller;
-        gp?.hapticActuators?.[0]?.pulse(0.4, 80);
-      } catch(e){}
+      const obj = tgt.object3D; obj.worldToLocal(this.localHit.copy(worldPoint));
+      try { const gp = (this.right.components['oculus-touch-controls']||{}).controller; gp?.hapticActuators?.[0]?.pulse(0.4, 80); } catch(e){}
     }
   },
   endGrab: function () { this.grabbing = false; },
   onAxisMove: function (evt) {
     const tgt = this.data.target; if (!tgt) return;
-    const axis = evt.detail && evt.detail.axis; // [x,y] del stick derecho
-    if (!axis) return;
+    const axis = evt.detail && evt.detail.axis; if (!axis) return;
     const o = tgt.object3D;
-
-    if (Math.abs(axis[0]) > 0.05) {
-      o.rotation.y -= axis[0] * this.data.rotateSpeed * (Math.PI/180) * 5;
-    }
+    if (Math.abs(axis[0]) > 0.05) { o.rotation.y -= axis[0] * this.data.rotateSpeed * (Math.PI/180) * 5; }
     if (Math.abs(axis[1]) > 0.05) {
       const s = 1 - (axis[1] * this.data.scaleSpeed * 10);
       const ns = new THREE.Vector3(o.scale.x*s, o.scale.y*s, o.scale.z*s);
-      ns.set(
-        THREE.MathUtils.clamp(ns.x, this.data.minScale, this.data.maxScale),
-        THREE.MathUtils.clamp(ns.y, this.data.minScale, this.data.maxScale),
-        THREE.MathUtils.clamp(ns.z, this.data.minScale, this.data.maxScale)
-      );
+      ns.set(THREE.MathUtils.clamp(ns.x, this.data.minScale, this.data.maxScale),
+             THREE.MathUtils.clamp(ns.y, this.data.minScale, this.data.maxScale),
+             THREE.MathUtils.clamp(ns.z, this.data.minScale, this.data.maxScale));
       o.scale.copy(ns);
       if (typeof scaleRange!=='undefined') scaleRange.value = o.scale.x.toFixed(2);
     }
@@ -861,9 +828,7 @@ AFRAME.registerComponent('vr-autoplace', {
     };
     this.el.sceneEl.addEventListener('enter-vr', this.onEnter);
   },
-  remove: function () {
-    this.el.sceneEl.removeEventListener('enter-vr', this.onEnter);
-  }
+  remove: function () { this.el.sceneEl.removeEventListener('enter-vr', this.onEnter); }
 });
 </script>
 
