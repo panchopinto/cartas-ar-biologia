@@ -29,14 +29,17 @@
   .uiRoot > *{ pointer-events:auto; }
 
   /* Título/HUD: reservamos altura para no chocar con toolbar */
-  .hud{
-    position:fixed;left:0;right:0;top:0;
-    height: calc(var(--hudH) + env(safe-area-inset-top));
-    padding: 8px 12px calc(8px + env(safe-area-inset-top)) 12px;
-    display:flex; align-items:flex-end; gap:8px;
-    color:#fff;font:600 14px system-ui; z-index:5;
-    background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));
-  }
+.hud{
+  position:fixed;left:0;right:0;top:0;
+  height: calc(var(--hudH) + env(safe-area-inset-top));
+  padding: 8px 12px calc(8px + env(safe-area-inset-top)) 12px;
+  display:flex; align-items:flex-end; gap:8px;
+  justify-content:center;           /* 🔥 centra el título */
+  text-align:center;                /* 🔥 centra el texto interno */
+  color:#fff;font:600 14px system-ui; z-index:5;
+  background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));
+}
+
   .hud .tag{opacity:.9}
 
   /* Barra de botones debajo del HUD (centrada) */
