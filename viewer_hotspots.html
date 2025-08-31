@@ -157,7 +157,7 @@
       <button id="btnDiff" class="btn active" title="Resaltar diferencias">Diferencias</button>
       <button id="btnSolo" class="btn" title="Mostrar solo el seleccionado">Solo</button>
       <button id="btnPinchPage" class="btn" title="Pellizcar para zoom de la página (no del modelo)">Pinch página</button>
-      <button id="btnInfo" class="btn active" title="Ver/Ocultar ficha">Info</button>
+      <button id="btnInfo" class="btn" title="Ver/Ocultar ficha">Info</button>
       <!-- NUEVO: botón Ayuda VR -->
       <button id="btnHelpVR" class="btn" title="Controles en casco (Quest 2)">Ayuda VR</button>
     </div>
@@ -165,7 +165,7 @@
     <!-- Progreso -->
     <div class="progress" id="progress"><div class="bar" id="progressBar"></div><div class="pct" id="progressPct">0%</div></div>
     <!-- Ficha EDU -->
-    <div class="infoPanel" id="infoPanel"></div>
+    <div class="infoPanel" id="infoPanel" style="display:none"></div>
 
     <!-- Lista de componentes / acciones -->
     <div class="listPanel" id="listPanel">
@@ -613,7 +613,17 @@ function restoreTogglesFromStorage(){
   const diff   = localStorage.getItem('vh_diff');   if(diff!==null) btnDiff.classList.toggle('active', diff==='1');
   const solo   = localStorage.getItem('vh_solo');   if(solo!==null) btnSolo.classList.toggle('active', solo==='1');
   const auto   = localStorage.getItem('vh_auto');   if(auto!==null) btnAuto.classList.toggle('active', auto==='1');
-  const infoOn = localStorage.getItem('vh_info');   if(infoOn!==null){ const on = infoOn==='1'; btnInfo.classList.toggle('active', on); infoPanel.style.display = on?'block':'none'; }
+  // 🔽 cambia este bloque
+const infoOn = localStorage.getItem('vh_info');
+if (infoOn !== null) {
+  const on = infoOn === '1';
+  btnInfo.classList.toggle('active', on);
+  infoPanel.style.display = on ? 'block' : 'none';
+} else {
+  // por defecto apagado
+  btnInfo.classList.remove('active');
+  infoPanel.style.display = 'none';
+}
   const pinch  = localStorage.getItem('vh_pinch') || 'model'; setPinchMode(pinch);
 
   const sc = localStorage.getItem('vh_scale'); if(sc) { const v=parseFloat(sc); if(!isNaN(v)) scaleRange.value=v; }
