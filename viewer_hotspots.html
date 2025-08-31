@@ -13,9 +13,11 @@
     --z-hud: 10;
     --z-sides: 12;
     --z-progress: 14;
-    --z-list: 20;      /* panel componentes por encima de controles */
-    --z-controls: 8;   /* controles de abajo */
-    --z-float: 30;     /* ayuda VR flotante */
+    --z-list: 20;
+    --z-controls: 8;
+    --z-float: 30;
+    /* Ancho estándar (mínimo) para los botones de la columna izquierda */
+    --leftBtnMinW: 180px;
   }
 
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
@@ -38,7 +40,7 @@
   }
   .hud .tag{opacity:.9}
 
-  /* ===== Columna izquierda (arriba-izquierda) ===== */
+  /* ===== Columna izquierda ===== */
   .leftColumn{
     position:fixed; z-index: var(--z-sides);
     left:12px;
@@ -53,17 +55,26 @@
   }
   .group{ display:flex; flex-direction:column; gap:8px }
 
-  /* Botones */
+  /* Botones base */
   .btn{
     border:1px solid rgba(255,255,255,.22);
     color:#fff; background:rgba(0,0,0,.35);
     border-radius:12px; padding:9px 12px; text-align:left;
-    font:600 13px/1 system-ui; cursor:pointer; transition:.15s; min-height:36px; white-space:nowrap;
+    font:600 13px/1 system-ui; cursor:pointer; transition:.15s; min-height:36px;
   }
   .btn:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px) }
   .btn:active{ transform:translateY(0) }
   .btn:focus-visible{ outline:none; box-shadow:0 0 0 2px rgba(60,201,255,.55); border-color:#3cc9ff }
   .btn.active{ background:rgba(60,201,255,.22); border-color:#3cc9ff; box-shadow:0 0 0 1px rgba(60,201,255,.25) inset }
+
+  /* Botones de la columna izquierda */
+  .leftBtn{
+    display:inline-flex; align-items:center; justify-content:flex-start;
+    white-space:nowrap;
+    min-width: var(--leftBtnMinW);
+    width: fit-content;
+    max-width: 100%;
+  }
 
   /* Progreso centrado */
   .progress{
@@ -77,12 +88,12 @@
                  box-shadow:0 0 12px #39ff14,0 0 24px #39ff14;transition:width .15s ease}
   .progress .pct{position:absolute;right:0;top:-22px;font:700 12px system-ui;color:#bfff00;text-shadow:0 0 8px #39ff14}
 
-  /* Info EDU (opcional) */
+  /* Info EDU */
   .infoPanel{
     position:fixed;left:12px;z-index:8; padding:12px; width:min(360px,86vw);max-height:60vh;overflow:auto;
     background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.28);border-radius:14px;backdrop-filter:blur(2px)
   }
-  .infoPanel{ top: calc(var(--hudH) + var(--safeTop) + 10px + 200px) } /* cae debajo de los grupos */
+  .infoPanel{ top: calc(var(--hudH) + var(--safeTop) + 10px + 200px) }
   .infoPanel h3{margin:0 0 6px;font:700 16px system-ui;color:#fff}
   .infoPanel h4{margin:10px 0 6px;font:700 13px system-ui;color:#cfe6ff}
   .infoPanel ul{margin:0;padding-left:16px}
@@ -91,7 +102,7 @@
   .chip{ padding:6px 8px;border-radius:999px;font:700 12px system-ui;color:#132;
     background:rgba(57,255,20,.15);border:1px solid #39ff14; box-shadow:0 0 8px rgba(57,255,20,.5) inset,0 0 6px rgba(57,255,20,.25) }
 
-  /* Panel Componentes (derecha, por encima de controles) */
+  /* Panel Componentes (derecha) */
   .listPanel{
     position:fixed; right:12px; z-index: var(--z-list);
     top: calc(var(--hudH) + var(--safeTop) + 10px);
@@ -104,7 +115,7 @@
   .listPanel .row{display:flex;gap:8px;margin-top:10px}
   .listPanel .row .btn{flex:1;text-align:center}
 
-  /* Controles inferiores (se levanta si hay botón VR) */
+  /* Controles inferiores */
   .controls{
     position:fixed;right:10px;z-index: var(--z-controls);
     bottom: 88px; display:grid;grid-template-columns:repeat(3,48px);grid-gap:8px
@@ -130,16 +141,15 @@
   .panel label{display:flex;align-items:center;gap:6px;font:600 12px system-ui;color:#fff;margin:4px 0}
   .panel input[type=range]{width:130px}
 
-  /* Botón Ayuda VR flotante (se ubica justo sobre el VR) */
+  /* Ayuda VR flotante (0.5cm más abajo que antes) */
   #btnHelpVRFloat{
     position:fixed; right:12px; bottom:64px; z-index: var(--z-float);
     border:1px solid rgba(255,255,255,.22); color:#fff; background:rgba(0,0,0,.55);
     border-radius:12px; padding:10px 14px; font:700 13px system-ui; cursor:pointer;
     box-shadow:0 6px 18px rgba(0,0,0,.35);
   }
-  body.no-vr-button #btnHelpVRFloat{ display:none } /* si no hay VR button, escondemos el flotante */
+  body.no-vr-button #btnHelpVRFloat{ display:none }
 
-  /* Teléfonos chicos */
   @media (max-width:480px){
     .btn{ padding:8px 10px; min-height:34px }
     .controls{grid-gap:6px}
@@ -147,7 +157,7 @@
     .listPanel{min-width:210px}
   }
 
-  /* ===== Ayuda VR ===== */
+  /* ===== Ayuda VR overlay ===== */
   .helpVR-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:99999; backdrop-filter: blur(2px) }
   .helpVR{ width:min(720px,92vw); background:rgba(2,14,24,.9); border:1px solid rgba(60,201,255,.35); border-radius:14px; padding:14px; color:#def; box-shadow:0 10px 30px rgba(0,0,0,.4) }
   .helpVR h3{margin:0 0 8px; font:700 16px system-ui; color:#fff}
@@ -166,22 +176,22 @@
   <div class="uiRoot">
     <div class="hud">3D — Célula <span id="labelKind" class="tag">Animal</span></div>
 
-    <!-- IZQUIERDA: arriba Animal/Vegetal; debajo resto de opciones -->
+    <!-- IZQUIERDA -->
     <div class="leftColumn">
       <div class="card">
         <div class="group">
-          <button id="btnAnimal" class="btn">Célula Animal</button>
-          <button id="btnVegetal" class="btn">Célula Vegetal</button>
+          <button id="btnAnimal"  class="btn leftBtn">Célula Animal</button>
+          <button id="btnVegetal" class="btn leftBtn">Célula Vegetal</button>
         </div>
       </div>
       <div class="card">
         <div class="group">
-          <button id="btnAuto" class="btn" title="Auto-rotación">Auto</button>
-          <button id="btnTags" class="btn active" title="Mostrar/Ocultar etiquetas">Etiquetas</button>
-          <button id="btnDiff" class="btn active" title="Resaltar diferencias">Diferencias</button>
-          <button id="btnSolo" class="btn" title="Mostrar solo el seleccionado">Solo</button>
-          <button id="btnPinchPage" class="btn" title="Pellizcar para zoom de la página (no del modelo)">Pinch página</button>
-          <button id="btnInfo" class="btn" title="Ver/Ocultar ficha">Info</button>
+          <button id="btnAuto"       class="btn leftBtn" title="Auto-rotación">Auto</button>
+          <button id="btnTags"       class="btn leftBtn active" title="Mostrar/Ocultar etiquetas">Etiquetas</button>
+          <button id="btnDiff"       class="btn leftBtn active" title="Resaltar diferencias">Diferencias</button>
+          <button id="btnSolo"       class="btn leftBtn" title="Mostrar solo el seleccionado">Solo</button>
+          <button id="btnPinchPage"  class="btn leftBtn" title="Pellizcar para zoom de la página (no del modelo)">Pinch página</button>
+          <button id="btnInfo"       class="btn leftBtn" title="Ver/Ocultar ficha">Info</button>
         </div>
       </div>
     </div>
@@ -189,10 +199,10 @@
     <!-- Progreso -->
     <div class="progress" id="progress"><div class="bar" id="progressBar"></div><div class="pct" id="progressPct">0%</div></div>
 
-    <!-- Ficha EDU (apagada por defecto) -->
+    <!-- Ficha EDU -->
     <div class="infoPanel" id="infoPanel" style="display:none"></div>
 
-    <!-- Panel Componentes (derecha, arriba) -->
+    <!-- Panel Componentes (derecha) -->
     <div class="listPanel" id="listPanel">
       <h4>Componentes</h4>
       <select id="compSelect"></select>
@@ -219,7 +229,7 @@
     </div>
   </div>
 
-  <!-- Botón Ayuda VR flotante (se ubicará sobre el botón VR) -->
+  <!-- Ayuda VR flotante -->
   <button id="btnHelpVRFloat" title="Controles en casco (Quest 2)">Ayuda VR</button>
 
   <!-- ===== Overlay Ayuda VR ===== -->
@@ -306,7 +316,7 @@
   </a-scene>
 
 <script>
-/* ===== Detectar botón VR y ubicar “Ayuda VR” justo encima ===== */
+/* === Colocar Ayuda VR justo sobre el VR, bajado 0.5cm === */
 (function watchVRButton(){
   const clsNoVR  = 'no-vr-button';
   const helpBtn  = document.getElementById('btnHelpVRFloat');
@@ -316,7 +326,8 @@
     if (vrBtn){
       document.body.classList.remove(clsNoVR);
       const h = Math.max(56, vrBtn.offsetHeight || 56);
-      helpBtn.style.bottom = (h + 12) + 'px';   // justo encima del VR
+      /* posición respecto al botón VR; 0.5cm más abajo del offset previo */
+      helpBtn.style.bottom = `calc(${h + 12}px - 0.5cm)`;
       helpBtn.style.right  = '12px';
       helpBtn.style.display = 'block';
     }else{
@@ -330,7 +341,23 @@
   place();
 })();
 
-/* ====== Pinch mode global ====== */
+/* Abrir/cerrar overlay de ayuda */
+const helpVRBackdrop = document.getElementById('helpVRBackdrop');
+const helpVRClose = document.getElementById('helpVRClose');
+const helpVRToggleHint = document.getElementById('helpVRToggleHint');
+function openHelpVR(){ helpVRBackdrop.classList.add('show'); helpVRBackdrop.setAttribute('aria-hidden','false'); }
+function closeHelpVR(){ helpVRBackdrop.classList.remove('show'); helpVRBackdrop.setAttribute('aria-hidden','true'); }
+document.getElementById('btnHelpVRFloat').addEventListener('click', openHelpVR);
+helpVRClose.addEventListener('click', closeHelpVR);
+helpVRBackdrop.addEventListener('click', (e)=>{ if(e.target===helpVRBackdrop) closeHelpVR(); });
+helpVRToggleHint.addEventListener('click', ()=>{
+  const cur = localStorage.getItem('vh_help_auto') !== '0';
+  const next = !cur;
+  localStorage.setItem('vh_help_auto', next ? '1' : '0');
+  helpVRToggleHint.textContent = next ? 'No mostrar automáticamente' : 'Volver a mostrar automáticamente';
+});
+
+/* ====== Pinch mode ====== */
 window.PINCH_MODE = 'model';
 function setPinchMode(mode){
   window.PINCH_MODE = mode;
@@ -440,11 +467,39 @@ function getHotspots(kind){
 
 const CONTENT={
   animal:{titulo:"Célula Animal",
-    componentes:[["Núcleo","Controla la célula y guarda el ADN."],["Membrana plasmática","Delimita y regula el intercambio de sustancias."],["Citoplasma","Medio donde ocurren reacciones químicas."],["Ribosomas","Fabrican proteínas."],["R.E. rugoso","Sintetiza y procesa proteínas."],["R.E. liso","Sintetiza lípidos y detoxifica."],["Aparato de Golgi","Empaqueta y distribuye proteínas/lípidos."],["Mitocondrias","Producen ATP (energía)."],["Lisosomas","Digieren desechos y partículas."],["Peroxisomas","Metabolismo de peróxidos."],["Citoesqueleto","Forma, soporte y transporte interno."],["Centriolos","Organizan huso mitótico en división celular."]],
-    diferencia:["Sin pared celular","Sin cloroplastos","Vacuolas pequeñas y múltiples","Centriolos presentes","Lisosomas abundantes"]},
+    componentes:[
+      ["Núcleo","Controla la célula y guarda el ADN."],
+      ["Membrana plasmática","Delimita y regula el intercambio de sustancias."],
+      ["Citoplasma","Medio donde ocurren reacciones químicas."],
+      ["Ribosomas","Fabrican proteínas."],
+      ["R.E. rugoso","Sintetiza y procesa proteínas."],
+      ["R.E. liso","Sintetiza lípidos y detoxifica."],
+      ["Aparato de Golgi","Empaqueta y distribuye proteínas/lípidos."],
+      ["Mitocondrias","Producen ATP (energía)."],
+      ["Lisosomas","Digieren desechos y partículas."],
+      ["Peroxisomas","Metabolismo de peróxidos."],
+      ["Citoesqueleto","Forma, soporte y transporte interno."],
+      ["Centriolos","Organizan huso mitótico en división celular."]
+    ],
+    diferencia:["Sin pared celular","Sin cloroplastos","Vacuolas pequeñas y múltiples","Centriolos presentes","Lisosomas abundantes"]
+  },
   vegetal:{titulo:"Célula Vegetal",
-    componentes:[["Núcleo","Controla la célula y guarda el ADN."],["Membrana plasmática","Regula el intercambio con el exterior."],["Pared celular (celulosa)","Aporta rigidez y protección."],["Citoplasma","Medio de reacciones celulares."],["Ribosomas","Síntesis de proteínas."],["R.E. rugoso/liso","Proteínas y lípidos."],["Aparato de Golgi","Empaque y secreción."],["Mitocondrias","Producción de ATP."],["Vacuola central","Almacenamiento y turgencia (presión interna)."],["Cloroplastos","Fotosíntesis: luz → energía química."],["Plasmodesmos","Canales de comunicación entre células vegetales."],["Citoesqueleto","Estructura y transporte."]],
-    diferencia:["Pared celular (celulosa)","Cloroplastos (fotosíntesis)","Vacuola central grande","Plasmodesmos","Sin centriolos típicos"]}
+    componentes:[
+      ["Núcleo","Controla la célula y guarda el ADN."],
+      ["Membrana plasmática","Regula el intercambio con el exterior."],
+      ["Pared celular (celulosa)","Aporta rigidez y protección."],
+      ["Citoplasma","Medio de reacciones celulares."],
+      ["Ribosomas","Síntesis de proteínas."],
+      ["R.E. rugoso/liso","Proteínas y lípidos."],
+      ["Aparato de Golgi","Empaque y secreción."],
+      ["Mitocondrias","Producción de ATP."],
+      ["Vacuola central","Almacenamiento y turgencia (presión interna)."],
+      ["Cloroplastos","Fotosíntesis: luz → energía química."],
+      ["Plasmodesmos","Canales de comunicación entre células vegetales."],
+      ["Citoesqueleto","Estructura y transporte."]
+    ],
+    diferencia:["Pared celular (celulosa)","Cloroplastos (fotosíntesis)","Vacuola central grande","Plasmodesmos","Sin centriolos típicos"]
+  }
 };
 
 const INIT={ animal:{scale:0.40,rotYdeg:0}, vegetal:{scale:0.36,rotYdeg:0} };
@@ -454,7 +509,7 @@ const MAP={
   vegetal:{normal:"./assets/models/vegetal.glb",draco:"./assets/models/vegetal_draco.glb"}
 };
 
-/* ====== Estado / refs ====== */
+/* ====== Estado / Referencias ====== */
 const params=new URLSearchParams(location.search);
 let kind=(params.get('m')||localStorage.getItem('vh_kind')||'animal').toLowerCase(); if(!MAP[kind]) kind='animal';
 
@@ -468,7 +523,6 @@ const btnDiff=document.getElementById('btnDiff');
 const btnSolo=document.getElementById('btnSolo');
 const btnPinchPage=document.getElementById('btnPinchPage');
 const btnInfo=document.getElementById('btnInfo');
-const helpBtnFloat=document.getElementById('btnHelpVRFloat');
 
 const rotL=document.getElementById('rotL'), rotR=document.getElementById('rotR');
 const zoomIn=document.getElementById('zoomIn'), zoomOut=document.getElementById('zoomOut');
@@ -513,7 +567,7 @@ function normalizeAndFrame(){
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
   const maxDim = Math.max(size.x,size.y,size.z) || 1;
-  mesh.position.sub(center);
+  mesh.position.sub(center); // centra el modelo
   const s  = TARGET_SIZE / maxDim;
   const s2 = s * ZOOM0;
   modelEl.object3D.scale.set(s2,s2,s2);
@@ -548,19 +602,20 @@ function setUI(){
   const u=new URL(location.href); u.searchParams.set('m',kind); history.replaceState(null,'',u.toString());
 }
 
-/* ====== Hotspots ====== */
+/* ====== Hotspots runtime ====== */
 let hsRoot=null, hsRecords=[];
 function clearHotspots(){ const old=document.getElementById('hsRoot'); if(old&&old.parentNode) old.parentNode.removeChild(old); hsRecords=[]; compSelect.innerHTML=''; }
 function populateSelect(items){ compSelect.innerHTML=''; items.forEach((it,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=it.name; compSelect.appendChild(o); }); }
 
+/* Dibuja hotspots */
 function makeHotspots(kind){
   clearHotspots();
   const items = getHotspots(kind) || [];
   hsRoot = document.createElement('a-entity'); hsRoot.setAttribute('id','hsRoot'); modelEl.appendChild(hsRoot);
 
-  const labelsOn = document.getElementById('btnTags').classList.contains('active');
-  const diffOn   = document.getElementById('btnDiff').classList.contains('active');
-  const soloOn   = document.getElementById('btnSolo').classList.contains('active');
+  const labelsOn = btnTags.classList.contains('active');
+  const diffOn   = btnDiff.classList.contains('active');
+  const soloOn   = btnSolo.classList.contains('active');
   const selectedIndex = parseInt(compSelect.value||0,10)||0;
 
   items.forEach((item,idx)=>{
@@ -593,7 +648,7 @@ function makeHotspots(kind){
 
     wrap.addEventListener('click', ()=>{
       dot.emit('ping');
-      if (document.getElementById('btnSolo').classList.contains('active')) {
+      if (btnSolo.classList.contains('active')) {
         compSelect.value = idx;
         applySoloFilter();
       } else {
@@ -609,15 +664,33 @@ function makeHotspots(kind){
   populateSelect(items);
 }
 
+/* Solo seleccionado */
 function applySoloFilter(){
-  const solo = document.getElementById('btnSolo').classList.contains('active');
+  const solo = btnSolo.classList.contains('active');
   const idx = parseInt(compSelect.value||0,10)||0;
   hsRecords.forEach(r=>{
-    const show = !solo ? document.getElementById('btnTags').classList.contains('active') : (r.idx===idx);
+    const show = !solo ? btnTags.classList.contains('active') : (r.idx===idx);
     r.tip.setAttribute('visible', show);
     if (show && !r.stem.parentNode) r.wrap.appendChild(r.stem);
     if (!show && r.stem.parentNode) r.wrap.removeChild(r.stem);
   });
+}
+
+/* Enfocar hotspot (rota el modelo hacia el punto) */
+function focusHotspot(index){
+  const rec = hsRecords[index]; if(!rec) return;
+  const p = rec.wrap.object3D.position.clone();
+  const angle = Math.atan2(p.x, p.z);
+  const start = modelEl.object3D.rotation.y;
+  const end = angle;
+  const dur = 450; const t0 = performance.now();
+  function anim(now){
+    const k=Math.min(1,(now-t0)/dur);
+    modelEl.object3D.rotation.y = THREE.MathUtils.lerp(start,end,k);
+    if(k<1) requestAnimationFrame(anim);
+  }
+  requestAnimationFrame(anim);
+  rec.dot.emit('ping');
 }
 
 /* ====== Modelo ====== */
@@ -640,20 +713,21 @@ async function load(){
   setTimeout(()=>modelEl.setAttribute('gltf-model',url),30);
 }
 
-/* ====== Persistencia ====== */
+/* ====== UI helpers (persistencia) ====== */
 function restoreTogglesFromStorage(){
   const tags   = localStorage.getItem('vh_tags');   if(tags!==null) btnTags.classList.toggle('active', tags==='1');
   const diff   = localStorage.getItem('vh_diff');   if(diff!==null) btnDiff.classList.toggle('active', diff==='1');
   const solo   = localStorage.getItem('vh_solo');   if(solo!==null) btnSolo.classList.toggle('active', solo==='1');
   const auto   = localStorage.getItem('vh_auto');   if(auto!==null) btnAuto.classList.toggle('active', auto==='1');
 
+  // Info: si no existe clave, queda apagado
   const infoOn = localStorage.getItem('vh_info');
   if (infoOn !== null) {
     const on = infoOn === '1';
-    document.getElementById('btnInfo').classList.toggle('active', on);
+    btnInfo.classList.toggle('active', on);
     infoPanel.style.display = on ? 'block' : 'none';
   } else {
-    document.getElementById('btnInfo').classList.remove('active');
+    btnInfo.classList.remove('active');
     infoPanel.style.display = 'none';
   }
 
@@ -662,18 +736,19 @@ function restoreTogglesFromStorage(){
   const sc = localStorage.getItem('vh_scale'); if(sc) { const v=parseFloat(sc); if(!isNaN(v)) scaleRange.value=v; }
   const sp = localStorage.getItem('vh_speed'); if(sp){ const v=parseFloat(sp); if(!isNaN(v)) speedRange.value=v; }
 
-  const hv = localStorage.getItem('vh_help_auto'); if(hv===null){ localStorage.setItem('vh_help_auto','1'); }
+  // ayuda VR
+  const hv = localStorage.getItem('vh_help_auto'); if(hv===null){ localStorage.setItem('vh_help_auto','1'); } // default: mostrar auto
 }
 function saveToggle(id, val){ localStorage.setItem(id, val ? '1' : '0'); }
 
-/* ====== Botones ====== */
+/* ====== Botones top ====== */
 function setUIAndURL(){ setUI(); const u=new URL(location.href); u.searchParams.set('m',kind); history.replaceState(null,'',u.toString()); localStorage.setItem('vh_kind',kind); }
 
 btnA.onclick=()=>{ kind='animal'; setUIAndURL(); load(); };
 btnV.onclick=()=>{ kind='vegetal'; setUIAndURL(); load(); };
 btnAuto.onclick=()=>{ const en=!btnAuto.classList.contains('active'); btnAuto.classList.toggle('active',en);
   modelEl.setAttribute('auto-rotator',`enabled:${en}; speed:${parseFloat(speedRange.value)}`); saveToggle('vh_auto', en); };
-document.getElementById('btnInfo').onclick=()=>{ const v=infoPanel.style.display!=='none'; infoPanel.style.display=v?'none':'block'; const on=!v; document.getElementById('btnInfo').classList.toggle('active',on); saveToggle('vh_info', on); };
+btnInfo.onclick=()=>{ const v=infoPanel.style.display!=='none'; infoPanel.style.display=v?'none':'block'; const on=!v; btnInfo.classList.toggle('active',on); saveToggle('vh_info', on); };
 btnTags.onclick=()=>{ const st = !btnTags.classList.contains('active'); btnTags.classList.toggle('active', st); saveToggle('vh_tags', st); makeHotspots(kind); };
 btnDiff.onclick=()=>{ const st = !btnDiff.classList.contains('active'); btnDiff.classList.toggle('active', st); saveToggle('vh_diff', st); makeHotspots(kind); };
 btnSolo.onclick=()=>{ const st = !btnSolo.classList.contains('active'); btnSolo.classList.toggle('active', st); saveToggle('vh_solo', st); applySoloFilter(); };
@@ -684,7 +759,7 @@ compSelect.addEventListener('change', applySoloFilter);
 btnFocus.onclick = ()=> focusHotspot(parseInt(compSelect.value||0,10)||0);
 btnPing.onclick  = ()=> { const rec=hsRecords[parseInt(compSelect.value||0,10)||0]; rec && rec.dot.emit('ping'); };
 
-/* Modelo */
+/* Carga eventos del modelo */
 modelEl.addEventListener('model-loaded',()=>{ hideProgress(); normalizeAndFrame(); makeHotspots(kind); });
 modelEl.addEventListener('model-error',e=>{ hideProgress(); alert('No se pudo cargar el modelo. Revisa las rutas de GLB.'); console.error(e.detail);});
 
@@ -701,29 +776,13 @@ centerBtn.addEventListener('click',()=> modelEl.object3D.position.set(0,0,0));
 scaleRange.addEventListener('input',()=> setScaleUniform(parseFloat(scaleRange.value)));
 speedRange.addEventListener('input',()=>{ const en=btnAuto.classList.contains('active'); modelEl.setAttribute('auto-rotator',`enabled:${en}; speed:${parseFloat(speedRange.value)}`); localStorage.setItem('vh_speed', parseFloat(speedRange.value)); });
 
-/* ====== Ayuda VR (lógica) ====== */
-const helpVRBackdrop = document.getElementById('helpVRBackdrop');
-const helpVRClose = document.getElementById('helpVRClose');
-const helpVRToggleHint = document.getElementById('helpVRToggleHint');
-function openHelpVR(){ helpVRBackdrop.classList.add('show'); helpVRBackdrop.setAttribute('aria-hidden','false'); }
-function closeHelpVR(){ helpVRBackdrop.classList.remove('show'); helpVRBackdrop.setAttribute('aria-hidden','true'); }
-document.getElementById('btnHelpVRFloat').addEventListener('click', openHelpVR);
-helpVRClose.addEventListener('click', closeHelpVR);
-helpVRBackdrop.addEventListener('click', (e)=>{ if(e.target===helpVRBackdrop) closeHelpVR(); });
-helpVRToggleHint.addEventListener('click', ()=>{
-  const cur = localStorage.getItem('vh_help_auto') !== '0';
-  const next = !cur;
-  localStorage.setItem('vh_help_auto', next ? '1' : '0');
-  helpVRToggleHint.textContent = next ? 'No mostrar automáticamente' : 'Volver a mostrar automáticamente';
-});
-
 /* ====== Inicio ====== */
 (function init(){
   restoreTogglesFromStorage();
   setUI();
   load();
 
-  // Mostrar ayuda automáticamente al entrar a VR si está activado.
+  // Mostrar ayuda automáticamente al entrar a VR solo si está activado (por defecto sí).
   const scene = document.querySelector('a-scene');
   const autoHelp = () => {
     const shouldShow = localStorage.getItem('vh_help_auto') !== '0';
@@ -733,18 +792,28 @@ helpVRToggleHint.addEventListener('click', ()=>{
 })();
 </script>
 
-<!-- VR: agarrar/rotar/escalar + autoplace -->
+<!-- ====== CONTROLES VR: agarrar/rotar/escalar (Quest 2) + autoplace ====== -->
 <script>
 AFRAME.registerComponent('vr-grab-rotate-scale', {
-  schema: { target:{type:'selector'}, rotateSpeed:{default:1.8}, scaleSpeed:{default:0.003}, minScale:{default:0.05}, maxScale:{default:5.0} },
+  schema: {
+    target: {type: 'selector'},
+    rotateSpeed: {default: 1.8},
+    scaleSpeed: {default: 0.003},
+    minScale: {default: 0.05},
+    maxScale: {default: 5.0}
+  },
   init: function () {
     this.right = document.getElementById('rightHand');
-    this.grabbing = false; this.grabDistance = 0;
-    this.ray = new THREE.Raycaster(); this.tmpDir = new THREE.Vector3(); this.localHit = new THREE.Vector3();
+    this.grabbing = false;
+    this.grabDistance = 0;
+    this.ray = new THREE.Raycaster();
+    this.tmpDir = new THREE.Vector3();
+    this.localHit = new THREE.Vector3();
+
     if (this.right) {
       this.right.addEventListener('triggerdown', () => this.startGrab());
       this.right.addEventListener('triggerup',   () => this.endGrab());
-      this.right.addEventListener('axismove', (e) => this.onAxisMove(e));
+      this.right.addEventListener('axismove', (e) => this.onAxisMove(e)); // stick derecho
     }
     this.el.sceneEl.addEventListener('exit-vr', () => this.endGrab());
   },
@@ -758,24 +827,37 @@ AFRAME.registerComponent('vr-grab-rotate-scale', {
     const mesh = tgt.getObject3D('mesh'); if (!mesh) return;
     const hit = this.ray.intersectObject(mesh, true);
     if (hit.length) {
-      this.grabbing = true; this.grabDistance = hit[0].distance;
+      this.grabbing = true;
+      this.grabDistance = hit[0].distance;
       const worldPoint = hit[0].point.clone();
-      const obj = tgt.object3D; obj.worldToLocal(this.localHit.copy(worldPoint));
-      try { const gp = (this.right.components['oculus-touch-controls']||{}).controller; gp?.hapticActuators?.[0]?.pulse(0.4, 80); } catch(e){}
+      const obj = tgt.object3D;
+      obj.worldToLocal(this.localHit.copy(worldPoint));
+
+      // Haptics suave al agarrar (si disponible)
+      try {
+        const gp = (this.right.components['oculus-touch-controls']||{}).controller;
+        gp?.hapticActuators?.[0]?.pulse(0.4, 80);
+      } catch(e){}
     }
   },
   endGrab: function () { this.grabbing = false; },
   onAxisMove: function (evt) {
     const tgt = this.data.target; if (!tgt) return;
-    const axis = evt.detail && evt.detail.axis; if (!axis) return;
+    const axis = evt.detail && evt.detail.axis; // [x,y] del stick derecho
+    if (!axis) return;
     const o = tgt.object3D;
-    if (Math.abs(axis[0]) > 0.05) { o.rotation.y -= axis[0] * this.data.rotateSpeed * (Math.PI/180) * 5; }
+
+    if (Math.abs(axis[0]) > 0.05) {
+      o.rotation.y -= axis[0] * this.data.rotateSpeed * (Math.PI/180) * 5;
+    }
     if (Math.abs(axis[1]) > 0.05) {
-      const s = 1 - (axis[1] * this.data.scaleSpeed) * 10;
+      const s = 1 - (axis[1] * this.data.scaleSpeed * 10);
       const ns = new THREE.Vector3(o.scale.x*s, o.scale.y*s, o.scale.z*s);
-      ns.set(THREE.MathUtils.clamp(ns.x, this.data.minScale, this.data.maxScale),
-             THREE.MathUtils.clamp(ns.y, this.data.minScale, this.data.maxScale),
-             THREE.MathUtils.clamp(ns.z, this.data.minScale, this.data.maxScale));
+      ns.set(
+        THREE.MathUtils.clamp(ns.x, this.data.minScale, this.data.maxScale),
+        THREE.MathUtils.clamp(ns.y, this.data.minScale, this.data.maxScale),
+        THREE.MathUtils.clamp(ns.z, this.data.minScale, this.data.maxScale)
+      );
       o.scale.copy(ns);
       if (typeof scaleRange!=='undefined') scaleRange.value = o.scale.x.toFixed(2);
     }
@@ -810,7 +892,9 @@ AFRAME.registerComponent('vr-autoplace', {
     };
     this.el.sceneEl.addEventListener('enter-vr', this.onEnter);
   },
-  remove: function () { this.el.sceneEl.removeEventListener('enter-vr', this.onEnter); }
+  remove: function () {
+    this.el.sceneEl.removeEventListener('enter-vr', this.onEnter);
+  }
 });
 </script>
 
