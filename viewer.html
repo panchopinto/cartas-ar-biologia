@@ -14,9 +14,23 @@
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
   canvas,.a-canvas{position:fixed;inset:0;width:100vw!important;height:100vh!important;background:#000!important}
 
-  .hud{position:fixed;left:0;right:0;top:0;padding:.55rem .8rem;color:#fff;font:600 14px system-ui;z-index:5;
-       background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0))}
-  .toolbar{position:fixed;right:8px;top:8px;display:flex;gap:8px;z-index:6}
+  /* Título (centrado) */
+  .hud{
+    position:fixed;left:0;right:0;top:0;
+    padding:.55rem .8rem;color:#fff;font:600 14px system-ui;z-index:5;
+    background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));
+    text-align:center; /* <-- centramos el título */
+  }
+
+  /* Toolbar centrada justo debajo del título */
+  .toolbar{
+    position:fixed;
+    top:44px;               /* debajo del HUD */
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;gap:8px;z-index:6
+  }
+
   .btn{border:1px solid rgba(255,255,255,.25);color:#fff;background:rgba(0,0,0,.35);
        border-radius:10px;padding:6px 10px;font:600 13px system-ui;cursor:pointer}
   .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
