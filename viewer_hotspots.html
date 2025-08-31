@@ -13,8 +13,9 @@
     --z-hud: 10;
     --z-sides: 12;
     --z-progress: 14;
-    --z-list: 20;      /* panel de componentes por encima de todo */
+    --z-list: 20;      /* panel componentes por encima de controles */
     --z-controls: 8;   /* controles de abajo */
+    --z-float: 30;     /* ayuda VR flotante */
   }
 
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
@@ -37,42 +38,34 @@
   }
   .hud .tag{opacity:.9}
 
-  /* ===== Columnas laterales (responsivas) ===== */
-  .side{
-    position:fixed; top:auto; bottom:auto; z-index: var(--z-sides);
-    display:flex; flex-direction:column; gap:8px; padding:8px;
-    background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.18); backdrop-filter: blur(6px);
-    border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.25);
-    max-width: 44vw;
+  /* ===== Columna izquierda (arriba-izquierda) ===== */
+  .leftColumn{
+    position:fixed; z-index: var(--z-sides);
+    left:12px;
+    top: calc(var(--hudH) + var(--safeTop) + 10px);
+    display:flex; flex-direction:column; gap:10px;
+    width:min(44vw, 320px);
   }
-  .side-left{ left:12px }
-  .side-right{ right:12px }
-
-  /* Posiciones PORTRAIT (teléfono vertical) */
-  @media (orientation:portrait){
-    .side-left{ top: calc(var(--hudH) + var(--safeTop) + 10px) }
-    .side-right{ top: calc(var(--hudH) + var(--safeTop) + 10px) }
+  .card{
+    background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.18);
+    backdrop-filter: blur(6px); border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.25);
+    padding:8px;
   }
-  /* Posiciones LANDSCAPE (teléfono horizontal / tablet) */
-  @media (orientation:landscape){
-    .side-left{ top: 50%; transform: translateY(-50%) }
-    .side-right{ top: 50%; transform: translateY(-50%) }
-  }
+  .group{ display:flex; flex-direction:column; gap:8px }
 
   /* Botones */
   .btn{
     border:1px solid rgba(255,255,255,.22);
     color:#fff; background:rgba(0,0,0,.35);
     border-radius:12px; padding:9px 12px; text-align:left;
-    font:600 13px/1 system-ui; cursor:pointer;
-    transition:.15s; min-height:36px; white-space:nowrap;
+    font:600 13px/1 system-ui; cursor:pointer; transition:.15s; min-height:36px; white-space:nowrap;
   }
   .btn:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px) }
   .btn:active{ transform:translateY(0) }
   .btn:focus-visible{ outline:none; box-shadow:0 0 0 2px rgba(60,201,255,.55); border-color:#3cc9ff }
   .btn.active{ background:rgba(60,201,255,.22); border-color:#3cc9ff; box-shadow:0 0 0 1px rgba(60,201,255,.25) inset }
 
-  /* Progreso */
+  /* Progreso centrado */
   .progress{
     position:fixed;left:50%;transform:translateX(-50%);
     top: calc(var(--hudH) + var(--safeTop) + 60px);
@@ -89,8 +82,7 @@
     position:fixed;left:12px;z-index:8; padding:12px; width:min(360px,86vw);max-height:60vh;overflow:auto;
     background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.28);border-radius:14px;backdrop-filter:blur(2px)
   }
-  @media (orientation:portrait){ .infoPanel{ top: calc(var(--hudH) + var(--safeTop) + 10px + 160px) } }
-  @media (orientation:landscape){ .infoPanel{ top: 12px } }
+  .infoPanel{ top: calc(var(--hudH) + var(--safeTop) + 10px + 200px) } /* cae debajo de los grupos */
   .infoPanel h3{margin:0 0 6px;font:700 16px system-ui;color:#fff}
   .infoPanel h4{margin:10px 0 6px;font:700 13px system-ui;color:#cfe6ff}
   .infoPanel ul{margin:0;padding-left:16px}
@@ -99,21 +91,20 @@
   .chip{ padding:6px 8px;border-radius:999px;font:700 12px system-ui;color:#132;
     background:rgba(57,255,20,.15);border:1px solid #39ff14; box-shadow:0 0 8px rgba(57,255,20,.5) inset,0 0 6px rgba(57,255,20,.25) }
 
-  /* Panel Componentes (encima de controles) */
+  /* Panel Componentes (derecha, por encima de controles) */
   .listPanel{
     position:fixed; right:12px; z-index: var(--z-list);
+    top: calc(var(--hudH) + var(--safeTop) + 10px);
     padding:12px;background:rgba(0,0,0,.55);
     border:1px solid rgba(255,255,255,.28);border-radius:12px;min-width:240px;
     box-shadow:0 6px 24px rgba(0,0,0,.35); backdrop-filter: blur(2px);
   }
-  @media (orientation:portrait){ .listPanel{ top: calc(var(--hudH) + var(--safeTop) + 10px + 210px) } }
-  @media (orientation:landscape){ .listPanel{ top: 12px } }
   .listPanel h4{margin:0 0 6px;font:700 13px system-ui;color:#cfe6ff}
   .listPanel select{width:100%;font:600 12px system-ui;padding:8px;border-radius:10px;border:1px solid #3cc9ff;background:#021525;color:#e8fbff}
   .listPanel .row{display:flex;gap:8px;margin-top:10px}
   .listPanel .row .btn{flex:1;text-align:center}
 
-  /* Controles inferiores con espacio para VR */
+  /* Controles inferiores (se levanta si hay botón VR) */
   .controls{
     position:fixed;right:10px;z-index: var(--z-controls);
     bottom: 88px; display:grid;grid-template-columns:repeat(3,48px);grid-gap:8px
@@ -138,6 +129,15 @@
   body.no-vr-button .panel{ bottom:10px }
   .panel label{display:flex;align-items:center;gap:6px;font:600 12px system-ui;color:#fff;margin:4px 0}
   .panel input[type=range]{width:130px}
+
+  /* Botón Ayuda VR flotante (se ubica justo sobre el VR) */
+  #btnHelpVRFloat{
+    position:fixed; right:12px; bottom:64px; z-index: var(--z-float);
+    border:1px solid rgba(255,255,255,.22); color:#fff; background:rgba(0,0,0,.55);
+    border-radius:12px; padding:10px 14px; font:700 13px system-ui; cursor:pointer;
+    box-shadow:0 6px 18px rgba(0,0,0,.35);
+  }
+  body.no-vr-button #btnHelpVRFloat{ display:none } /* si no hay VR button, escondemos el flotante */
 
   /* Teléfonos chicos */
   @media (max-width:480px){
@@ -166,21 +166,24 @@
   <div class="uiRoot">
     <div class="hud">3D — Célula <span id="labelKind" class="tag">Animal</span></div>
 
-    <!-- Columna izquierda: SOLO tipos de célula -->
-    <div class="side side-left">
-      <button id="btnAnimal" class="btn">Célula Animal</button>
-      <button id="btnVegetal" class="btn">Célula Vegetal</button>
-    </div>
-
-    <!-- Columna derecha: resto de opciones -->
-    <div class="side side-right">
-      <button id="btnAuto" class="btn" title="Auto-rotación">Auto</button>
-      <button id="btnTags" class="btn active" title="Mostrar/Ocultar etiquetas">Etiquetas</button>
-      <button id="btnDiff" class="btn active" title="Resaltar diferencias">Diferencias</button>
-      <button id="btnSolo" class="btn" title="Mostrar solo el seleccionado">Solo</button>
-      <button id="btnPinchPage" class="btn" title="Pellizcar para zoom de la página (no del modelo)">Pinch página</button>
-      <button id="btnInfo" class="btn" title="Ver/Ocultar ficha">Info</button>
-      <button id="btnHelpVR" class="btn" title="Controles en casco (Quest 2)">Ayuda VR</button>
+    <!-- IZQUIERDA: arriba Animal/Vegetal; debajo resto de opciones -->
+    <div class="leftColumn">
+      <div class="card">
+        <div class="group">
+          <button id="btnAnimal" class="btn">Célula Animal</button>
+          <button id="btnVegetal" class="btn">Célula Vegetal</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="group">
+          <button id="btnAuto" class="btn" title="Auto-rotación">Auto</button>
+          <button id="btnTags" class="btn active" title="Mostrar/Ocultar etiquetas">Etiquetas</button>
+          <button id="btnDiff" class="btn active" title="Resaltar diferencias">Diferencias</button>
+          <button id="btnSolo" class="btn" title="Mostrar solo el seleccionado">Solo</button>
+          <button id="btnPinchPage" class="btn" title="Pellizcar para zoom de la página (no del modelo)">Pinch página</button>
+          <button id="btnInfo" class="btn" title="Ver/Ocultar ficha">Info</button>
+        </div>
+      </div>
     </div>
 
     <!-- Progreso -->
@@ -189,7 +192,7 @@
     <!-- Ficha EDU (apagada por defecto) -->
     <div class="infoPanel" id="infoPanel" style="display:none"></div>
 
-    <!-- Panel Componentes (encima de controles) -->
+    <!-- Panel Componentes (derecha, arriba) -->
     <div class="listPanel" id="listPanel">
       <h4>Componentes</h4>
       <select id="compSelect"></select>
@@ -216,15 +219,47 @@
     </div>
   </div>
 
+  <!-- Botón Ayuda VR flotante (se ubicará sobre el botón VR) -->
+  <button id="btnHelpVRFloat" title="Controles en casco (Quest 2)">Ayuda VR</button>
+
   <!-- ===== Overlay Ayuda VR ===== -->
   <div id="helpVRBackdrop" class="helpVR-backdrop" aria-hidden="true">
     <div class="helpVR" role="dialog" aria-modal="true" aria-labelledby="helpVRTitle">
       <h3 id="helpVRTitle">Controles en Oculus Quest 2</h3>
       <p>Apunta con el <b>rayo</b> del control derecho al modelo. Usa estos gestos dentro del casco:</p>
-      <div class="helpRow"><div class="helpKey">RT</div><div><div class="helpTitle">Gatillo derecho</div><div class="helpDesc">Agarrar y mover el modelo.</div></div></div>
-      <div class="helpRow"><div class="helpKey">↔︎</div><div><div class="helpTitle">Stick derecho (Izq/Der)</div><div class="helpDesc">Rotar sobre eje Y.</div></div></div>
-      <div class="helpRow"><div class="helpKey">↕︎</div><div><div class="helpTitle">Stick derecho (Arriba/Abajo)</div><div class="helpDesc">Escalar con límites.</div></div></div>
-      <div class="helpRow"><div class="helpKey">VR</div><div><div class="helpTitle">Autoposicionar</div><div class="helpDesc">Se coloca frente a ti a 1.2 m.</div></div></div>
+
+      <div class="helpRow">
+        <div class="helpKey">RT</div>
+        <div>
+          <div class="helpTitle">Gatillo derecho (Trigger)</div>
+          <div class="helpDesc">Mantén presionado para <b>agarrar</b> y <b>mover</b> el modelo.</div>
+        </div>
+      </div>
+
+      <div class="helpRow">
+        <div class="helpKey">↔︎</div>
+        <div>
+          <div class="helpTitle">Stick derecho (Izq/Der)</div>
+          <div class="helpDesc"><b>Rota</b> la célula sobre su eje Y.</div>
+        </div>
+      </div>
+
+      <div class="helpRow">
+        <div class="helpKey">↕︎</div>
+        <div>
+          <div class="helpTitle">Stick derecho (Arriba/Abajo)</div>
+          <div class="helpDesc"><b>Escala</b> el modelo (con límites).</div>
+        </div>
+      </div>
+
+      <div class="helpRow">
+        <div class="helpKey">VR</div>
+        <div>
+          <div class="helpTitle">Autoposicionar</div>
+          <div class="helpDesc">Al entrar a VR, se coloca <b>frente a ti</b> a <b>1.2 m</b> de altura.</div>
+        </div>
+      </div>
+
       <div class="helpActions">
         <button id="helpVRToggleHint" class="helpBtn">No mostrar automáticamente</button>
         <button id="helpVRClose" class="helpBtn primary">Entendido</button>
@@ -232,8 +267,12 @@
     </div>
   </div>
 
-  <a-scene embedded renderer="antialias:true;precision:mediump" background="color: #000"
-           webxr="optionalFeatures: local-floor, bounded-floor">
+  <a-scene
+    embedded
+    renderer="antialias:true;precision:mediump"
+    background="color: #000"
+    webxr="optionalFeatures: local-floor, bounded-floor"
+  >
     <a-entity light="type:ambient; intensity:0.9"></a-entity>
     <a-entity light="type:directional; intensity:0.8" position="1 1 0"></a-entity>
 
@@ -253,9 +292,13 @@
     </a-entity>
 
     <!-- Controladores Quest 2 -->
-    <a-entity id="rightHand" oculus-touch-controls="hand: right"
-              raycaster="objects: .interactable; far: 20" line="opacity: 0.9"></a-entity>
-    <a-entity id="leftHand"  oculus-touch-controls="hand: left"></a-entity>
+    <a-entity id="rightHand"
+              oculus-touch-controls="hand: right"
+              raycaster="objects: .interactable; far: 20"
+              line="opacity: 0.9"></a-entity>
+
+    <a-entity id="leftHand"
+              oculus-touch-controls="hand: left"></a-entity>
 
     <!-- Manipulador VR -->
     <a-entity id="vrManipulator"
@@ -263,14 +306,28 @@
   </a-scene>
 
 <script>
-/* ===== Detectar botón VR y ajustar layout (espacio inferior) ===== */
+/* ===== Detectar botón VR y ubicar “Ayuda VR” justo encima ===== */
 (function watchVRButton(){
-  const clsOn  = 'no-vr-button';
-  const obs = new MutationObserver(()=>{
-    const btn = document.querySelector('.a-enter-vr-button, .a-enter-ar-button');
-    if (btn) document.body.classList.remove(clsOn); else document.body.classList.add(clsOn);
-  });
+  const clsNoVR  = 'no-vr-button';
+  const helpBtn  = document.getElementById('btnHelpVRFloat');
+
+  function place(){
+    const vrBtn = document.querySelector('.a-enter-vr-button, .a-enter-ar-button');
+    if (vrBtn){
+      document.body.classList.remove(clsNoVR);
+      const h = Math.max(56, vrBtn.offsetHeight || 56);
+      helpBtn.style.bottom = (h + 12) + 'px';   // justo encima del VR
+      helpBtn.style.right  = '12px';
+      helpBtn.style.display = 'block';
+    }else{
+      document.body.classList.add(clsNoVR);
+      helpBtn.style.display = 'none';
+    }
+  }
+  const obs = new MutationObserver(place);
   obs.observe(document.body, {childList:true, subtree:true});
+  window.addEventListener('resize', place);
+  place();
 })();
 
 /* ====== Pinch mode global ====== */
@@ -286,7 +343,7 @@ function setPinchMode(mode){
   localStorage.setItem('vh_pinch', mode);
 }
 
-/* ====== Gestos / entradas ====== */
+/* ====== Gestos ====== */
 AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},minScale:{default:0.05},maxScale:{default:3.0}},
   init:function(){this.oneFinger=false;this.lastX=0;this.lastY=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
     t.addEventListener('touchstart',e=>{ if(window.PINCH_MODE==='page') return; if(e.touches.length===1){this.oneFinger=true;this.lastX=e.touches[0].clientX; this.lastY=e.touches[0].clientY;}},{passive:false});
@@ -411,7 +468,7 @@ const btnDiff=document.getElementById('btnDiff');
 const btnSolo=document.getElementById('btnSolo');
 const btnPinchPage=document.getElementById('btnPinchPage');
 const btnInfo=document.getElementById('btnInfo');
-const btnHelpVR=document.getElementById('btnHelpVR');
+const helpBtnFloat=document.getElementById('btnHelpVRFloat');
 
 const rotL=document.getElementById('rotL'), rotR=document.getElementById('rotR');
 const zoomIn=document.getElementById('zoomIn'), zoomOut=document.getElementById('zoomOut');
@@ -501,9 +558,9 @@ function makeHotspots(kind){
   const items = getHotspots(kind) || [];
   hsRoot = document.createElement('a-entity'); hsRoot.setAttribute('id','hsRoot'); modelEl.appendChild(hsRoot);
 
-  const labelsOn = btnTags.classList.contains('active');
-  const diffOn   = btnDiff.classList.contains('active');
-  const soloOn   = btnSolo.classList.contains('active');
+  const labelsOn = document.getElementById('btnTags').classList.contains('active');
+  const diffOn   = document.getElementById('btnDiff').classList.contains('active');
+  const soloOn   = document.getElementById('btnSolo').classList.contains('active');
   const selectedIndex = parseInt(compSelect.value||0,10)||0;
 
   items.forEach((item,idx)=>{
@@ -536,7 +593,7 @@ function makeHotspots(kind){
 
     wrap.addEventListener('click', ()=>{
       dot.emit('ping');
-      if (btnSolo.classList.contains('active')) {
+      if (document.getElementById('btnSolo').classList.contains('active')) {
         compSelect.value = idx;
         applySoloFilter();
       } else {
@@ -553,10 +610,10 @@ function makeHotspots(kind){
 }
 
 function applySoloFilter(){
-  const solo = btnSolo.classList.contains('active');
+  const solo = document.getElementById('btnSolo').classList.contains('active');
   const idx = parseInt(compSelect.value||0,10)||0;
   hsRecords.forEach(r=>{
-    const show = !solo ? btnTags.classList.contains('active') : (r.idx===idx);
+    const show = !solo ? document.getElementById('btnTags').classList.contains('active') : (r.idx===idx);
     r.tip.setAttribute('visible', show);
     if (show && !r.stem.parentNode) r.wrap.appendChild(r.stem);
     if (!show && r.stem.parentNode) r.wrap.removeChild(r.stem);
@@ -593,10 +650,10 @@ function restoreTogglesFromStorage(){
   const infoOn = localStorage.getItem('vh_info');
   if (infoOn !== null) {
     const on = infoOn === '1';
-    btnInfo.classList.toggle('active', on);
+    document.getElementById('btnInfo').classList.toggle('active', on);
     infoPanel.style.display = on ? 'block' : 'none';
   } else {
-    btnInfo.classList.remove('active');
+    document.getElementById('btnInfo').classList.remove('active');
     infoPanel.style.display = 'none';
   }
 
@@ -616,7 +673,7 @@ btnA.onclick=()=>{ kind='animal'; setUIAndURL(); load(); };
 btnV.onclick=()=>{ kind='vegetal'; setUIAndURL(); load(); };
 btnAuto.onclick=()=>{ const en=!btnAuto.classList.contains('active'); btnAuto.classList.toggle('active',en);
   modelEl.setAttribute('auto-rotator',`enabled:${en}; speed:${parseFloat(speedRange.value)}`); saveToggle('vh_auto', en); };
-btnInfo.onclick=()=>{ const v=infoPanel.style.display!=='none'; infoPanel.style.display=v?'none':'block'; const on=!v; btnInfo.classList.toggle('active',on); saveToggle('vh_info', on); };
+document.getElementById('btnInfo').onclick=()=>{ const v=infoPanel.style.display!=='none'; infoPanel.style.display=v?'none':'block'; const on=!v; document.getElementById('btnInfo').classList.toggle('active',on); saveToggle('vh_info', on); };
 btnTags.onclick=()=>{ const st = !btnTags.classList.contains('active'); btnTags.classList.toggle('active', st); saveToggle('vh_tags', st); makeHotspots(kind); };
 btnDiff.onclick=()=>{ const st = !btnDiff.classList.contains('active'); btnDiff.classList.toggle('active', st); saveToggle('vh_diff', st); makeHotspots(kind); };
 btnSolo.onclick=()=>{ const st = !btnSolo.classList.contains('active'); btnSolo.classList.toggle('active', st); saveToggle('vh_solo', st); applySoloFilter(); };
@@ -644,13 +701,13 @@ centerBtn.addEventListener('click',()=> modelEl.object3D.position.set(0,0,0));
 scaleRange.addEventListener('input',()=> setScaleUniform(parseFloat(scaleRange.value)));
 speedRange.addEventListener('input',()=>{ const en=btnAuto.classList.contains('active'); modelEl.setAttribute('auto-rotator',`enabled:${en}; speed:${parseFloat(speedRange.value)}`); localStorage.setItem('vh_speed', parseFloat(speedRange.value)); });
 
-/* ====== Ayuda VR ====== */
+/* ====== Ayuda VR (lógica) ====== */
 const helpVRBackdrop = document.getElementById('helpVRBackdrop');
 const helpVRClose = document.getElementById('helpVRClose');
 const helpVRToggleHint = document.getElementById('helpVRToggleHint');
 function openHelpVR(){ helpVRBackdrop.classList.add('show'); helpVRBackdrop.setAttribute('aria-hidden','false'); }
 function closeHelpVR(){ helpVRBackdrop.classList.remove('show'); helpVRBackdrop.setAttribute('aria-hidden','true'); }
-btnHelpVR.addEventListener('click', openHelpVR);
+document.getElementById('btnHelpVRFloat').addEventListener('click', openHelpVR);
 helpVRClose.addEventListener('click', closeHelpVR);
 helpVRBackdrop.addEventListener('click', (e)=>{ if(e.target===helpVRBackdrop) closeHelpVR(); });
 helpVRToggleHint.addEventListener('click', ()=>{
@@ -665,8 +722,13 @@ helpVRToggleHint.addEventListener('click', ()=>{
   restoreTogglesFromStorage();
   setUI();
   load();
+
+  // Mostrar ayuda automáticamente al entrar a VR si está activado.
   const scene = document.querySelector('a-scene');
-  const autoHelp = () => { if (localStorage.getItem('vh_help_auto') !== '0') openHelpVR(); };
+  const autoHelp = () => {
+    const shouldShow = localStorage.getItem('vh_help_auto') !== '0';
+    if (shouldShow) openHelpVR();
+  };
   scene.addEventListener('enter-vr', autoHelp, false);
 })();
 </script>
@@ -709,7 +771,7 @@ AFRAME.registerComponent('vr-grab-rotate-scale', {
     const o = tgt.object3D;
     if (Math.abs(axis[0]) > 0.05) { o.rotation.y -= axis[0] * this.data.rotateSpeed * (Math.PI/180) * 5; }
     if (Math.abs(axis[1]) > 0.05) {
-      const s = 1 - (axis[1] * this.data.scaleSpeed * 10);
+      const s = 1 - (axis[1] * this.data.scaleSpeed) * 10;
       const ns = new THREE.Vector3(o.scale.x*s, o.scale.y*s, o.scale.z*s);
       ns.set(THREE.MathUtils.clamp(ns.x, this.data.minScale, this.data.maxScale),
              THREE.MathUtils.clamp(ns.y, this.data.minScale, this.data.maxScale),
