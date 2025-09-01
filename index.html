@@ -118,6 +118,156 @@
 
 </head>
 <body>
+  <!-- ====== HEADER GLOBAL (pegar inmediatamente tras <body>) ====== -->
+<style>
+  :root{ --headerH: 52px; }
+
+  /* Empuja tu HUD por debajo del header */
+  .hud{ top: var(--headerH) !important; }
+
+  .siteHeader{
+    position:fixed; inset:0 0 auto 0; height:var(--headerH);
+    display:flex; align-items:center; z-index:1000;
+    padding:8px 12px;
+    background:linear-gradient(180deg,rgba(0,0,0,.75),rgba(0,0,0,.35));
+    border-bottom:1px solid rgba(255,255,255,.15);
+    backdrop-filter: blur(8px);
+  }
+  .siteHeader nav{ display:flex; justify-content:space-between; width:100%; gap:12px }
+  .h-left, .h-right{ display:flex; align-items:center; gap:8px }
+
+  .m{
+    position:relative;
+  }
+  .m > button, .link{
+    height:36px; padding:0 12px; border-radius:10px; cursor:pointer;
+    border:1px solid rgba(255,255,255,.22);
+    background:rgba(0,0,0,.35); color:#fff; font:600 13px/34px system-ui;
+  }
+  .m > button:hover, .link:hover{ background:rgba(60,201,255,.18); border-color:#3cc9ff }
+  .m.open > button{ background:rgba(60,201,255,.25); border-color:#3cc9ff }
+
+  .dd{                /* dropdown */
+    position:absolute; top:40px; left:0; min-width:220px;
+    background:rgba(0,0,0,.85); border:1px solid rgba(255,255,255,.18);
+    border-radius:12px; padding:8px; display:none;
+    box-shadow:0 10px 26px rgba(0,0,0,.35);
+  }
+  .m.open .dd{ display:block; }
+  .dd a{
+    display:block; padding:8px 10px; border-radius:8px; color:#eaf6ff; text-decoration:none;
+    border:1px solid transparent; font:600 13px/1.2 system-ui;
+  }
+  .dd a:hover{ background:rgba(60,201,255,.18); border-color:#3cc9ff }
+
+  /* Responsive: compactar un poco en móviles */
+  @media (max-width:520px){
+    :root{ --headerH: 56px; }
+    .dd{ min-width:180px }
+    .m > button, .link{ padding:0 10px; font-size:12px }
+  }
+</style>
+
+<header class="siteHeader" role="banner">
+  <nav aria-label="Navegación principal">
+    <div class="h-left">
+      <!-- TRIVIA -->
+      <div class="m" data-menu="trivia">
+        <button type="button" aria-haspopup="true" aria-expanded="false">TRIVIA</button>
+        <div class="dd" role="menu">
+          <a role="menuitem" href="./quiz_mcq.html?m=animal">Célula Animal</a>
+          <a role="menuitem" href="./quiz_mcq.html?m=vegetal">Célula Vegetal</a>
+        </div>
+      </div>
+
+      <!-- VER 3D (simple) -->
+      <div class="m" data-menu="3d">
+        <button type="button" aria-haspopup="true" aria-expanded="false">VER 3D</button>
+        <div class="dd" role="menu">
+          <a role="menuitem" href="./viewer.html?m=animal">Célula Animal</a>
+          <a role="menuitem" href="./viewer.html?m=vegetal">Célula Vegetal</a>
+        </div>
+      </div>
+
+      <!-- VER RA (AR.js) -->
+      <div class="m" data-menu="ra">
+        <button type="button" aria-haspopup="true" aria-expanded="false">VER RA</button>
+        <div class="dd" role="menu">
+          <a role="menuitem" href="./arjs-demo/animal_glb.html?m=animal">Célula Animal (RA)</a>
+          <a role="menuitem" href="./arjs-demo/vegetal_glb.html?m=vegetal">Célula Vegetal (RA)</a>
+        </div>
+      </div>
+
+      <!-- VER RV (VR/UI y herramientas) -->
+      <div class="m" data-menu="rv">
+        <button type="button" aria-haspopup="true" aria-expanded="false">VER RV</button>
+        <div class="dd" role="menu">
+          <!-- Sugerencia: usa el mismo viewer con un flag "mode=vr" para mostrar tus controles VR -->
+          <a role="menuitem" href="./viewer.html?m=animal&mode=vr">Célula Animal (VR)</a>
+          <a role="menuitem" href="./viewer.html?m=vegetal&mode=vr">Célula Vegetal (VR)</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="h-right">
+      <a class="link" href="./help.html">Ayuda</a>
+      <a class="link" href="#" data-lang="es" title="Español">ES</a>
+      <a class="link" href="#" data-lang="en" title="English">EN</a>
+    </div>
+  </nav>
+</header>
+
+<script>
+/* ====== Menús desplegables (click/teclado) + cierre al hacer click fuera ====== */
+(function(){
+  const menus = [...document.querySelectorAll('.siteHeader .m')];
+  const closeAll = ()=> menus.forEach(m => { m.classList.remove('open'); m.querySelector('button')?.setAttribute('aria-expanded','false'); });
+  menus.forEach(m=>{
+    const btn = m.querySelector('button');
+    btn.addEventListener('click', (e)=>{
+      const wasOpen = m.classList.contains('open');
+      closeAll();
+      if(!wasOpen){ m.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+    });
+    // Accesibilidad básica con teclado
+    btn.addEventListener('keydown', (e)=>{
+      if(e.key==='ArrowDown'){ m.classList.add('open'); btn.setAttribute('aria-expanded','true'); m.querySelector('.dd a')?.focus(); }
+    });
+    m.querySelectorAll('.dd a').forEach(a=>{
+      a.addEventListener('keydown',(e)=>{
+        if(e.key==='Escape'){ closeAll(); btn.focus(); }
+      });
+    });
+  });
+  document.addEventListener('click', (e)=>{
+    if(!e.target.closest('.siteHeader')) closeAll();
+  });
+  document.addEventListener('keydown',(e)=>{
+    if(e.key==='Escape') closeAll();
+  });
+
+  /* ====== Idioma: agrega/actualiza ?lang=es|en en la URL actual ====== */
+  function setLang(lang){
+    const u = new URL(location.href);
+    u.searchParams.set('lang', lang);
+    location.href = u.toString();
+  }
+  document.querySelector('.siteHeader [data-lang="es"]')?.addEventListener('click', (e)=>{ e.preventDefault(); setLang('es');});
+  document.querySelector('.siteHeader [data-lang="en"]')?.addEventListener('click', (e)=>{ e.preventDefault(); setLang('en');});
+
+  /* ====== Marca menú activo según la página actual (opcional) ====== */
+  const href = location.href;
+  const markActive = (dataMenu) => {
+    const m = document.querySelector(`.siteHeader .m[data-menu="${dataMenu}"] > button`);
+    if(m) m.style.outline = '2px solid #3cc9ff';
+  };
+  if (/\/viewer\.html/i.test(href) && !/mode=vr/i.test(href)) markActive('3d');
+  if (/\/viewer\.html/i.test(href) && /mode=vr/i.test(href)) markActive('rv');
+  if (/\/arjs-demo\//i.test(href)) markActive('ra');
+  if (/quiz_mcq\.html/i.test(href)) markActive('trivia');
+})();
+</script>
+<!-- ====== /HEADER GLOBAL ====== -->
   <div class="container">
     <!-- Topbar -->
     <div class="topbar">
