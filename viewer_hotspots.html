@@ -6,42 +6,29 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=3,user-scalable=yes"/>
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 <style>
-  /* === Botones fijos: 1 cm (alto) x 1.2 cm (ancho) === */
-/* Nota: 1 cm ≈ 37.8 px y 1.2 cm ≈ 45.4 px. */
-:root{
-  --fixedBtnH: 1cm;     /* o 37.8px */
-  --fixedBtnW: 1.5cm;   /* o 45.4px */
-}
+  :root{
+    --uiScale:1;
+    --hudH: 44px;
+    --safeTop: env(safe-area-inset-top);
+    --z-hud: 10;
+    --z-sides: 12;
+    --z-progress: 14;
+    --z-list: 20;
+    --z-controls: 8;
+    --z-float: 30;
 
-/* Solo los toggles de la segunda tarjeta (izquierda) */
-#btnAuto,
-#btnTags,
-#btnDiff,
-#btnSolo,
-#btnPinchPage,
-#btnInfo{
-  width: var(--fixedBtnW) !important;
-  min-width: var(--fixedBtnW);
-  max-width: var(--fixedBtnW);
-  height: var(--fixedBtnH);
-  min-height: var(--fixedBtnH);
-  max-height: var(--fixedBtnH);
+    /* Altura barra centrada (Animal / Vegetal) */
+    --toolbarH: 46px;
 
-  /* Ajustes para que el texto no rompa el tamaño fijo */
-  padding: 0 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+    /* Columna izquierda */
+    --leftColMaxW: 260px;
+    --leftColVW:   32vw;
+    --leftBtnMinLines: 1;
 
-  /* Texto en una línea y recorte si es largo */
-  font-size: 12px;
-  line-height: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
+    /* TAMAÑOS FIJOS SOLICITADOS */
+    --fixedBtnH: 1cm;     /* ≈ 37.8px */
+    --fixedBtnW: 1.2cm;   /* ≈ 45.4px */
+  }
 
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
   canvas,.a-canvas{position:fixed;inset:0;width:100vw!important;height:100vh!important;background:#000!important;z-index:0}
@@ -63,11 +50,35 @@
   }
   .hud .tag{opacity:.9}
 
-  /* ===== Columna izquierda (dos tarjetas: 1) Animal/Vegetal  2) resto) ===== */
+  /* ===== Toolbar centrada: Animal / Vegetal ===== */
+  .toolbar{
+    position:fixed;
+    top: calc(var(--hudH) + var(--safeTop));
+    left:50%;
+    transform:translateX(-50%);
+    height: var(--toolbarH);
+    display:flex; align-items:center; gap:10px; z-index: var(--z-hud);
+    padding: 6px 8px;
+    background: rgba(0,0,0,.35);
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:14px;
+    backdrop-filter: blur(6px);
+    box-shadow:0 8px 24px rgba(0,0,0,.25);
+  }
+  .toolbar .btn{
+    border:1px solid rgba(255,255,255,.22);
+    color:#fff; background:rgba(0,0,0,.35);
+    border-radius:12px; padding:8px 12px;
+    font:700 clamp(12px,1.6vw,14px)/1.2 system-ui; cursor:pointer; transition:.15s;
+  }
+  .toolbar .btn:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px) }
+  .toolbar .btn.active{ background:rgba(60,201,255,.22); border-color:#3cc9ff }
+
+  /* ===== Columna izquierda (solo toggles) ===== */
   .leftColumn{
     position:fixed; z-index: var(--z-sides);
     left:12px;
-    top: calc(var(--hudH) + var(--safeTop) + 10px);
+    top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 12px);
     display:flex; flex-direction:column; gap:10px;
     width: min(var(--leftColVW), var(--leftColMaxW));
     max-width: 92vw;
@@ -79,35 +90,40 @@
   }
   .group{ display:flex; flex-direction:column; gap:8px }
 
-  /* Botones base (multilínea y tipografía responsiva) */
+  /* Botones base multilínea (se usarán para todos, y luego se fijan tamaños donde corresponde) */
   .btn{
     border:1px solid rgba(255,255,255,.22);
     color:#fff; background:rgba(0,0,0,.35);
-    border-radius:12px;
-    padding:8px 10px;                 /* margen cómodo para varias líneas */
+    border-radius:12px; padding:8px 10px;
     text-align:left;
     font:600 clamp(12px,1.6vw,14px)/1.25 system-ui;
-    cursor:pointer;
-    transition:.15s;
-    min-height: calc( (1.25em * var(--leftBtnMinLines)) + 10px + 10px ); /* 2 líneas + padding */
-    white-space: normal;               /* permite multilínea */
-    word-break: break-word;            /* evita desbordes en palabras largas */
+    cursor:pointer; transition:.15s;
+    min-height: calc( (1.25em * var(--leftBtnMinLines)) + 10px + 10px );
+    white-space: normal; word-break: break-word;
   }
   .btn:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px) }
   .btn:active{ transform:translateY(0) }
   .btn:focus-visible{ outline:none; box-shadow:0 0 0 2px rgba(60,201,255,.55); border-color:#3cc9ff }
   .btn.active{ background:rgba(60,201,255,.22); border-color:#3cc9ff; box-shadow:0 0 0 1px rgba(60,201,255,.25) inset }
 
-  /* Botones de la izquierda: todos mismo ancho (100% del contenedor) */
-  .leftBtn{
-    display:inline-flex; align-items:center; justify-content:flex-start;
-    width: 100%;
+  /* Botones izquierda: mismo ancho fijo solicitado 1.2cm x 1cm (alto x ancho) */
+  .leftBtn{ display:inline-flex; align-items:center; justify-content:center; text-align:center; }
+  #btnAuto, #btnTags, #btnDiff, #btnSolo, #btnPinchPage, #btnInfo{
+    width: var(--fixedBtnW) !important;
+    min-width: var(--fixedBtnW);
+    max-width: var(--fixedBtnW);
+    height: var(--fixedBtnH);
+    min-height: var(--fixedBtnH);
+    max-height: var(--fixedBtnH);
+    padding: 0 6px;
+    font-size: 12px; line-height: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
 
-  /* Progreso centrado */
+  /* Progreso centrado (baja para no tapar la toolbar) */
   .progress{
     position:fixed;left:50%;transform:translateX(-50%);
-    top: calc(var(--hudH) + var(--safeTop) + 60px);
+    top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 60px);
     z-index: var(--z-progress);
     width:min(60vw,520px);height:10px; display:none;
     background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden;border:1px solid rgba(57,255,20,.35)
@@ -116,12 +132,12 @@
                  box-shadow:0 0 12px #39ff14,0 0 24px #39ff14;transition:width .15s ease}
   .progress .pct{position:absolute;right:0;top:-22px;font:700 12px system-ui;color:#bfff00;text-shadow:0 0 8px #39ff14}
 
-  /* Info EDU (se mantiene) */
+  /* Info EDU */
   .infoPanel{
     position:fixed;left:12px;z-index:8; padding:12px; width:min(360px,86vw);max-height:60vh;overflow:auto;
     background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.28);border-radius:14px;backdrop-filter:blur(2px)
   }
-  .infoPanel{ top: calc(var(--hudH) + var(--safeTop) + 10px + 200px) }
+  .infoPanel{ top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 12px + 200px) }
   .infoPanel h3{margin:0 0 6px;font:700 clamp(14px,1.8vw,16px) system-ui;color:#fff}
   .infoPanel h4{margin:10px 0 6px;font:700 clamp(12px,1.6vw,13px) system-ui;color:#cfe6ff}
   .infoPanel ul{margin:0;padding-left:16px}
@@ -130,21 +146,30 @@
   .chip{ padding:6px 8px;border-radius:999px;font:700 12px system-ui;color:#132;
     background:rgba(57,255,20,.15);border:1px solid #39ff14; box-shadow:0 0 8px rgba(57,255,20,.5) inset,0 0 6px rgba(57,255,20,.25) }
 
-  /* Panel Componentes (derecha): botones también uniformes y multilínea */
+  /* Panel Componentes (derecha) */
   .listPanel{
     position:fixed; right:12px; z-index: var(--z-list);
-    top: calc(var(--hudH) + var(--safeTop) + 10px);
+    top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 12px);
     padding:12px;background:rgba(0,0,0,.55);
     border:1px solid rgba(255,255,255,.28);border-radius:12px;min-width:240px;
     box-shadow:0 6px 24px rgba(0,0,0,.35); backdrop-filter: blur(2px);
   }
   .listPanel h4{margin:0 0 6px;font:700 clamp(12px,1.4vw,13px) system-ui;color:#cfe6ff}
   .listPanel select{width:100%;font:600 clamp(12px,1.4vw,12.5px)/1.2 system-ui;padding:8px;border-radius:10px;border:1px solid #3cc9ff;background:#021525;color:#e8fbff}
-  .listPanel .row{display:flex;gap:8px;margin-top:10px}
-  .listPanel .row .btn{
-    flex:1;text-align:center;
-    white-space: normal; word-break: break-word; line-height:1.2;
-    min-height: calc( (1.25em * var(--leftBtnMinLines)) + 10px + 10px );
+  .listPanel .row{display:flex; gap:8px; margin-top:10px; justify-content:center}
+
+  /* TAMAÑO FIJO para Enfocar / Ping (derecha) */
+  #btnFocus, #btnPing{
+    width: var(--fixedBtnW);
+    min-width: var(--fixedBtnW);
+    max-width: var(--fixedBtnW);
+    height: var(--fixedBtnH);
+    min-height: var(--fixedBtnH);
+    max-height: var(--fixedBtnH);
+    display:inline-flex; align-items:center; justify-content:center;
+    padding: 0 6px; text-align:center;
+    font-size: 12px; line-height:1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
 
   /* Controles inferiores */
@@ -173,7 +198,7 @@
   .panel label{display:flex;align-items:center;gap:6px;font:600 clamp(12px,1.6vw,12.5px) system-ui;color:#fff;margin:4px 0}
   .panel input[type=range]{width:130px}
 
-  /* Ayuda VR flotante (0.5cm más abajo que antes) */
+  /* Ayuda VR flotante */
   #btnHelpVRFloat{
     position:fixed; right:12px; bottom:64px; z-index: var(--z-float);
     border:1px solid rgba(255,255,255,.22); color:#fff; background:rgba(0,0,0,.55);
@@ -211,14 +236,14 @@
   <div class="uiRoot">
     <div class="hud">3D — Célula <span id="labelKind" class="tag">Animal</span></div>
 
-    <!-- IZQUIERDA -->
+    <!-- BARRA CENTRADA: Animal / Vegetal -->
+    <div class="toolbar">
+      <button id="btnAnimal"  class="btn">Célula Animal</button>
+      <button id="btnVegetal" class="btn">Célula Vegetal</button>
+    </div>
+
+    <!-- IZQUIERDA: SOLO los toggles, con tamaño fijo -->
     <div class="leftColumn">
-      <div class="card">
-        <div class="group">
-          <button id="btnAnimal"  class="btn leftBtn">Célula Animal</button>
-          <button id="btnVegetal" class="btn leftBtn">Célula Vegetal</button>
-        </div>
-      </div>
       <div class="card">
         <div class="group">
           <button id="btnAuto"       class="btn leftBtn" title="Auto-rotación">Auto</button>
@@ -404,7 +429,7 @@ function setPinchMode(mode){
   localStorage.setItem('vh_pinch', mode);
 }
 
-/* ====== Gestos / interacción de tu versión anterior (sin cambios lógicos) ====== */
+/* ====== Gestos / interacción ====== */
 AFRAME.registerComponent('gesture-handler',{schema:{rotFactor:{default:0.45},minScale:{default:0.05},maxScale:{default:3.0}},
   init:function(){this.oneFinger=false;this.lastX=0;this.lastY=0;const s=this.el.sceneEl;const add=()=>{const t=s.canvas||s;
     t.addEventListener('touchstart',e=>{ if(window.PINCH_MODE==='page') return; if(e.touches.length===1){this.oneFinger=true;this.lastX=e.touches[0].clientX; this.lastY=e.touches[0].clientY;}},{passive:false});
@@ -771,11 +796,11 @@ function restoreTogglesFromStorage(){
   const sp = localStorage.getItem('vh_speed'); if(sp){ const v=parseFloat(sp); if(!isNaN(v)) speedRange.value=v; }
 
   // ayuda VR
-  const hv = localStorage.getItem('vh_help_auto'); if(hv===null){ localStorage.setItem('vh_help_auto','1'); } // default: mostrar auto
+  const hv = localStorage.getItem('vh_help_auto'); if(hv===null){ localStorage.setItem('vh_help_auto','1'); }
 }
 function saveToggle(id, val){ localStorage.setItem(id, val ? '1' : '0'); }
 
-/* ====== Botones top ====== */
+/* ====== Botones ====== */
 function setUIAndURL(){ setUI(); const u=new URL(location.href); u.searchParams.set('m',kind); history.replaceState(null,'',u.toString()); localStorage.setItem('vh_kind',kind); }
 
 btnA.onclick=()=>{ kind='animal'; setUIAndURL(); load(); };
