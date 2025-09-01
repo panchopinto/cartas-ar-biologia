@@ -10,10 +10,15 @@
     /* Offset dinámico para no chocar con footer/badges fijos (se setea vía JS) */
     --fixedBottomOffset: 0px;
 
-    /* Columna izquierda (ancho compacto) */
-    --leftColMaxW: 200px;  /* antes no existía: ancho máximo compacto */
-    --leftColVW:   30vw;   /* límite relativo en móviles */
-    --leftBtnMinLines: 1;  /* altura pensada para 1 línea */
+    /* Columna izquierda (ahora se ajusta al contenido) */
+    --leftColMaxW: 260px;  /* ya no limita, pero lo dejamos por compatibilidad */
+    --leftColVW:   34vw;
+    --leftBtnMinLines: 1;  /* ya no se usa para altura */
+
+    /* Tamaños solicitados (físicos): 1 cm alto, 1.2 cm ancho
+       Equivalencias aproximadas: 1cm ≈ 37.80px, 1.2cm ≈ 45.36px */
+    --leftBtnW: 1.2cm; /* ~45.36px */
+    --leftBtnH: 1cm;   /* ~37.80px */
   }
 
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
@@ -40,9 +45,10 @@
   .leftColumn{
     position:fixed; z-index:6;
     left:12px;
-    top: 80px; /* debajo de la toolbar superior */
+    top: 88px; /* debajo de la toolbar superior */
     display:flex; flex-direction:column; gap:10px;
-    width: min(var(--leftColVW), var(--leftColMaxW));
+    /* Antes: width:min(var(--leftColVW), var(--leftColMaxW));  */
+    width: max-content;           /* ➜ se ajusta exactamente al contenido */
     max-width: 92vw;
   }
   .card{
@@ -59,12 +65,25 @@
   }
   .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
 
-  /* Botones de la izquierda: mismo ancho (100% del contenedor compacto) */
+  /* Botones de la izquierda: tamaño físico fijo solicitado */
   .leftBtn{
-    display:inline-flex; align-items:center; justify-content:flex-start;
-    width: 100%;
-    min-height: calc( (1.2em * var(--leftBtnMinLines)) + 8px + 8px );
-    white-space: normal; word-break: break-word;
+    display:inline-flex; align-items:center; justify-content:center;
+
+    /* Tamaño EXACTO incluido padding/borde (box-sizing:border-box aplica global) */
+    width: var(--leftBtnW);
+    min-width: var(--leftBtnW);
+    max-width: var(--leftBtnW);
+
+    height: var(--leftBtnH);
+    min-height: var(--leftBtnH);
+    max-height: var(--leftBtnH);
+
+    /* Ajustes para que “Editar” quepa bien en 1.2cm */
+    padding: 4px 6px;          /* más pequeño que el base */
+    font-size: 12px;           /* un pelín más chico que 13px */
+    white-space: nowrap;       /* sin salto de línea */
+    overflow: hidden;          /* evita desbordes raros */
+    text-overflow: ellipsis;   /* por si en otro idioma es más largo */
   }
 
   .progress{position:fixed;left:50%;transform:translateX(-50%);top:90px;z-index:9;width:min(60vw,520px);height:10px;
@@ -748,4 +767,3 @@ AFRAME.registerComponent('vr-autoplace', {
   <script src="./assets/js/anti-copy.js" defer></script>
 </body>
 </html>
-
