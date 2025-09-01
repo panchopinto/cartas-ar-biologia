@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <title>3D — Célula (simple)</title>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalizable=no"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 <style>
   :root{
@@ -505,7 +505,7 @@ window.addEventListener('resize', frameCameraOnly);
 window.addEventListener('orientationchange', frameCameraOnly);
 
 /* ====== Progreso ====== */
-const progress=document.getElementById('progress'); const progressBar=document.getElementById('progressBar'); const progressPct=document.getElementById('progressPct']);
+const progress=document.getElementById('progress'); const progressBar=document.getElementById('progressBar'); const progressPct=document.getElementById('progressPct');
 function showProgress(p){ progress.style.display='block'; setProgress(p); }
 function setProgress(p){ const v=Math.max(0,Math.min(1,p||0)); progressBar.style.width=(v*100).toFixed(0)+'%'; progressPct.textContent=(v*100).toFixed(0)+'%'; }
 function hideProgress(){ setProgress(1); setTimeout(()=>{progress.style.display='none';},300); }
@@ -748,3 +748,4 @@ AFRAME.registerComponent('vr-autoplace', {
   <script src="./assets/js/anti-copy.js" defer></script>
 </body>
 </html>
+
