@@ -17,15 +17,14 @@
     --z-controls: 8;
     --z-float: 30;
 
-    /* Altura barra centrada (Animal / Vegetal) */
+    /* Barra centrada (Animal/Vegetal) */
     --toolbarH: 46px;
 
-    /* Columna izquierda (igual a viewer) */
-    --leftColMaxW: 260px;
-    --leftColVW:   32vw;
-    --leftBtnMinLines: 1;
+    /* Botones izquierdos (como en viewer) */
+    --leftFixedH: 1cm;   /* alto  */
+    --leftFixedW: 1.2cm; /* ancho */
 
-    /* Tamaño fijo SOLO para Enfocar / Ping */
+    /* Enfocar/Ping */
     --fixedBtnH: 1cm;
     --fixedBtnW: 1.2cm;
   }
@@ -39,7 +38,7 @@
   .uiRoot{position:fixed; inset:0; pointer-events:none; transform:scale(var(--uiScale)); transform-origin: top left; z-index:9999}
   .uiRoot > *{ pointer-events:auto }
 
-  /* ===== Título ===== */
+  /* ===== HUD ===== */
   .hud{
     position:fixed;left:0;right:0;top:0;
     height: calc(var(--hudH) + var(--safeTop));
@@ -70,48 +69,50 @@
     color:#fff; background:rgba(0,0,0,.35);
     border-radius:12px; padding:8px 12px;
     font:700 clamp(12px,1.6vw,14px)/1.2 system-ui; cursor:pointer; transition:.15s;
-    white-space: nowrap;           /* solo aquí los forzamos a una línea */
+    white-space:nowrap;
   }
   .toolbar .btn:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px) }
   .toolbar .btn.active{ background:rgba(60,201,255,.22); border-color:#3cc9ff }
 
-  /* ===== Columna izquierda (como en viewer) ===== */
+  /* ===== Columna izquierda — tarjeta se ajusta al tamaño de los botones ===== */
   .leftColumn{
     position:fixed; z-index: var(--z-sides);
     left:12px;
     top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 12px);
-    display:flex; flex-direction:column; gap:10px;
-    width: min(var(--leftColVW), var(--leftColMaxW));
-    max-width: 92vw;
+    width:auto; /* clave: no uses un ancho grande fijo */
   }
-  .card{
-    background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.18);
-    backdrop-filter: blur(6px); border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.25);
+  .leftColumn .card{
+    display:inline-block;                /* se encoge al contenido */
+    background:rgba(0,0,0,.35);
+    border:1px solid rgba(255,255,255,.18);
+    backdrop-filter: blur(6px); border-radius:14px;
+    box-shadow:0 8px 24px rgba(0,0,0,.25);
     padding:10px;
+    width: calc(var(--leftFixedW) + 20px);  /* 2×padding horizontal */
   }
   .group{ display:flex; flex-direction:column; gap:8px }
 
-  /* Base de botón (multilínea, igual a viewer) */
+  /* Base botón */
   .btn{
     border:1px solid rgba(255,255,255,.22);
     color:#fff; background:rgba(0,0,0,.35);
-    border-radius:12px; padding:8px 10px;
-    text-align:left;                       /* como viewer */
-    font:600 13px/1.2 system-ui;           /* como viewer */
-    cursor:pointer; transition:.15s;
-    min-height: calc( (1.2em * var(--leftBtnMinLines)) + 8px + 8px );
-    white-space: normal;                   /* ← permite multilínea (arregla la “línea enorme”) */
-    word-break: break-word;                /* evita desbordes */
+    border-radius:12px; cursor:pointer; transition:.15s;
   }
   .btn:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px) }
   .btn:active{ transform:translateY(0) }
   .btn:focus-visible{ outline:none; box-shadow:0 0 0 2px rgba(60,201,255,.55); border-color:#3cc9ff }
   .btn.active{ background:rgba(60,201,255,.22); border-color:#3cc9ff; box-shadow:0 0 0 1px rgba(60,201,255,.25) inset }
 
-  /* Botones del lado IZQUIERDO ocupan TODO el ancho (como viewer) */
+  /* Botones del lado IZQUIERDO — 1cm × 1.2cm y texto con elipsis */
   .leftBtn{
-    display:inline-flex; align-items:center; justify-content:flex-start;
-    width: 100%;                            /* clave */
+    width: var(--leftFixedW);
+    min-width: var(--leftFixedW); max-width: var(--leftFixedW);
+    height: var(--leftFixedH);
+    min-height: var(--leftFixedH); max-height: var(--leftFixedH);
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:0 8px; text-align:center;
+    font:700 12px/1 system-ui;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
 
   /* Progreso */
@@ -129,9 +130,9 @@
   /* Info EDU */
   .infoPanel{
     position:fixed;left:12px;z-index:8; padding:12px; width:min(360px,86vw);max-height:60vh;overflow:auto;
-    background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.28);border-radius:14px;backdrop-filter:blur(2px)
+    background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.28);border-radius:14px;backdrop-filter:blur(2px);
+    top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 12px + 200px);
   }
-  .infoPanel{ top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 12px + 200px) }
   .infoPanel h3{margin:0 0 6px;font:700 clamp(14px,1.8vw,16px) system-ui;color:#fff}
   .infoPanel h4{margin:10px 0 6px;font:700 clamp(12px,1.6vw,13px) system-ui;color:#cfe6ff}
   .infoPanel ul{margin:0;padding-left:16px}
@@ -152,7 +153,7 @@
   .listPanel select{width:100%;font:600 clamp(12px,1.4vw,12.5px)/1.2 system-ui;padding:8px;border-radius:10px;border:1px solid #3cc9ff;background:#021525;color:#e8fbff}
   .listPanel .row{display:flex; gap:8px; margin-top:10px; justify-content:center}
 
-  /* Enfocar / Ping con tamaño fijo */
+  /* Enfocar / Ping fijos */
   #btnFocus, #btnPing{
     width: var(--fixedBtnW);
     min-width: var(--fixedBtnW); max-width: var(--fixedBtnW);
@@ -170,7 +171,6 @@
     bottom: 88px; display:grid;grid-template-columns:repeat(3,48px);grid-gap:8px
   }
   body.no-vr-button .controls{ bottom:10px; }
-
   .ctrl{
     width:48px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,.24);
     background:rgba(0,0,0,.45);color:#fff;
@@ -199,17 +199,16 @@
   }
   body.no-vr-button #btnHelpVRFloat{ display:none }
 
-  /* Ajustes móviles */
+  /* Móvil */
   @media (max-width:480px){
     .leftColumn{ left:8px }
-    .card{ padding:8px }
-    .btn{ padding:9px 10px }
+    .leftColumn .card{ padding:8px; width: calc(var(--leftFixedW) + 16px); }
     .controls{grid-gap:6px}
     .ctrl{width:44px;height:44px;font:600 18px/44px system-ui}
     .listPanel{min-width:210px}
   }
 
-  /* ===== Ayuda VR overlay ===== */
+  /* ===== Overlay Ayuda VR ===== */
   .helpVR-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:99999; backdrop-filter: blur(2px) }
   .helpVR{ width:min(720px,92vw); background:rgba(2,14,24,.9); border:1px solid rgba(60,201,255,.35); border-radius:14px; padding:14px; color:#def; box-shadow:0 10px 30px rgba(0,0,0,.4) }
   .helpVR h3{margin:0 0 8px; font:700 clamp(14px,1.8vw,16px) system-ui; color:#fff}
@@ -234,15 +233,15 @@
       <button id="btnVegetal" class="btn">Célula Vegetal</button>
     </div>
 
-    <!-- IZQUIERDA (igual a viewer) -->
+    <!-- IZQUIERDA: botones compactos 1cm×1.2cm y tarjeta ajustada -->
     <div class="leftColumn">
       <div class="card">
         <div class="group">
           <button id="btnAuto"       class="btn leftBtn" title="Auto-rotación">Auto</button>
-          <button id="btnTags"       class="btn leftBtn active" title="Mostrar u ocultar las etiquetas en el modelo 3D">Etiquetas</button>
-          <button id="btnDiff"       class="btn leftBtn active" title="Resaltar diferencias entre animal y vegetal">Diferencias</button>
+          <button id="btnTags"       class="btn leftBtn active" title="Mostrar u ocultar etiquetas">Etiquetas</button>
+          <button id="btnDiff"       class="btn leftBtn active" title="Resaltar diferencias">Diferencias</button>
           <button id="btnSolo"       class="btn leftBtn" title="Mostrar solo el componente seleccionado">Solo</button>
-          <button id="btnPinchPage"  class="btn leftBtn" title="Zoom de la PÁGINA (no del modelo)">Pinch página</button>
+          <button id="btnPinchPage"  class="btn leftBtn" title="Zoom de la PÁGINA">Pinch página</button>
           <button id="btnInfo"       class="btn leftBtn" title="Ver/Ocultar ficha">Info</button>
         </div>
       </div>
@@ -368,7 +367,7 @@
   </a-scene>
 
 <script>
-/* === Posicionar “Ayuda VR” cerca del botón VR === */
+/* === Posicionar “Ayuda VR” === */
 (function watchVRButton(){
   const clsNoVR  = 'no-vr-button';
   const helpBtn  = document.getElementById('btnHelpVRFloat');
@@ -618,7 +617,7 @@ function normalizeAndFrame(){
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
   const maxDim = Math.max(size.x,size.y,size.z) || 1;
-  mesh.position.sub(center); // centra el modelo
+  mesh.position.sub(center);
   const s  = TARGET_SIZE / maxDim;
   const s2 = s * ZOOM0;
   modelEl.object3D.scale.set(s2,s2,s2);
@@ -636,7 +635,7 @@ window.addEventListener('orientationchange', frameCameraOnly);
 const progress=document.getElementById('progress'); const progressBar=document.getElementById('progressBar'); const progressPct=document.getElementById('progressPct');
 function showProgress(p){ progress.style.display='block'; setProgress(p); }
 function setProgress(p){ const v=Math.max(0,Math.min(1,p||0)); progressBar.style.width=(v*100).toFixed(0)+'%'; progressPct.textContent=(v*100).toFixed(0)+'%'; }
-function hideProgress(){ setProgress(1); setTimeout(()=>{progress.style.display='none');},300); }
+function hideProgress(){ setProgress(1); setTimeout(()=>{progress.style.display='none';},300); }
 const manager=THREE.DefaultLoadingManager; manager.onStart=()=>showProgress(0); manager.onProgress=(u,l,t)=>{if(t&&t>0)setProgress(l/t)}; manager.onLoad=()=>hideProgress();
 
 /* ====== Ficha EDU ====== */
@@ -727,7 +726,7 @@ function applySoloFilter(){
   });
 }
 
-/* Enfocar hotspot (rota el modelo hacia el punto) */
+/* Enfocar hotspot */
 function focusHotspot(index){
   const rec = hsRecords[index]; if(!rec) return;
   const p = rec.wrap.object3D.position.clone();
@@ -771,7 +770,6 @@ function restoreTogglesFromStorage(){
   const solo   = localStorage.getItem('vh_solo');   if(solo!==null) btnSolo.classList.toggle('active', solo==='1');
   const auto   = localStorage.getItem('vh_auto');   if(auto!==null) btnAuto.classList.toggle('active', auto==='1');
 
-  // Info: si no existe clave, queda apagado
   const infoOn = localStorage.getItem('vh_info');
   if (infoOn !== null) {
     const on = infoOn === '1';
@@ -809,7 +807,7 @@ compSelect.addEventListener('change', applySoloFilter);
 btnFocus.onclick = ()=> focusHotspot(parseInt(compSelect.value||0,10)||0);
 btnPing.onclick  = ()=> { const rec=hsRecords[parseInt(compSelect.value||0,10)||0]; rec && rec.dot.emit('ping'); };
 
-/* Carga eventos del modelo */
+/* Carga del modelo */
 modelEl.addEventListener('model-loaded',()=>{ hideProgress(); normalizeAndFrame(); makeHotspots(kind); });
 modelEl.addEventListener('model-error',e=>{ hideProgress(); alert('No se pudo cargar el modelo. Revisa las rutas de GLB.'); console.error(e.detail);});
 
@@ -832,7 +830,6 @@ speedRange.addEventListener('input',()=>{ const en=btnAuto.classList.contains('a
   setUI();
   load();
 
-  // Mostrar ayuda automáticamente al entrar a VR si está activado.
   const scene = document.querySelector('a-scene');
   const autoHelp = () => {
     const shouldShow = localStorage.getItem('vh_help_auto') !== '0';
@@ -842,7 +839,7 @@ speedRange.addEventListener('input',()=>{ const en=btnAuto.classList.contains('a
 })();
 </script>
 
-<!-- ====== CONTROLES VR: agarrar/rotar/escalar (Quest 2) + autoplace ====== -->
+<!-- ====== CONTROLES VR ====== -->
 <script>
 AFRAME.registerComponent('vr-grab-rotate-scale', {
   schema: {
@@ -863,7 +860,7 @@ AFRAME.registerComponent('vr-grab-rotate-scale', {
     if (this.right) {
       this.right.addEventListener('triggerdown', () => this.startGrab());
       this.right.addEventListener('triggerup',   () => this.endGrab());
-      this.right.addEventListener('axismove', (e) => this.onAxisMove(e)); // stick derecho
+      this.right.addEventListener('axismove', (e) => this.onAxisMove(e));
     }
     this.el.sceneEl.addEventListener('exit-vr', () => this.endGrab());
   },
@@ -882,8 +879,6 @@ AFRAME.registerComponent('vr-grab-rotate-scale', {
       const worldPoint = hit[0].point.clone();
       const obj = tgt.object3D;
       obj.worldToLocal(this.localHit.copy(worldPoint));
-
-      // Haptics suave (si disponible)
       try {
         const gp = (this.right.components['oculus-touch-controls']||{}).controller;
         gp?.hapticActuators?.[0]?.pulse(0.4, 80);
@@ -893,7 +888,7 @@ AFRAME.registerComponent('vr-grab-rotate-scale', {
   endGrab: function () { this.grabbing = false; },
   onAxisMove: function (evt) {
     const tgt = this.data.target; if (!tgt) return;
-    const axis = evt.detail && evt.detail.axis; // [x,y] del stick derecho
+    const axis = evt.detail && evt.detail.axis; // [x,y]
     if (!axis) return;
     const o = tgt.object3D;
 
