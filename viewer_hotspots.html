@@ -20,14 +20,14 @@
     /* Altura barra centrada (Animal / Vegetal) */
     --toolbarH: 46px;
 
-    /* Columna izquierda */
-    --leftColMaxW: 200px;
+    /* Columna izquierda (igual a viewer) */
+    --leftColMaxW: 260px;
     --leftColVW:   32vw;
     --leftBtnMinLines: 1;
 
-    /* TAMAÑOS FIJOS SOLICITADOS */
-    --fixedBtnH: 1cm;     /* ≈ 37.8px */
-    --fixedBtnW: 1.5cm;   /* ≈ 45.4px */
+    /* Tamaño fijo SOLO para Enfocar / Ping */
+    --fixedBtnH: 1cm;
+    --fixedBtnW: 1.2cm;
   }
 
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
@@ -70,11 +70,12 @@
     color:#fff; background:rgba(0,0,0,.35);
     border-radius:12px; padding:8px 12px;
     font:700 clamp(12px,1.6vw,14px)/1.2 system-ui; cursor:pointer; transition:.15s;
+    white-space: nowrap;           /* solo aquí los forzamos a una línea */
   }
   .toolbar .btn:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px) }
   .toolbar .btn.active{ background:rgba(60,201,255,.22); border-color:#3cc9ff }
 
-  /* ===== Columna izquierda (solo toggles) ===== */
+  /* ===== Columna izquierda (como en viewer) ===== */
   .leftColumn{
     position:fixed; z-index: var(--z-sides);
     left:12px;
@@ -90,37 +91,30 @@
   }
   .group{ display:flex; flex-direction:column; gap:8px }
 
-  /* Botones base multilínea (se usarán para todos, y luego se fijan tamaños donde corresponde) */
+  /* Base de botón (multilínea, igual a viewer) */
   .btn{
     border:1px solid rgba(255,255,255,.22);
     color:#fff; background:rgba(0,0,0,.35);
     border-radius:12px; padding:8px 10px;
-    text-align:left;
-    font:600 clamp(12px,1.6vw,14px)/1.25 system-ui;
+    text-align:left;                       /* como viewer */
+    font:600 13px/1.2 system-ui;           /* como viewer */
     cursor:pointer; transition:.15s;
-    min-height: calc( (1.25em * var(--leftBtnMinLines)) + 10px + 10px );
-    white-space: normal; word-break: break-word;
+    min-height: calc( (1.2em * var(--leftBtnMinLines)) + 8px + 8px );
+    white-space: normal;                   /* ← permite multilínea (arregla la “línea enorme”) */
+    word-break: break-word;                /* evita desbordes */
   }
   .btn:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px) }
   .btn:active{ transform:translateY(0) }
   .btn:focus-visible{ outline:none; box-shadow:0 0 0 2px rgba(60,201,255,.55); border-color:#3cc9ff }
   .btn.active{ background:rgba(60,201,255,.22); border-color:#3cc9ff; box-shadow:0 0 0 1px rgba(60,201,255,.25) inset }
 
-  /* Botones izquierda: mismo ancho fijo solicitado 1.2cm x 1cm (alto x ancho) */
-  .leftBtn{ display:inline-flex; align-items:center; justify-content:center; text-align:center; }
-  #btnAuto, #btnTags, #btnDiff, #btnSolo, #btnPinchPage, #btnInfo{
-    width: var(--fixedBtnW) !important;
-    min-width: var(--fixedBtnW);
-    max-width: var(--fixedBtnW);
-    height: var(--fixedBtnH);
-    min-height: var(--fixedBtnH);
-    max-height: var(--fixedBtnH);
-    padding: 0 6px;
-    font-size: 12px; line-height: 1;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* Botones del lado IZQUIERDO ocupan TODO el ancho (como viewer) */
+  .leftBtn{
+    display:inline-flex; align-items:center; justify-content:flex-start;
+    width: 100%;                            /* clave */
   }
 
-  /* Progreso centrado (baja para no tapar la toolbar) */
+  /* Progreso */
   .progress{
     position:fixed;left:50%;transform:translateX(-50%);
     top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 60px);
@@ -158,14 +152,12 @@
   .listPanel select{width:100%;font:600 clamp(12px,1.4vw,12.5px)/1.2 system-ui;padding:8px;border-radius:10px;border:1px solid #3cc9ff;background:#021525;color:#e8fbff}
   .listPanel .row{display:flex; gap:8px; margin-top:10px; justify-content:center}
 
-  /* TAMAÑO FIJO para Enfocar / Ping (derecha) */
+  /* Enfocar / Ping con tamaño fijo */
   #btnFocus, #btnPing{
     width: var(--fixedBtnW);
-    min-width: var(--fixedBtnW);
-    max-width: var(--fixedBtnW);
+    min-width: var(--fixedBtnW); max-width: var(--fixedBtnW);
     height: var(--fixedBtnH);
-    min-height: var(--fixedBtnH);
-    max-height: var(--fixedBtnH);
+    min-height: var(--fixedBtnH); max-height: var(--fixedBtnH);
     display:inline-flex; align-items:center; justify-content:center;
     padding: 0 6px; text-align:center;
     font-size: 12px; line-height:1;
@@ -242,16 +234,16 @@
       <button id="btnVegetal" class="btn">Célula Vegetal</button>
     </div>
 
-    <!-- IZQUIERDA: SOLO los toggles, con tamaño fijo -->
+    <!-- IZQUIERDA (igual a viewer) -->
     <div class="leftColumn">
       <div class="card">
         <div class="group">
           <button id="btnAuto"       class="btn leftBtn" title="Auto-rotación">Auto</button>
           <button id="btnTags"       class="btn leftBtn active" title="Mostrar u ocultar las etiquetas en el modelo 3D">Etiquetas</button>
-          <button id="btnDiff"       class="btn leftBtn active" title="Resaltar las diferencias principales entre célula animal y vegetal">Diferencias</button>
-          <button id="btnSolo"       class="btn leftBtn" title="Mostrar solo el componente seleccionado de la lista">Solo</button>
-          <button id="btnPinchPage"  class="btn leftBtn" title="Activar pellizcar para hacer zoom de la PÁGINA (no del modelo)">Pinch página</button>
-          <button id="btnInfo"       class="btn leftBtn" title="Ver u ocultar la ficha informativa">Info</button>
+          <button id="btnDiff"       class="btn leftBtn active" title="Resaltar diferencias entre animal y vegetal">Diferencias</button>
+          <button id="btnSolo"       class="btn leftBtn" title="Mostrar solo el componente seleccionado">Solo</button>
+          <button id="btnPinchPage"  class="btn leftBtn" title="Zoom de la PÁGINA (no del modelo)">Pinch página</button>
+          <button id="btnInfo"       class="btn leftBtn" title="Ver/Ocultar ficha">Info</button>
         </div>
       </div>
     </div>
@@ -376,7 +368,7 @@
   </a-scene>
 
 <script>
-/* === Posicionar “Ayuda VR” sobre el botón VR, con margen adicional de 0.7cm === */
+/* === Posicionar “Ayuda VR” cerca del botón VR === */
 (function watchVRButton(){
   const clsNoVR  = 'no-vr-button';
   const helpBtn  = document.getElementById('btnHelpVRFloat');
@@ -644,7 +636,7 @@ window.addEventListener('orientationchange', frameCameraOnly);
 const progress=document.getElementById('progress'); const progressBar=document.getElementById('progressBar'); const progressPct=document.getElementById('progressPct');
 function showProgress(p){ progress.style.display='block'; setProgress(p); }
 function setProgress(p){ const v=Math.max(0,Math.min(1,p||0)); progressBar.style.width=(v*100).toFixed(0)+'%'; progressPct.textContent=(v*100).toFixed(0)+'%'; }
-function hideProgress(){ setProgress(1); setTimeout(()=>{progress.style.display='none';},300); }
+function hideProgress(){ setProgress(1); setTimeout(()=>{progress.style.display='none');},300); }
 const manager=THREE.DefaultLoadingManager; manager.onStart=()=>showProgress(0); manager.onProgress=(u,l,t)=>{if(t&&t>0)setProgress(l/t)}; manager.onLoad=()=>hideProgress();
 
 /* ====== Ficha EDU ====== */
@@ -795,7 +787,6 @@ function restoreTogglesFromStorage(){
   const sc = localStorage.getItem('vh_scale'); if(sc) { const v=parseFloat(sc); if(!isNaN(v)) scaleRange.value=v; }
   const sp = localStorage.getItem('vh_speed'); if(sp){ const v=parseFloat(sp); if(!isNaN(v)) speedRange.value=v; }
 
-  // ayuda VR
   const hv = localStorage.getItem('vh_help_auto'); if(hv===null){ localStorage.setItem('vh_help_auto','1'); }
 }
 function saveToggle(id, val){ localStorage.setItem(id, val ? '1' : '0'); }
