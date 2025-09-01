@@ -461,25 +461,104 @@ document.getElementById('ctaVegetal').href = links.simple_veg;
 (function stickyTopButtons(){
   const row = document.getElementById('topActionsRow');
   const bar = document.querySelector('.menuBar'); // barra VER 3D / RA / RV / TRIVIA
-  if (!row || !bar) return;
+  if (!row) return;
 
-  const getTrigger = () => (bar.offsetTop || 0) + (bar.offsetHeight || 0);
+  function getTrigger(){
+    const b = document.querySelector('.menuBar');
+    return b ? (b.offsetTop || 0) + (b.offsetHeight || 0) : 0;
+  }
   let triggerY = 0;
 
-  function recompute(){
-    triggerY = getTrigger();
-    onScroll();
-  }
-  function onScroll(){
-    if (window.scrollY > triggerY){
-      row.classList.add('stick');
-    } else {
-      row.classList.remove('stick');
-    }
-  }
+  function recompute(){ triggerY = getTrigger(); onScroll(); }
+  function onScroll(){ if (!row) return; if (window.scrollY > triggerY){ row.classList.add('stick'); } else { row.classList.remove('stick'); } }
+
   window.addEventListener('load', recompute);
   window.addEventListener('resize', recompute);
   window.addEventListener('scroll', onScroll, { passive: true });
+})();
+</script>
+
+<!-- === Parche de seguridad: re-crea la barra si faltara y reengancha eventos === -->
+<script>
+(function restoreMenuBarIfMissing(){
+  if (document.querySelector('.menuBar')) return; // ya existe: nada que hacer
+
+  // 1) Insertar HTML de la barra
+  const html = `
+  <nav class="menuBar" aria-label="Acceso rápido">
+    <div class="m" data-menu="3d">
+      <button type="button" aria-haspopup="true" aria-expanded="false">VER 3D</button>
+      <div class="dd" role="menu">
+        <a role="menuitem" href="./viewer.html?m=animal">Célula Animal (3D)</a>
+        <a role="menuitem" href="./viewer.html?m=vegetal">Célula Vegetal (3D)</a>
+      </div>
+    </div>
+    <div class="m" data-menu="ra">
+      <button type="button" aria-haspopup="true" aria-expanded="false">VER RA</button>
+      <div class="dd" role="menu">
+        <a role="menuitem" href="./arjs-demo/animal_glb.html?v=2&m=animal">Célula Animal (RA)</a>
+        <a role="menuitem" href="./arjs-demo/vegetal_glb.html?v=2&m=vegetal">Célula Vegetal (RA)</a>
+      </div>
+    </div>
+    <div class="m" data-menu="rv">
+      <button type="button" aria-haspopup="true" aria-expanded="false">VER RV</button>
+      <div class="dd" role="menu">
+        <a role="menuitem" href="./viewer.html?m=animal&mode=vr">Célula Animal (VR)</a>
+        <a role="menuitem" href="./viewer.html?m=vegetal&mode=vr">Célula Vegetal (VR)</a>
+      </div>
+    </div>
+    <div class="m" data-menu="trivia">
+      <button type="button" aria-haspopup="true" aria-expanded="false">TRIVIA</button>
+      <div class="dd" role="menu">
+        <a role="menuitem" href="./quiz_labels.html?m=animal">Etiquetas — Célula Animal</a>
+        <a role="menuitem" href="./quiz_labels.html?m=vegetal">Etiquetas — Célula Vegetal</a>
+        <hr class="sep">
+        <a role="menuitem" href="./quiz_mcq.html?m=animal">Alternativas (MCQ) — Animal</a>
+        <a role="menuitem" href="./quiz_mcq.html?m=vegetal">Alternativas (MCQ) — Vegetal</a>
+      </div>
+    </div>
+  </nav>`;
+  const topbar = document.querySelector('.topbar') || document.body;
+  topbar.insertAdjacentHTML('afterend', html);
+
+  // 2) Enlazar lógica de menús (idempotente)
+  (function attachMenuLogic(){
+    const menus = [...document.querySelectorAll('.menuBar .m')];
+    if (!menus.length) return;
+    const closeAll = ()=> menus.forEach(m => {
+      m.classList.remove('open');
+      m.querySelector('button')?.setAttribute('aria-expanded','false');
+    });
+    menus.forEach(m=>{
+      const btn = m.querySelector('button');
+      if(!btn.__wired){
+        btn.__wired = true;
+        btn.addEventListener('click', ()=>{
+          const wasOpen = m.classList.contains('open');
+          closeAll();
+          if(!wasOpen){ m.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+        });
+        btn.addEventListener('keydown', (e)=>{
+          if(e.key==='ArrowDown'){ m.classList.add('open'); btn.setAttribute('aria-expanded','true'); m.querySelector('.dd a')?.focus(); }
+        });
+      }
+      m.querySelectorAll('.dd a').forEach(a=>{
+        if(!a.__wired){
+          a.__wired = true;
+          a.addEventListener('keydown',(e)=>{ if(e.key==='Escape'){ closeAll(); btn.focus(); }});
+        }
+      });
+    });
+    if(!document.__menuBarGlobalWired){
+      document.__menuBarGlobalWired = true;
+      document.addEventListener('click', (e)=>{ if(!e.target.closest('.menuBar')) closeAll(); });
+      document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') closeAll(); });
+    }
+  })();
+
+  // 3) Forzar recálculo del sticky (usa el handler ya registrado)
+  setTimeout(()=> window.dispatchEvent(new Event('resize')), 0);
+  setTimeout(()=> window.dispatchEvent(new Event('resize')), 200);
 })();
 </script>
 
