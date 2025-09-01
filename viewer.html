@@ -60,12 +60,25 @@
   .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
 
   /* Botones de la izquierda: mismo ancho (100% del contenedor compacto) */
-  .leftBtn{
-    display:inline-flex; align-items:center; justify-content:flex-start;
-    width: 100%;
-    min-height: calc( (1.2em * var(--leftBtnMinLines)) + 8px + 8px );
-    white-space: normal; word-break: break-word;
-  }
+/* alto fijo de 1.2 cm para los botones de la columna izquierda */
+.leftBtn{
+  /* que el alto incluya padding y borde */
+  box-sizing: border-box;
+
+  /* alto fijo físico */
+  height: 1.2cm;
+  min-height: 1.2cm;
+
+  /* el resto igual que antes */
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  padding: 0 10px;     /* sin padding vertical para respetar 1.2cm exactos */
+  white-space: normal;
+  word-break: break-word;
+}
+
 
   .progress{position:fixed;left:50%;transform:translateX(-50%);top:90px;z-index:9;width:min(60vw,520px);height:10px;
             background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden;display:none;border:1px solid rgba(57,255,20,.35)}
