@@ -3,12 +3,17 @@
 <head>
 <meta charset="utf-8"/>
 <title>3D — Célula (simple)</title>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalizable=no"/>
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 <style>
   :root{
     /* Offset dinámico para no chocar con footer/badges fijos (se setea vía JS) */
     --fixedBottomOffset: 0px;
+
+    /* Columna izquierda (ancho compacto) */
+    --leftColMaxW: 260px;  /* antes no existía: ancho máximo compacto */
+    --leftColVW:   34vw;   /* límite relativo en móviles */
+    --leftBtnMinLines: 1;  /* altura pensada para 1 línea */
   }
 
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
@@ -19,10 +24,10 @@
     position:fixed;left:0;right:0;top:0;
     padding:.55rem .8rem;color:#fff;font:600 14px system-ui;z-index:5;
     background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));
-    text-align:center; /* <-- centramos el título */
+    text-align:center;
   }
 
-  /* Toolbar centrada justo debajo del título */
+  /* Toolbar superior: SOLO Animal/Vegetal centrados */
   .toolbar{
     position:fixed;
     top:44px;               /* debajo del HUD */
@@ -31,9 +36,36 @@
     display:flex;gap:8px;z-index:6
   }
 
-  .btn{border:1px solid rgba(255,255,255,.25);color:#fff;background:rgba(0,0,0,.35);
-       border-radius:10px;padding:6px 10px;font:600 13px system-ui;cursor:pointer}
+  /* Columna izquierda (Auto, Info, Editar) */
+  .leftColumn{
+    position:fixed; z-index:6;
+    left:12px;
+    top: 88px; /* debajo de la toolbar superior */
+    display:flex; flex-direction:column; gap:10px;
+    width: min(var(--leftColVW), var(--leftColMaxW));
+    max-width: 92vw;
+  }
+  .card{
+    background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.18);
+    backdrop-filter: blur(6px); border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.25);
+    padding:10px;
+  }
+  .group{ display:flex; flex-direction:column; gap:8px }
+
+  .btn{
+    border:1px solid rgba(255,255,255,.25);color:#fff;background:rgba(0,0,0,.35);
+    border-radius:10px;padding:8px 10px;font:600 13px/1.2 system-ui;cursor:pointer;
+    transition:.15s;
+  }
   .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
+
+  /* Botones de la izquierda: mismo ancho (100% del contenedor compacto) */
+  .leftBtn{
+    display:inline-flex; align-items:center; justify-content:flex-start;
+    width: 100%;
+    min-height: calc( (1.2em * var(--leftBtnMinLines)) + 8px + 8px );
+    white-space: normal; word-break: break-word;
+  }
 
   .progress{position:fixed;left:50%;transform:translateX(-50%);top:90px;z-index:9;width:min(60vw,520px);height:10px;
             background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden;display:none;border:1px solid rgba(57,255,20,.35)}
@@ -41,7 +73,7 @@
                  box-shadow:0 0 12px #39ff14,0 0 24px #39ff14;transition:width .15s ease}
   .progress .pct{position:absolute;right:0;top:-22px;font:700 12px system-ui;color:#bfff00;text-shadow:0 0 8px #39ff14}
 
-  .infoPanel{position:fixed;left:10px;top:100px;z-index:8;width:min(360px,86vw);max-height:60vh;overflow:auto;padding:12px;
+  .infoPanel{position:fixed;left:12px;top:calc(88px + 120px);z-index:8;width:min(360px,86vw);max-height:60vh;overflow:auto;padding:12px;
              background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.28);border-radius:14px;backdrop-filter:blur(2px)}
   .infoPanel h3{margin:0 0 6px;font:700 16px system-ui;color:#fff}
   .infoPanel h4{margin:10px 0 6px;font:700 13px system-ui;color:#cfe6ff}
@@ -57,7 +89,6 @@
 
   .panel{
     position:fixed;left:10px;
-    /* antes: bottom:10px; ahora subimos según footer/badges */
     bottom: calc(10px + var(--fixedBottomOffset));
     z-index:8;padding:8px 10px;background:rgba(0,0,0,.45);
     border:1px solid rgba(255,255,255,.28);border-radius:10px;min-width:190px
@@ -75,6 +106,7 @@
   .nudge{display:grid;grid-template-columns:repeat(3,40px);grid-gap:6px;justify-content:center}
   .nudge button{height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.45);color:#fff;cursor:pointer}
   .editor .small{font:600 12px system-ui;padding:6px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.4);color:#fff;cursor:pointer}
+
   @media (max-width:480px){
     .panel{padding:6px 8px;min-width:170px}
     .panel input[type=range]{width:110px}
@@ -86,18 +118,29 @@
 </head>
 <body>
   <div class="hud">3D — Célula <span id="labelKind" style="opacity:.9">Animal</span></div>
+
+  <!-- Toolbar superior CENTRADA: solo Animal / Vegetal -->
   <div class="toolbar">
     <button id="btnAnimal" class="btn">Animal</button>
     <button id="btnVegetal" class="btn">Vegetal</button>
-    <button id="btnAuto" class="btn" title="Auto-rotación">Auto</button>
-    <button id="btnInfo" class="btn active" title="Ver/Ocultar ficha">Info</button>
-    <button id="btnEdit" class="btn" title="Editar hotspots">Editar</button>
+  </div>
+
+  <!-- Columna izquierda: Auto / Info / Editar -->
+  <div class="leftColumn">
+    <div class="card">
+      <div class="group">
+        <button id="btnAuto" class="btn leftBtn" title="Auto-rotación">Auto</button>
+        <button id="btnInfo" class="btn leftBtn" title="Ver/Ocultar ficha">Info</button>
+        <button id="btnEdit" class="btn leftBtn" title="Editar hotspots">Editar</button>
+      </div>
+    </div>
   </div>
 
   <!-- Progreso -->
   <div class="progress" id="progress"><div class="bar" id="progressBar"></div><div class="pct" id="progressPct">0%</div></div>
-  <!-- Ficha EDU -->
-  <div class="infoPanel" id="infoPanel"></div>
+
+  <!-- Ficha EDU (OCULTA POR DEFECTO) -->
+  <div class="infoPanel" id="infoPanel" style="display:none"></div>
 
   <!-- Controles -->
   <div class="controls" id="controls">
@@ -404,7 +447,7 @@ const labelEl=document.getElementById('labelKind');
 const btnA=document.getElementById('btnAnimal');
 const btnV=document.getElementById('btnVegetal');
 const btnAuto=document.getElementById('btnAuto');
-const btnInfo=document.getElementById('btnInfo');
+const btnInfo=document.getElementById('btnInfo');   // AHORA inicia desactivado y panel oculto
 const btnEdit=document.getElementById('btnEdit');
 const rotL=document.getElementById('rotL'), rotR=document.getElementById('rotR');
 const zoomIn=document.getElementById('zoomIn'), zoomOut=document.getElementById('zoomOut');
@@ -462,7 +505,7 @@ window.addEventListener('resize', frameCameraOnly);
 window.addEventListener('orientationchange', frameCameraOnly);
 
 /* ====== Progreso ====== */
-const progress=document.getElementById('progress'); const progressBar=document.getElementById('progressBar'); const progressPct=document.getElementById('progressPct');
+const progress=document.getElementById('progress'); const progressBar=document.getElementById('progressBar'); const progressPct=document.getElementById('progressPct']);
 function showProgress(p){ progress.style.display='block'; setProgress(p); }
 function setProgress(p){ const v=Math.max(0,Math.min(1,p||0)); progressBar.style.width=(v*100).toFixed(0)+'%'; progressPct.textContent=(v*100).toFixed(0)+'%'; }
 function hideProgress(){ setProgress(1); setTimeout(()=>{progress.style.display='none';},300); }
@@ -654,7 +697,7 @@ AFRAME.registerComponent('vr-grab-rotate-scale', {
       o.rotation.y -= axis[0] * this.data.rotateSpeed * (Math.PI/180) * 5;
     }
     if (Math.abs(axis[1]) > 0.05) {
-      const s = 1 - (axis[1] * this.data.scaleSpeed * 10);
+      const s = 1 - (axis[1]) * this.data.scaleSpeed * 10;
       const ns = new THREE.Vector3(o.scale.x*s, o.scale.y*s, o.scale.z*s);
       ns.set(
         THREE.MathUtils.clamp(ns.x, this.data.minScale, this.data.maxScale),
