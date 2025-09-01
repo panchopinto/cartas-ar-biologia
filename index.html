@@ -355,8 +355,6 @@ function makeQR(canvasId, text){
     size: 512, background: 'white', foreground: '#0b1a2b', level: 'H'
   });
 }
-makeQR('qrAnimal', links.ra_animal);
-makeQR('qrVegetal', links.ra_veg);
 
 /* ========= Idiomas ========= */
 const i18n = {
@@ -443,9 +441,14 @@ document.getElementById('langEN').onclick = ()=> setLang('en');
 /* ========= Años en footer ========= */
 document.querySelectorAll('.year').forEach(el=> el.textContent = new Date().getFullYear());
 
-/* ========= CTA enlaces ========= */
-document.getElementById('ctaAnimal').href = links.simple_animal;
-document.getElementById('ctaVegetal').href = links.simple_veg);
+/* ========= CTA enlaces + QRs (seguro) ========= */
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('ctaAnimal').href  = links.simple_animal;
+  document.getElementById('ctaVegetal').href = links.simple_veg;   /* <-- BUG FIX: sin paréntesis extra */
+
+  makeQR('qrAnimal',  links.ra_animal);
+  makeQR('qrVegetal', links.ra_veg);
+});
 
 /* ========= Wire de menús (reutilizable) ========= */
 function wireMenus(rootSel){
@@ -557,7 +560,6 @@ wireMenus('.menuBar');
   const topbar = document.querySelector('.topbar') || document.body;
   topbar.insertAdjacentHTML('afterend', html);
   wireMenus('.menuBar');
-  // recalcular sticky
   setTimeout(()=> window.dispatchEvent(new Event('resize')), 0);
   setTimeout(()=> window.dispatchEvent(new Event('resize')), 200);
 })();
