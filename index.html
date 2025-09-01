@@ -61,31 +61,39 @@
     border-bottom:1px solid #263040;
   }
   .menuBar .m{ position:relative }
-  .menuBar .m > button{
+  .menuBar .m > button,
+  .menuCompact .m > button{
     height:36px; padding:0 12px; border-radius:12px; cursor:pointer;
     border:1px solid #2a3a4e;
     background:linear-gradient(180deg,#132132,#0d1623);
     color:#e8f7ff; font:700 13px/34px system-ui;
   }
-  .menuBar .m > button:hover{ background:linear-gradient(180deg,#18314a,#0f1a29) }
-  .menuBar .m.open > button{ background:rgba(60,201,255,.15); border-color:#3cc9ff }
+  .menuBar .m > button:hover,
+  .menuCompact .m > button:hover{ background:linear-gradient(180deg,#18314a,#0f1a29) }
+  .menuBar .m.open > button,
+  .menuCompact .m.open > button{ background:rgba(60,201,255,.15); border-color:#3cc9ff }
 
-  .menuBar .dd{
-    position:absolute; top:40px; left:0; min-width:240px; z-index:50;
+  .menuBar .dd,
+  .menuCompact .dd{
+    position:absolute; top:40px; left:0; min-width:240px; z-index:1200;
     background:linear-gradient(180deg,#0b0f16,#0a0d13);
     border:1px solid #2a3a4e; border-radius:12px; padding:8px; display:none;
     box-shadow:0 10px 26px rgba(0,0,0,.35);
   }
-  .menuBar .m.open .dd{ display:block; }
-  .menuBar .dd a{
+  .menuBar .m.open .dd,
+  .menuCompact .m.open .dd{ display:block; }
+  .menuBar .dd a,
+  .menuCompact .dd a{
     display:block; padding:8px 10px; border-radius:8px; margin:6px 0;
     color:#eaf6ff; text-decoration:none; border:1px solid transparent; font:700 13px;
   }
-  .menuBar .dd a:hover{ background:linear-gradient(180deg,#18314a,#0f1a29); border-color:#3cc9ff }
-  .menuBar .dd .sep{ border:0; height:1px; background:#263040; margin:4px 2px }
+  .menuBar .dd a:hover,
+  .menuCompact .dd a:hover{ background:linear-gradient(180deg,#18314a,#0f1a29); border-color:#3cc9ff }
+  .menuBar .dd .sep,
+  .menuCompact .dd .sep{ border:0; height:1px; background:#263040; margin:4px 2px }
   @media (max-width:520px){
-    .menuBar .dd{ min-width:200px }
-    .menuBar .m > button{ padding:0 10px; font-size:12px }
+    .menuBar .dd, .menuCompact .dd{ min-width:200px }
+    .menuBar .m > button, .menuCompact .m > button{ padding:0 10px; font-size:12px }
   }
 
   /* Hero */
@@ -130,18 +138,32 @@
   footer{margin:26px 0 10px; color:#9fb3c9; font:13px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; border-top:1px solid var(--line); padding-top:14px}
   @media (max-width:900px){ .hero{grid-template-columns:1fr} .grid{grid-template-columns:1fr} .qrGrid{grid-template-columns:1fr} }
 
-  /* ====== Sticky: SOLO los botones del topbar al hacer scroll ====== */
+  /* ====== Sticky: top-right y top-left ====== */
   #topActionsRow { transition: transform .18s ease, opacity .18s ease; }
   #topActionsRow.stick{
-    position: fixed; top: 8px; right: 12px; z-index: 1001;
+    position: fixed; top: 8px; right: 12px; z-index: 1100;
     display: flex; gap: 8px; padding: 6px;
     border: 1px solid #2a3a4e; border-radius: 12px;
     background: rgba(7, 12, 20, .65); backdrop-filter: blur(8px); box-shadow: var(--shadow);
   }
   #topActionsRow.stick .btn{ background: transparent; border-color: #39536d; box-shadow: none; }
   #topActionsRow.stick .btn:hover{ background: linear-gradient(180deg,#18314a,#0f1a29); }
-  @media (max-width: 600px){
-    #topActionsRow.stick{ left: 8px; right: 8px; justify-content: center; }
+
+  /* Barra compacta a la izquierda (clon de VER 3D / RA / RV / TRIVIA) */
+  #stickyLeft{
+    position: fixed; top: 8px; left: 12px; z-index: 1100; display:none;
+  }
+  #stickyLeft.show{ display:block; }
+  #stickyLeft .menuCompact{
+    display:flex; gap:8px; flex-wrap:wrap; padding:6px;
+    border: 1px solid #2a3a4e; border-radius:12px;
+    background: rgba(7,12,20,.65); backdrop-filter: blur(8px); box-shadow: var(--shadow);
+  }
+
+  @media (max-width: 820px){
+    #stickyLeft{ left: 8px; right: 8px; }
+    #stickyLeft .menuCompact{ justify-content:center; }
+    #topActionsRow.stick{ left:auto; right:8px; }
   }
 </style>
 
@@ -168,7 +190,6 @@
 
     <!-- ====== Barra de botones bajo el topbar (VER 3D, VER RA, VER RV, TRIVIA) ====== -->
     <nav class="menuBar" aria-label="Acceso rápido">
-      <!-- VER 3D -->
       <div class="m" data-menu="3d">
         <button type="button" aria-haspopup="true" aria-expanded="false">VER 3D</button>
         <div class="dd" role="menu">
@@ -176,8 +197,6 @@
           <a role="menuitem" href="./viewer.html?m=vegetal">Célula Vegetal (3D)</a>
         </div>
       </div>
-
-      <!-- VER RA -->
       <div class="m" data-menu="ra">
         <button type="button" aria-haspopup="true" aria-expanded="false">VER RA</button>
         <div class="dd" role="menu">
@@ -185,8 +204,6 @@
           <a role="menuitem" href="./arjs-demo/vegetal_glb.html?v=2&m=vegetal">Célula Vegetal (RA)</a>
         </div>
       </div>
-
-      <!-- VER RV -->
       <div class="m" data-menu="rv">
         <button type="button" aria-haspopup="true" aria-expanded="false">VER RV</button>
         <div class="dd" role="menu">
@@ -194,16 +211,12 @@
           <a role="menuitem" href="./viewer.html?m=vegetal&mode=vr">Célula Vegetal (VR)</a>
         </div>
       </div>
-
-      <!-- TRIVIA -->
       <div class="m" data-menu="trivia">
         <button type="button" aria-haspopup="true" aria-expanded="false">TRIVIA</button>
         <div class="dd" role="menu">
-          <!-- Etiquetas -->
           <a role="menuitem" href="./quiz_labels.html?m=animal">Etiquetas — Célula Animal</a>
           <a role="menuitem" href="./quiz_labels.html?m=vegetal">Etiquetas — Célula Vegetal</a>
           <hr class="sep">
-          <!-- MCQ -->
           <a role="menuitem" href="./quiz_mcq.html?m=animal">Alternativas (MCQ) — Animal</a>
           <a role="menuitem" href="./quiz_mcq.html?m=vegetal">Alternativas (MCQ) — Vegetal</a>
         </div>
@@ -313,6 +326,9 @@
       <div>Todos los derechos reservados.</div>
     </footer>
   </div>
+
+<!-- contenedor de barra compacta (izquierda) -->
+<div id="stickyLeft" aria-label="Acceso rápido (fijo)"></div>
 
 <script>
 /* ========= Rutas ========= */
@@ -429,18 +445,21 @@ document.querySelectorAll('.year').forEach(el=> el.textContent = new Date().getF
 
 /* ========= CTA enlaces ========= */
 document.getElementById('ctaAnimal').href = links.simple_animal;
-document.getElementById('ctaVegetal').href = links.simple_veg;
+document.getElementById('ctaVegetal').href = links.simple_veg);
 
-/* ========= Menús de la barra bajo topbar ========= */
-(function(){
-  const menus = [...document.querySelectorAll('.menuBar .m')];
+/* ========= Wire de menús (reutilizable) ========= */
+function wireMenus(rootSel){
+  const root = document.querySelector(rootSel);
+  if (!root) return;
+  const menus = [...root.querySelectorAll('.m')];
   const closeAll = ()=> menus.forEach(m => {
     m.classList.remove('open');
     m.querySelector('button')?.setAttribute('aria-expanded','false');
   });
-
   menus.forEach(m=>{
     const btn = m.querySelector('button');
+    if(!btn) return;
+    if(btn.__wired) return; btn.__wired = true;
     btn.addEventListener('click', ()=>{
       const wasOpen = m.classList.contains('open');
       closeAll();
@@ -449,41 +468,58 @@ document.getElementById('ctaVegetal').href = links.simple_veg;
     btn.addEventListener('keydown', (e)=>{
       if(e.key==='ArrowDown'){ m.classList.add('open'); btn.setAttribute('aria-expanded','true'); m.querySelector('.dd a')?.focus(); }
     });
-    m.querySelectorAll('.dd a').forEach(a=>{
-      a.addEventListener('keydown',(e)=>{ if(e.key==='Escape'){ closeAll(); btn.focus(); }});
-    });
   });
-  document.addEventListener('click', (e)=>{ if(!e.target.closest('.menuBar')) closeAll(); });
-  document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') closeAll(); });
-})();
+  if(!document.__globalMenuClose){
+    document.__globalMenuClose = true;
+    document.addEventListener('click', (e)=>{ if(!e.target.closest('.menuBar') && !e.target.closest('#stickyLeft')) {
+      document.querySelectorAll('.m.open').forEach(m=> m.classList.remove('open'));
+    }});
+    document.addEventListener('keydown',(e)=>{ if(e.key==='Escape'){
+      document.querySelectorAll('.m.open').forEach(m=> m.classList.remove('open'));
+    }});
+  }
+}
+wireMenus('.menuBar');
 
-/* ====== Sticky de los botones del topbar al pasar la barra de menús ====== */
-(function stickyTopButtons(){
+/* ====== Sticky izquierda (VER...) + derecha (Ayuda/ES/EN) ====== */
+(function stickyBars(){
   const row = document.getElementById('topActionsRow');
-  const bar = document.querySelector('.menuBar'); // barra VER 3D / RA / RV / TRIVIA
-  if (!row) return;
+  const stickyLeft = document.getElementById('stickyLeft');
 
   function getTrigger(){
-    const b = document.querySelector('.menuBar');
-    return b ? (b.offsetTop || 0) + (b.offsetHeight || 0) : 0;
+    const bar = document.querySelector('.menuBar');
+    return bar ? (bar.offsetTop || 0) + (bar.offsetHeight || 0) : 0;
   }
-  let triggerY = 0;
+  let triggerY = 0, built = false;
+
+  function buildLeft(){
+    if (built) return;
+    const src = document.querySelector('.menuBar');
+    if (!src) return;
+    stickyLeft.innerHTML = `<nav class="menuCompact" aria-label="Acceso rápido (compacto)">${src.innerHTML}</nav>`;
+    wireMenus('#stickyLeft'); // engancha dropdowns en la barra compacta
+    built = true;
+  }
 
   function recompute(){ triggerY = getTrigger(); onScroll(); }
-  function onScroll(){ if (!row) return; if (window.scrollY > triggerY){ row.classList.add('stick'); } else { row.classList.remove('stick'); } }
-
+  function onScroll(){
+    if (window.scrollY > triggerY){
+      if(row) row.classList.add('stick');
+      buildLeft();
+      stickyLeft.classList.add('show');
+    } else {
+      if(row) row.classList.remove('stick');
+      stickyLeft.classList.remove('show');
+    }
+  }
   window.addEventListener('load', recompute);
   window.addEventListener('resize', recompute);
-  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('scroll', onScroll, { passive:true });
 })();
-</script>
 
-<!-- === Parche de seguridad: re-crea la barra si faltara y reengancha eventos === -->
-<script>
+/* === Parche de seguridad: si faltara la .menuBar original, recrearla === */
 (function restoreMenuBarIfMissing(){
-  if (document.querySelector('.menuBar')) return; // ya existe: nada que hacer
-
-  // 1) Insertar HTML de la barra
+  if (document.querySelector('.menuBar')) return;
   const html = `
   <nav class="menuBar" aria-label="Acceso rápido">
     <div class="m" data-menu="3d">
@@ -520,43 +556,8 @@ document.getElementById('ctaVegetal').href = links.simple_veg;
   </nav>`;
   const topbar = document.querySelector('.topbar') || document.body;
   topbar.insertAdjacentHTML('afterend', html);
-
-  // 2) Enlazar lógica de menús (idempotente)
-  (function attachMenuLogic(){
-    const menus = [...document.querySelectorAll('.menuBar .m')];
-    if (!menus.length) return;
-    const closeAll = ()=> menus.forEach(m => {
-      m.classList.remove('open');
-      m.querySelector('button')?.setAttribute('aria-expanded','false');
-    });
-    menus.forEach(m=>{
-      const btn = m.querySelector('button');
-      if(!btn.__wired){
-        btn.__wired = true;
-        btn.addEventListener('click', ()=>{
-          const wasOpen = m.classList.contains('open');
-          closeAll();
-          if(!wasOpen){ m.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
-        });
-        btn.addEventListener('keydown', (e)=>{
-          if(e.key==='ArrowDown'){ m.classList.add('open'); btn.setAttribute('aria-expanded','true'); m.querySelector('.dd a')?.focus(); }
-        });
-      }
-      m.querySelectorAll('.dd a').forEach(a=>{
-        if(!a.__wired){
-          a.__wired = true;
-          a.addEventListener('keydown',(e)=>{ if(e.key==='Escape'){ closeAll(); btn.focus(); }});
-        }
-      });
-    });
-    if(!document.__menuBarGlobalWired){
-      document.__menuBarGlobalWired = true;
-      document.addEventListener('click', (e)=>{ if(!e.target.closest('.menuBar')) closeAll(); });
-      document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') closeAll(); });
-    }
-  })();
-
-  // 3) Forzar recálculo del sticky (usa el handler ya registrado)
+  wireMenus('.menuBar');
+  // recalcular sticky
   setTimeout(()=> window.dispatchEvent(new Event('resize')), 0);
   setTimeout(()=> window.dispatchEvent(new Event('resize')), 200);
 })();
