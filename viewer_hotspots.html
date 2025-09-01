@@ -6,22 +6,42 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=3,user-scalable=yes"/>
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 <style>
-  :root{
-    --uiScale:1;
-    --hudH: 44px;
-    --safeTop: env(safe-area-inset-top);
-    --z-hud: 10;
-    --z-sides: 12;
-    --z-progress: 14;
-    --z-list: 20;
-    --z-controls: 8;
-    --z-float: 30;
+  /* === Botones fijos: 1 cm (alto) x 1.2 cm (ancho) === */
+/* Nota: 1 cm ≈ 37.8 px y 1.2 cm ≈ 45.4 px. */
+:root{
+  --fixedBtnH: 1cm;     /* o 37.8px */
+  --fixedBtnW: 1.2cm;   /* o 45.4px */
+}
 
-    /* Columna izquierda */
-    --leftColMaxW: 260px;       /* máximo en px  antes 340 */
-    --leftColVW:   32vw;        /* máximo relativo en viewport antes 44*/
-    --leftBtnMinLines: 1;       /* altura pensada para 1 líneas antes 2 */
-  }
+/* Solo los toggles de la segunda tarjeta (izquierda) */
+#btnAuto,
+#btnTags,
+#btnDiff,
+#btnSolo,
+#btnPinchPage,
+#btnInfo{
+  width: var(--fixedBtnW) !important;
+  min-width: var(--fixedBtnW);
+  max-width: var(--fixedBtnW);
+  height: var(--fixedBtnH);
+  min-height: var(--fixedBtnH);
+  max-height: var(--fixedBtnH);
+
+  /* Ajustes para que el texto no rompa el tamaño fijo */
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  /* Texto en una línea y recorte si es largo */
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
   canvas,.a-canvas{position:fixed;inset:0;width:100vw!important;height:100vh!important;background:#000!important;z-index:0}
