@@ -12,7 +12,7 @@
 
     /* Columna izquierda (ancho compacto) */
     --leftColMaxW: 200px;  /* antes no existía: ancho máximo compacto */
-    --leftColVW:   28vw;   /* límite relativo en móviles */
+    --leftColVW:   30vw;   /* límite relativo en móviles */
     --leftBtnMinLines: 1;  /* altura pensada para 1 línea */
   }
 
@@ -40,7 +40,7 @@
   .leftColumn{
     position:fixed; z-index:6;
     left:12px;
-    top: 88px; /* debajo de la toolbar superior */
+    top: 80px; /* debajo de la toolbar superior */
     display:flex; flex-direction:column; gap:10px;
     width: min(var(--leftColVW), var(--leftColMaxW));
     max-width: 92vw;
@@ -59,15 +59,11 @@
   }
   .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
 
-  /* Botones de la izquierda: mismo ancho (100% del contenedor) + ALTO FIJO 1.2 cm */
+  /* Botones de la izquierda: mismo ancho (100% del contenedor compacto) */
   .leftBtn{
-    /* 🔧 Mejora solicitada: alto físico fijo */
-    box-sizing: border-box;
-    height: 1.2cm;
-    min-height: 1.2cm;
-
     display:inline-flex; align-items:center; justify-content:flex-start;
     width: 100%;
+    min-height: calc( (1.2em * var(--leftBtnMinLines)) + 8px + 8px );
     white-space: normal; word-break: break-word;
   }
 
@@ -292,7 +288,7 @@ AFRAME.registerComponent('pinch-pan-pe',{schema:{min:{default:0.2},max:{default:
       if(this.pointers.size===2){ this.active=true; this.startDist=dist(); this.startScale=this.el.object3D.scale.x; this.startCentroid=centroid(); this.startPos=this.el.object3D.position.clone(); }
     };
     const onMove=(e)=>{ if(!this.pointers.has(e.pointerId)) return;
-      this.pointers.set(e.pointerId,{x:e.clientX,y=e.clientY});
+      this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
       if(this.active && this.pointers.size===2){
         e.preventDefault();
         // Zoom
@@ -361,7 +357,7 @@ AFRAME.registerComponent('mouse-pan',{schema:{panFactor:{default:1}},
     const onMove=(e)=>{ if(!down) return; e.preventDefault();
       const dx=e.clientX-start.x, dy=e.clientY-start.y; const wp=worldPerPixel();
       const tx=dx*wp.x*this.data.panFactor; const ty=-dy*wp.y*this.data.panFactor;
-      this.el.object3D.position.set(startPos.x+tx, startPos.y+ty, this.el.object3D.position.z);
+      this.el.object3D.position.set(startPos.x+tx, startPos.y+ty, startPos.z);
     };
     const onUp=()=>{ down=false; };
     const add=()=>{ const c=s.canvas||s;
@@ -752,3 +748,4 @@ AFRAME.registerComponent('vr-autoplace', {
   <script src="./assets/js/anti-copy.js" defer></script>
 </body>
 </html>
+
