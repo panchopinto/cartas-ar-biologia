@@ -152,49 +152,50 @@
       </div>
     </div>
 
-    <!-- ====== Barra de botones bajo el topbar ====== -->
-    <nav class="menuBar" aria-label="Acceso rápido">
-      <!-- TRIVIA -->
-      <div class="m" data-menu="trivia">
-        <button type="button" aria-haspopup="true" aria-expanded="false">TRIVIA</button>
-        <div class="dd" role="menu">
-          <!-- Etiquetas -->
-          <a role="menuitem" href="./quiz_labels.html?m=animal">Etiquetas — Célula Animal</a>
-          <a role="menuitem" href="./quiz_labels.html?m=vegetal">Etiquetas — Célula Vegetal</a>
-          <hr class="sep">
-          <!-- MCQ -->
-          <a role="menuitem" href="./quiz_mcq.html?m=animal">Alternativas (MCQ) — Animal</a>
-          <a role="menuitem" href="./quiz_mcq.html?m=vegetal">Alternativas (MCQ) — Vegetal</a>
-        </div>
-      </div>
+   <!-- ====== Barra de botones bajo el topbar (orden: VER 3D, VER RA, VER RV, TRIVIA) ====== -->
+<nav class="menuBar" aria-label="Acceso rápido">
+  <!-- VER 3D -->
+  <div class="m" data-menu="3d">
+    <button type="button" aria-haspopup="true" aria-expanded="false">VER 3D</button>
+    <div class="dd" role="menu">
+      <a role="menuitem" href="./viewer.html?m=animal">Célula Animal (3D)</a>
+      <a role="menuitem" href="./viewer.html?m=vegetal">Célula Vegetal (3D)</a>
+    </div>
+  </div>
 
-      <!-- VER 3D -->
-      <div class="m" data-menu="3d">
-        <button type="button" aria-haspopup="true" aria-expanded="false">VER 3D</button>
-        <div class="dd" role="menu">
-          <a role="menuitem" href="./viewer.html?m=animal">Célula Animal (3D)</a>
-          <a role="menuitem" href="./viewer.html?m=vegetal">Célula Vegetal (3D)</a>
-        </div>
-      </div>
+  <!-- VER RA -->
+  <div class="m" data-menu="ra">
+    <button type="button" aria-haspopup="true" aria-expanded="false">VER RA</button>
+    <div class="dd" role="menu">
+      <a role="menuitem" href="./arjs-demo/animal_glb.html?v=2&m=animal">Célula Animal (RA)</a>
+      <a role="menuitem" href="./arjs-demo/vegetal_glb.html?v=2&m=vegetal">Célula Vegetal (RA)</a>
+    </div>
+  </div>
 
-      <!-- VER RA -->
-      <div class="m" data-menu="ra">
-        <button type="button" aria-haspopup="true" aria-expanded="false">VER RA</button>
-        <div class="dd" role="menu">
-          <a role="menuitem" href="./arjs-demo/animal_glb.html?v=2&m=animal">Célula Animal (RA)</a>
-          <a role="menuitem" href="./arjs-demo/vegetal_glb.html?v=2&m=vegetal">Célula Vegetal (RA)</a>
-        </div>
-      </div>
+  <!-- VER RV -->
+  <div class="m" data-menu="rv">
+    <button type="button" aria-haspopup="true" aria-expanded="false">VER RV</button>
+    <div class="dd" role="menu">
+      <a role="menuitem" href="./viewer.html?m=animal&mode=vr">Célula Animal (VR)</a>
+      <a role="menuitem" href="./viewer.html?m=vegetal&mode=vr">Célula Vegetal (VR)</a>
+    </div>
+  </div>
 
-      <!-- VER RV -->
-      <div class="m" data-menu="rv">
-        <button type="button" aria-haspopup="true" aria-expanded="false">VER RV</button>
-        <div class="dd" role="menu">
-          <a role="menuitem" href="./viewer.html?m=animal&mode=vr">Célula Animal (VR)</a>
-          <a role="menuitem" href="./viewer.html?m=vegetal&mode=vr">Célula Vegetal (VR)</a>
-        </div>
-      </div>
-    </nav>
+  <!-- TRIVIA -->
+  <div class="m" data-menu="trivia">
+    <button type="button" aria-haspopup="true" aria-expanded="false">TRIVIA</button>
+    <div class="dd" role="menu">
+      <!-- Etiquetas -->
+      <a role="menuitem" href="./quiz_labels.html?m=animal">Etiquetas — Célula Animal</a>
+      <a role="menuitem" href="./quiz_labels.html?m=vegetal">Etiquetas — Célula Vegetal</a>
+      <hr class="sep">
+      <!-- MCQ -->
+      <a role="menuitem" href="./quiz_mcq.html?m=animal">Alternativas (MCQ) — Animal</a>
+      <a role="menuitem" href="./quiz_mcq.html?m=vegetal">Alternativas (MCQ) — Vegetal</a>
+    </div>
+  </div>
+</nav>
+
 
     <!-- Hero -->
     <section class="hero">
