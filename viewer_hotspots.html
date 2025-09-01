@@ -331,7 +331,7 @@
   </a-scene>
 
 <script>
-/* === Posicionar “Ayuda VR” sobre el botón VR, con margen adicional de 1cm === */
+/* === Posicionar “Ayuda VR” sobre el botón VR, con margen adicional de 0.8cm === */
 (function watchVRButton(){
   const clsNoVR  = 'no-vr-button';
   const helpBtn  = document.getElementById('btnHelpVRFloat');
@@ -341,7 +341,7 @@
     if (vrBtn){
       document.body.classList.remove(clsNoVR);
       const h = Math.max(56, vrBtn.offsetHeight || 56);
-      helpBtn.style.bottom = `calc(${h + 12}px - 1cm)`;
+      helpBtn.style.bottom = `calc(${h + 12}px - 0.8cm)`;
       helpBtn.style.right  = '12px';
       helpBtn.style.display = 'block';
     }else{
