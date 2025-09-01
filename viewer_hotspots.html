@@ -18,9 +18,9 @@
     --z-float: 30;
 
     /* Columna izquierda */
-    --leftColMaxW: 340px;       /* máximo en px */
-    --leftColVW:   44vw;        /* máximo relativo en viewport */
-    --leftBtnMinLines: 2;       /* altura pensada para 2 líneas */
+    --leftColMaxW: 260px;       /* máximo en px  antes 340 */
+    --leftColVW:   32vw;        /* máximo relativo en viewport antes 44*/
+    --leftBtnMinLines: 1;       /* altura pensada para 1 líneas antes 2 */
   }
 
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;overscroll-behavior:contain}
@@ -64,7 +64,7 @@
     border:1px solid rgba(255,255,255,.22);
     color:#fff; background:rgba(0,0,0,.35);
     border-radius:12px;
-    padding:10px 12px;                 /* margen cómodo para varias líneas */
+    padding:8px 10px;                 /* margen cómodo para varias líneas */
     text-align:left;
     font:600 clamp(12px,1.6vw,14px)/1.25 system-ui;
     cursor:pointer;
@@ -118,12 +118,12 @@
     border:1px solid rgba(255,255,255,.28);border-radius:12px;min-width:240px;
     box-shadow:0 6px 24px rgba(0,0,0,.35); backdrop-filter: blur(2px);
   }
-  .listPanel h4{margin:0 0 6px;font:700 clamp(12px,1.6vw,13px) system-ui;color:#cfe6ff}
-  .listPanel select{width:100%;font:600 clamp(12px,1.6vw,12.5px) system-ui;padding:8px;border-radius:10px;border:1px solid #3cc9ff;background:#021525;color:#e8fbff}
+  .listPanel h4{margin:0 0 6px;font:700 clamp(12px,1.4vw,13px) system-ui;color:#cfe6ff}
+  .listPanel select{width:100%;font:600 clamp(12px,1.4vw,12.5px)/1.2 system-ui;padding:8px;border-radius:10px;border:1px solid #3cc9ff;background:#021525;color:#e8fbff}
   .listPanel .row{display:flex;gap:8px;margin-top:10px}
   .listPanel .row .btn{
     flex:1;text-align:center;
-    white-space: normal; word-break: break-word; line-height:1.25;
+    white-space: normal; word-break: break-word; line-height:1.2;
     min-height: calc( (1.25em * var(--leftBtnMinLines)) + 10px + 10px );
   }
 
