@@ -60,16 +60,15 @@
   .btn.active{background:rgba(60,201,255,.25);border-color:#3cc9ff}
 
   /* Botones de la izquierda: mismo ancho (100% del contenedor) + ALTO FIJO 1.2 cm */
-  .leftBtn{
-    /* 🔧 Mejora solicitada: alto físico fijo */
-    box-sizing: border-box;
-    height: 1.2cm;
-    min-height: 1.2cm;
+.leftBtn{
+  box-sizing: border-box;
+  width: 1.2cm;        /* lado horizontal fijo */
+  min-width: 1.2cm;
+  height: auto;        /* el alto queda libre (o ajústalo si quieres) */
+  display:inline-flex; align-items:center; justify-content:center;
+  white-space: normal; word-break: break-word;
+}
 
-    display:inline-flex; align-items:center; justify-content:flex-start;
-    width: 100%;
-    white-space: normal; word-break: break-word;
-  }
 
   .progress{position:fixed;left:50%;transform:translateX(-50%);top:90px;z-index:9;width:min(60vw,520px);height:10px;
             background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden;display:none;border:1px solid rgba(57,255,20,.35)}
