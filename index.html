@@ -123,18 +123,32 @@
   .qr{border:1px solid var(--line); border-radius:16px; background:linear-gradient(180deg,#0b0f16,#0a0d13);
     padding:14px; display:grid; grid-template-rows:auto 1fr auto; gap:8px; align-items:center; justify-items:center}
   .qr h3{margin:0; font:800 16px system-ui}
-  .qr p{margin:0; color:var(--muted); font:13px; text-align:center}
+  .qr p{margin:0; color:#9fb3c9; font:13px; text-align:center}
   canvas.qrCanvas{width:min(280px,80%); height:auto; border-radius:12px; background:#fff}
   .qr .mini{font:700 12px system-ui; color:#96b7d6}
 
   footer{margin:26px 0 10px; color:#9fb3c9; font:13px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; border-top:1px solid var(--line); padding-top:14px}
   @media (max-width:900px){ .hero{grid-template-columns:1fr} .grid{grid-template-columns:1fr} .qrGrid{grid-template-columns:1fr} }
+
+  /* ====== Sticky: SOLO los botones del topbar al hacer scroll ====== */
+  #topActionsRow { transition: transform .18s ease, opacity .18s ease; }
+  #topActionsRow.stick{
+    position: fixed; top: 8px; right: 12px; z-index: 1001;
+    display: flex; gap: 8px; padding: 6px;
+    border: 1px solid #2a3a4e; border-radius: 12px;
+    background: rgba(7, 12, 20, .65); backdrop-filter: blur(8px); box-shadow: var(--shadow);
+  }
+  #topActionsRow.stick .btn{ background: transparent; border-color: #39536d; box-shadow: none; }
+  #topActionsRow.stick .btn:hover{ background: linear-gradient(180deg,#18314a,#0f1a29); }
+  @media (max-width: 600px){
+    #topActionsRow.stick{ left: 8px; right: 8px; justify-content: center; }
+  }
 </style>
 
 </head>
 <body>
   <div class="container">
-    <!-- Topbar (original: marca + Ayuda | ES | EN) -->
+    <!-- Topbar (marca + Ayuda | ES | EN) -->
     <div class="topbar">
       <div class="brand">
         <div class="logo" aria-hidden="true"></div>
@@ -152,50 +166,49 @@
       </div>
     </div>
 
-   <!-- ====== Barra de botones bajo el topbar (orden: VER 3D, VER RA, VER RV, TRIVIA) ====== -->
-<nav class="menuBar" aria-label="Acceso rápido">
-  <!-- VER 3D -->
-  <div class="m" data-menu="3d">
-    <button type="button" aria-haspopup="true" aria-expanded="false">VER 3D</button>
-    <div class="dd" role="menu">
-      <a role="menuitem" href="./viewer.html?m=animal">Célula Animal (3D)</a>
-      <a role="menuitem" href="./viewer.html?m=vegetal">Célula Vegetal (3D)</a>
-    </div>
-  </div>
+    <!-- ====== Barra de botones bajo el topbar (VER 3D, VER RA, VER RV, TRIVIA) ====== -->
+    <nav class="menuBar" aria-label="Acceso rápido">
+      <!-- VER 3D -->
+      <div class="m" data-menu="3d">
+        <button type="button" aria-haspopup="true" aria-expanded="false">VER 3D</button>
+        <div class="dd" role="menu">
+          <a role="menuitem" href="./viewer.html?m=animal">Célula Animal (3D)</a>
+          <a role="menuitem" href="./viewer.html?m=vegetal">Célula Vegetal (3D)</a>
+        </div>
+      </div>
 
-  <!-- VER RA -->
-  <div class="m" data-menu="ra">
-    <button type="button" aria-haspopup="true" aria-expanded="false">VER RA</button>
-    <div class="dd" role="menu">
-      <a role="menuitem" href="./arjs-demo/animal_glb.html?v=2&m=animal">Célula Animal (RA)</a>
-      <a role="menuitem" href="./arjs-demo/vegetal_glb.html?v=2&m=vegetal">Célula Vegetal (RA)</a>
-    </div>
-  </div>
+      <!-- VER RA -->
+      <div class="m" data-menu="ra">
+        <button type="button" aria-haspopup="true" aria-expanded="false">VER RA</button>
+        <div class="dd" role="menu">
+          <a role="menuitem" href="./arjs-demo/animal_glb.html?v=2&m=animal">Célula Animal (RA)</a>
+          <a role="menuitem" href="./arjs-demo/vegetal_glb.html?v=2&m=vegetal">Célula Vegetal (RA)</a>
+        </div>
+      </div>
 
-  <!-- VER RV -->
-  <div class="m" data-menu="rv">
-    <button type="button" aria-haspopup="true" aria-expanded="false">VER RV</button>
-    <div class="dd" role="menu">
-      <a role="menuitem" href="./viewer.html?m=animal&mode=vr">Célula Animal (VR)</a>
-      <a role="menuitem" href="./viewer.html?m=vegetal&mode=vr">Célula Vegetal (VR)</a>
-    </div>
-  </div>
+      <!-- VER RV -->
+      <div class="m" data-menu="rv">
+        <button type="button" aria-haspopup="true" aria-expanded="false">VER RV</button>
+        <div class="dd" role="menu">
+          <a role="menuitem" href="./viewer.html?m=animal&mode=vr">Célula Animal (VR)</a>
+          <a role="menuitem" href="./viewer.html?m=vegetal&mode=vr">Célula Vegetal (VR)</a>
+        </div>
+      </div>
 
-  <!-- TRIVIA -->
-  <div class="m" data-menu="trivia">
-    <button type="button" aria-haspopup="true" aria-expanded="false">TRIVIA</button>
-    <div class="dd" role="menu">
-      <!-- Etiquetas -->
-      <a role="menuitem" href="./quiz_labels.html?m=animal">Etiquetas — Célula Animal</a>
-      <a role="menuitem" href="./quiz_labels.html?m=vegetal">Etiquetas — Célula Vegetal</a>
-      <hr class="sep">
-      <!-- MCQ -->
-      <a role="menuitem" href="./quiz_mcq.html?m=animal">Alternativas (MCQ) — Animal</a>
-      <a role="menuitem" href="./quiz_mcq.html?m=vegetal">Alternativas (MCQ) — Vegetal</a>
-    </div>
-  </div>
-</nav>
-
+      <!-- TRIVIA -->
+      <div class="m" data-menu="trivia">
+        <button type="button" aria-haspopup="true" aria-expanded="false">TRIVIA</button>
+        <div class="dd" role="menu">
+          <!-- Etiquetas -->
+          <a role="menuitem" href="./quiz_labels.html?m=animal">Etiquetas — Célula Animal</a>
+          <a role="menuitem" href="./quiz_labels.html?m=vegetal">Etiquetas — Célula Vegetal</a>
+          <hr class="sep">
+          <!-- MCQ -->
+          <a role="menuitem" href="./quiz_mcq.html?m=animal">Alternativas (MCQ) — Animal</a>
+          <a role="menuitem" href="./quiz_mcq.html?m=vegetal">Alternativas (MCQ) — Vegetal</a>
+        </div>
+      </div>
+    </nav>
 
     <!-- Hero -->
     <section class="hero">
@@ -302,7 +315,7 @@
   </div>
 
 <script>
-/* ========= Utilidades ========= */
+/* ========= Rutas ========= */
 const links = {
   simple_animal: './viewer.html?m=animal',
   simple_veg: './viewer.html?m=vegetal',
@@ -316,7 +329,7 @@ const links = {
   trivia_veg_mcq: './quiz_mcq.html?m=vegetal'
 };
 
-/* ========= QR generator ========= */
+/* ========= QR ========= */
 function makeQR(canvasId, text){
   const el = document.getElementById(canvasId);
   if (!el) return;
@@ -411,10 +424,10 @@ setLang(savedLang === 'en' ? 'en' : 'es');
 document.getElementById('langES').onclick = ()=> setLang('es');
 document.getElementById('langEN').onclick = ()=> setLang('en');
 
-/* ========= Año footer (dos lugares) ========= */
+/* ========= Años en footer ========= */
 document.querySelectorAll('.year').forEach(el=> el.textContent = new Date().getFullYear());
 
-/* ========= Ajuste seguro de enlaces CTA ========= */
+/* ========= CTA enlaces ========= */
 document.getElementById('ctaAnimal').href = links.simple_animal;
 document.getElementById('ctaVegetal').href = links.simple_veg;
 
@@ -428,7 +441,7 @@ document.getElementById('ctaVegetal').href = links.simple_veg;
 
   menus.forEach(m=>{
     const btn = m.querySelector('button');
-    btn.addEventListener('click', (e)=>{
+    btn.addEventListener('click', ()=>{
       const wasOpen = m.classList.contains('open');
       closeAll();
       if(!wasOpen){ m.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
@@ -440,9 +453,33 @@ document.getElementById('ctaVegetal').href = links.simple_veg;
       a.addEventListener('keydown',(e)=>{ if(e.key==='Escape'){ closeAll(); btn.focus(); }});
     });
   });
-
   document.addEventListener('click', (e)=>{ if(!e.target.closest('.menuBar')) closeAll(); });
   document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') closeAll(); });
+})();
+
+/* ====== Sticky de los botones del topbar al pasar la barra de menús ====== */
+(function stickyTopButtons(){
+  const row = document.getElementById('topActionsRow');
+  const bar = document.querySelector('.menuBar'); // barra VER 3D / RA / RV / TRIVIA
+  if (!row || !bar) return;
+
+  const getTrigger = () => (bar.offsetTop || 0) + (bar.offsetHeight || 0);
+  let triggerY = 0;
+
+  function recompute(){
+    triggerY = getTrigger();
+    onScroll();
+  }
+  function onScroll(){
+    if (window.scrollY > triggerY){
+      row.classList.add('stick');
+    } else {
+      row.classList.remove('stick');
+    }
+  }
+  window.addEventListener('load', recompute);
+  window.addEventListener('resize', recompute);
+  window.addEventListener('scroll', onScroll, { passive: true });
 })();
 </script>
 
