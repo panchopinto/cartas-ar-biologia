@@ -42,10 +42,8 @@
   /* ===== HUD ===== */
   .hud{
     position:fixed;left:0;right:0;top:0;
-    /* antes: height: calc(var(--hudH) + var(--safeTop)); */
     min-height: calc(var(--hudH) + var(--safeTop)); /* crece si el título salta a 2 líneas */
     height:auto;
-    /* antes: padding: 8px 12px calc(8px + var(--safeTop)) 12px; */
     padding: calc(8px + var(--safeTop)) 12px 8px 12px;
     display:flex; align-items:flex-end; gap:8px; justify-content:center;
     color:#fff; font:600 clamp(12px,1.6vw,14px) system-ui; z-index: var(--z-hud);
@@ -57,7 +55,6 @@
   /* ===== Toolbar centrada: Animal / Vegetal ===== */
   .toolbar{
     position:fixed;
-    /* antes: top: calc(var(--hudH) + var(--safeTop)); */
     top: calc(var(--hudRealH) + 6px); /* siempre debajo de la HUD real */
     left:50%;
     transform:translateX(-50%);
@@ -85,7 +82,6 @@
   .leftColumn{
     position:fixed; z-index: var(--z-sides);
     left:12px;
-    /* antes: top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 12px); */
     top: calc(var(--hudRealH) + var(--toolbarH) + 12px);
     width:auto; /* clave: no uses un ancho grande fijo */
   }
@@ -126,7 +122,6 @@
   /* Progreso */
   .progress{
     position:fixed;left:50%;transform:translateX(-50%);
-    /* antes: top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 60px); */
     top: calc(var(--hudRealH) + var(--toolbarH) + 60px);
     z-index: var(--z-progress);
     width:min(60vw,520px);height:10px; display:none;
@@ -140,7 +135,6 @@
   .infoPanel{
     position:fixed;left:12px;z-index:8; padding:12px; width:min(360px,86vw);max-height:60vh;overflow:auto;
     background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.28);border-radius:14px;backdrop-filter:blur(2px);
-    /* antes: top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 12px + 200px); */
     top: calc(var(--hudRealH) + var(--toolbarH) + 12px + 200px);
   }
   .infoPanel h3{margin:0 0 6px;font:700 clamp(14px,1.8vw,16px) system-ui;color:#fff}
@@ -154,7 +148,6 @@
   /* Panel Componentes (derecha) */
   .listPanel{
     position:fixed; right:12px; z-index: var(--z-list);
-    /* antes: top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 12px); */
     top: calc(var(--hudRealH) + var(--toolbarH) + 12px);
     padding:12px;background:rgba(0,0,0,.55);
     border:1px solid rgba(255,255,255,.28);border-radius:12px;min-width:240px;
@@ -240,8 +233,8 @@
 
     <!-- BARRA CENTRADA: Animal / Vegetal -->
     <div class="toolbar">
-      <button id="btnAnimal"  class="btn">Célula Animal</button>
-      <button id="btnVegetal" class="btn">Célula Vegetal</button>
+      <button id="btnAnimal"  class="btn">Animal</button>
+      <button id="btnVegetal" class="btn">Vegetal</button>
     </div>
 
     <!-- IZQUIERDA: botones compactos 1cm×1.2cm y tarjeta ajustada -->
