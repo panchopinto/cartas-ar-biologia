@@ -10,6 +10,7 @@
     --uiScale:1;
     --hudH: 44px;
     --safeTop: env(safe-area-inset-top);
+    --hudRealH: calc(var(--hudH) + var(--safeTop)); /* ← altura real medida por JS */
     --z-hud: 10;
     --z-sides: 12;
     --z-progress: 14;
@@ -41,18 +42,23 @@
   /* ===== HUD ===== */
   .hud{
     position:fixed;left:0;right:0;top:0;
-    height: calc(var(--hudH) + var(--safeTop));
-    padding: 8px 12px calc(8px + var(--safeTop)) 12px;
+    /* antes: height: calc(var(--hudH) + var(--safeTop)); */
+    min-height: calc(var(--hudH) + var(--safeTop)); /* crece si el título salta a 2 líneas */
+    height:auto;
+    /* antes: padding: 8px 12px calc(8px + var(--safeTop)) 12px; */
+    padding: calc(8px + var(--safeTop)) 12px 8px 12px;
     display:flex; align-items:flex-end; gap:8px; justify-content:center;
     color:#fff; font:600 clamp(12px,1.6vw,14px) system-ui; z-index: var(--z-hud);
     background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));
+    text-align:center;
   }
   .hud .tag{opacity:.9}
 
   /* ===== Toolbar centrada: Animal / Vegetal ===== */
   .toolbar{
     position:fixed;
-    top: calc(var(--hudH) + var(--safeTop));
+    /* antes: top: calc(var(--hudH) + var(--safeTop)); */
+    top: calc(var(--hudRealH) + 6px); /* siempre debajo de la HUD real */
     left:50%;
     transform:translateX(-50%);
     height: var(--toolbarH);
@@ -63,6 +69,7 @@
     border-radius:14px;
     backdrop-filter: blur(6px);
     box-shadow:0 8px 24px rgba(0,0,0,.25);
+    white-space:nowrap; /* evita quiebres de línea */
   }
   .toolbar .btn{
     border:1px solid rgba(255,255,255,.22);
@@ -78,7 +85,8 @@
   .leftColumn{
     position:fixed; z-index: var(--z-sides);
     left:12px;
-    top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 12px);
+    /* antes: top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 12px); */
+    top: calc(var(--hudRealH) + var(--toolbarH) + 12px);
     width:auto; /* clave: no uses un ancho grande fijo */
   }
   .leftColumn .card{
@@ -118,7 +126,8 @@
   /* Progreso */
   .progress{
     position:fixed;left:50%;transform:translateX(-50%);
-    top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 60px);
+    /* antes: top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 60px); */
+    top: calc(var(--hudRealH) + var(--toolbarH) + 60px);
     z-index: var(--z-progress);
     width:min(60vw,520px);height:10px; display:none;
     background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden;border:1px solid rgba(57,255,20,.35)
@@ -131,7 +140,8 @@
   .infoPanel{
     position:fixed;left:12px;z-index:8; padding:12px; width:min(360px,86vw);max-height:60vh;overflow:auto;
     background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.28);border-radius:14px;backdrop-filter:blur(2px);
-    top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 12px + 200px);
+    /* antes: top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 12px + 200px); */
+    top: calc(var(--hudRealH) + var(--toolbarH) + 12px + 200px);
   }
   .infoPanel h3{margin:0 0 6px;font:700 clamp(14px,1.8vw,16px) system-ui;color:#fff}
   .infoPanel h4{margin:10px 0 6px;font:700 clamp(12px,1.6vw,13px) system-ui;color:#cfe6ff}
@@ -144,7 +154,8 @@
   /* Panel Componentes (derecha) */
   .listPanel{
     position:fixed; right:12px; z-index: var(--z-list);
-    top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 12px);
+    /* antes: top: calc(var(--hudH) + var(--safeTop) + var(--toolbarH) + 12px); */
+    top: calc(var(--hudRealH) + var(--toolbarH) + 12px);
     padding:12px;background:rgba(0,0,0,.55);
     border:1px solid rgba(255,255,255,.28);border-radius:12px;min-width:240px;
     box-shadow:0 6px 24px rgba(0,0,0,.35); backdrop-filter: blur(2px);
@@ -367,6 +378,17 @@
   </a-scene>
 
 <script>
+/* === Altura real de la HUD: evita que la toolbar se monte encima === */
+function updateHudHeight(){
+  const hud = document.querySelector('.hud');
+  if(!hud) return;
+  const h = Math.ceil(hud.getBoundingClientRect().height);
+  document.documentElement.style.setProperty('--hudRealH', h + 'px');
+}
+window.addEventListener('load', updateHudHeight, {once:true});
+window.addEventListener('resize', updateHudHeight);
+window.addEventListener('orientationchange', updateHudHeight);
+
 /* === Posicionar “Ayuda VR” === */
 (function watchVRButton(){
   const clsNoVR  = 'no-vr-button';
@@ -650,6 +672,8 @@ function setUI(){
   btnA.classList.toggle('active',kind==='animal'); btnV.classList.toggle('active',kind==='vegetal');
   labelEl.textContent=(kind==='animal'?'Animal':'Vegetal'); renderInfo(kind);
   const u=new URL(location.href); u.searchParams.set('m',kind); history.replaceState(null,'',u.toString());
+  /* Recalcular altura real de la HUD cuando cambia el texto (Animal/Vegetal) */
+  updateHudHeight();
 }
 
 /* ====== Hotspots runtime ====== */
